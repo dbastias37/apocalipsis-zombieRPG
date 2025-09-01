@@ -1,0 +1,6 @@
+services:
+  - type: static
+    name: apocalipsis-zombie-rpg
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: dist
