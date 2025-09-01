@@ -23,6 +23,7 @@ type Player = {
 
 type Enemy = { id: string; name: string; hp: number; hpMax: number; def: number; atk: number; special?: string; };
 type Resources = { food: number; water: number; medicine: number; fuel: number; ammo: number; materials: number; };
+type Camp = { defense: number; comfort: number };
 
 type Card = {
   id: string;
@@ -123,6 +124,49 @@ const combatDeckSeed: Card[] = [
   },
 ];
 
+type Reward = Partial<{
+  food: number; water: number; materials: number; ammo: number; medicine: number; fuel: number; item: string;
+}>;
+
+interface ExplorationEvent {
+  id: number;
+  text: string;
+  reward: Reward;
+}
+
+const EXPLORATION_EVENTS: ExplorationEvent[] = [
+  { id: 1,  text: "Encuentras una despensa saqueada, aún quedan latas.", reward: { food: 3 } },
+  { id: 2,  text: "Bidón medio lleno escondido bajo un auto.", reward: { fuel: 2 } },
+  { id: 3,  text: "Botiquín empolvado en una farmacia abandonada.", reward: { medicine: 2 } },
+  { id: 4,  text: "Caja de munición en un puesto militar caído.", reward: { ammo: 12 } },
+  { id: 5,  text: "Chatarra útil para refuerzos.", reward: { materials: 6 } },
+  { id: 6,  text: "Garrafa y agua embotellada aún potable.", reward: { water: 4 } },
+  { id: 7,  text: "Rifle viejo aún funcional.", reward: { item: "Rifle", ammo: 6 } },
+  { id: 8,  text: "Pistola oculta en una guantera.", reward: { item: "Pistola", ammo: 8 } },
+  { id: 9,  text: "Cocina de campaña, útiles varios.", reward: { item: "Kit de cocina", food: 2 } },
+  { id:10,  text: "Mochila robusta para cargar más.", reward: { item: "Mochila", materials: 2 } },
+  { id:11,  text: "Hachas y herramientas dispersas.", reward: { item: "Hacha", materials: 3 } },
+  { id:12,  text: "Tienda compacta y aislante.", reward: { item: "Toldo reforzado" } },
+  { id:13,  text: "Mapa local con rutas seguras marcadas.", reward: { item: "Mapa", fuel: 1 } },
+  { id:14,  text: "Baterías y linterna operativa.", reward: { item: "Linterna" } },
+  { id:15,  text: "Gran caja de clavos y listones.", reward: { materials: 10 } },
+  { id:16,  text: "Cantimploras y pastillas potabilizadoras.", reward: { water: 3, item: "Pastillas potabilizadoras" } },
+  { id:17,  text: "Raciones militares en buen estado.", reward: { food: 5 } },
+  { id:18,  text: "Medicamentos variados sin caducar.", reward: { medicine: 3 } },
+  { id:19,  text: "Rollo de alambre y herramientas de sujeción.", reward: { materials: 7 } },
+  { id:20,  text: "Munición calibre variado.", reward: { ammo: 15 } },
+  { id:21,  text: "Combustible sifoneado de un generador.", reward: { fuel: 3 } },
+  { id:22,  text: "Caja de pesca con útiles improvisables.", reward: { item: "Caja multiusos", food: 1 } },
+  { id:23,  text: "Plancha de metal para blindaje.", reward: { materials: 8 } },
+  { id:24,  text: "Cuaderno de notas útil para coordinar.", reward: { item: "Cuaderno" } },
+  { id:25,  text: "Cuerda y mosquetones.", reward: { item: "Cuerda", materials: 2 } },
+  { id:26,  text: "Guantes, linterna frontal, cinta.", reward: { item: "Kit de mantenimiento" } },
+  { id:27,  text: "Latas escondidas bajo el piso.", reward: { food: 4 } },
+  { id:28,  text: "Tambores con un poco de gasolina.", reward: { fuel: 2 } },
+  { id:29,  text: "Caja médica sellada (suerte).", reward: { medicine: 4 } },
+  { id:30,  text: "Pequeño arsenal olvidado.", reward: { ammo: 20, item: "Cuchillo táctico" } },
+];
+
 // === Componente principal ===
 export default function App(){
   // Estado base
@@ -135,6 +179,7 @@ export default function App(){
   const [morale, setMorale] = useState(60);
   const [threat, setThreat] = useState(10);
   const [resources, setResources] = useState<Resources>({ food: 15, water: 15, medicine: 6, fuel: 10, ammo: 30, materials: 12 });
+  const [camp, setCamp] = useState<Camp>({ defense: 10, comfort: 10 });
 
   const [players, setPlayers] = useState<Player[]>([
     mkPlayer("Sarah", "Médica"),
@@ -314,6 +359,23 @@ export default function App(){
     nextDay(true);
   }
 
+  function endOfDeckAdvanceDay(){
+    setDecisionDeck(shuffle([...decisionDeckSeed]));
+    setDiscardDecision([]);
+    pushLog("El mazo se agotó. La jornada termina y el grupo descansa.");
+
+    if(phase !== "night"){
+      setThreat(t=>t+10);
+      pushLog("La noche cae. La amenaza aumenta.");
+      setPhase("night");
+    }
+
+    const upcoming = day + 1;
+    nextDay(true);
+    pushLog(`=== DÍA ${upcoming} COMIENZA ===`);
+    setMorale(m=>clamp(m+3,0,100));
+  }
+
   // ——— Decks ———
   function drawDecision(){
     let deck = [...decisionDeck];
@@ -321,7 +383,7 @@ export default function App(){
       deck = shuffle(discardDecision);
       setDiscardDecision([]);
     }
-    if(deck.length===0){ pushLog("No quedan cartas de decisión."); return; }
+    if(deck.length===0){ endOfDeckAdvanceDay(); return; }
     const card = deck[0];
     setDecisionDeck(deck.slice(1));
     setCurrentCard(card);
@@ -391,6 +453,10 @@ export default function App(){
 
   // ——— Combate muy simplificado ———
   function cloneEnemy(e: Enemy): Enemy{ return { ...e, id: uid() }; }
+  function spawnEnemies(count:number){
+    const spawned = Array.from({length: count}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
+    setEnemies(spawned);
+  }
   function performAttack(enemyId: string){
     const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
     if(!actor) return;
@@ -483,22 +549,47 @@ export default function App(){
   }
 
   // ——— Acciones fuera de combate ———
-  function explore(){
-    // consume tiempo, chance de materiales, evento o combate
-    timePenalty(60);
-    const r = Math.random();
-    if(r<0.45){
-      const gain = 1 + Math.floor(Math.random()*4);
-      setResources(res=>({...res, materials: res.materials + gain, ammo: res.ammo + (Math.random()<0.3?5:0)}));
-      pushLog(`🔎 Hallazgo: +${gain} materiales${Math.random()<0.3?" y algo de munición":""}.`);
-      setMorale(m=>clamp(m+1,0,100));
-    }else if(r<0.7){
-      // evento con countdown
-      spawnTimedEvent();
-    }else{
-      // combate
-      drawCombat();
+  function exploreArea(){
+    const roll = Math.random();
+    if(roll < 0.2){
+      const count = 1 + Math.floor(Math.random()*3);
+      spawnEnemies(count);
+      setCurrentCard({ id: uid(), type: "combat", title: "Encuentro inesperado", text: "Durante la exploración aparecen enemigos." });
+      pushLog(`Exploración interrumpida: ¡${count} enemigos!`);
+      timePenalty(30);
+      advanceTurn();
+      return;
     }
+
+    const ev = EXPLORATION_EVENTS[Math.floor(Math.random()*EXPLORATION_EVENTS.length)];
+    const r = ev.reward || {};
+
+    setResources(prev => ({
+      ...prev,
+      food: (prev.food || 0) + (r.food || 0),
+      water: (prev.water || 0) + (r.water || 0),
+      materials: (prev.materials || 0) + (r.materials || 0),
+      ammo: (prev.ammo || 0) + (r.ammo || 0),
+      medicine: (prev.medicine || 0) + (r.medicine || 0),
+      fuel: (prev.fuel || 0) + (r.fuel || 0),
+    }));
+
+    if(r.item){
+      const vivos = players.filter(p=>p.status!=="dead");
+      if(vivos.length>0){
+        const pick = vivos[Math.floor(Math.random()*vivos.length)];
+        const idx = players.findIndex(p=>p.id===pick.id);
+        updatePlayer(pick.id, { inventory: [...players[idx].inventory, r.item] });
+        pushLog(`${ev.text} — Recompensa: ${Object.keys(r).map(k=>k==='item'?r[k]:`${k}+${r[k]}`).join(', ')}`);
+      }else{
+        pushLog(`${ev.text} — Recompensa enviada al almacén.`);
+      }
+    }else{
+      pushLog(`${ev.text} — Recompensa: ${Object.keys(r).map(k=>`${k}+${r[k]}`).join(', ')}`);
+    }
+
+    timePenalty(20);
+    advanceTurn();
   }
 
   function spawnTimedEvent(){
@@ -643,7 +734,7 @@ export default function App(){
             }}
           />
         ) : (
-          <NoCardActions onExplore={explore} onPassNight={passNight} phase={phase} />
+          <NoCardActions onExplore={exploreArea} onPassNight={passNight} phase={phase} />
         )}
 
         {timedEvent && (
@@ -665,6 +756,14 @@ export default function App(){
           players={players}
           giveItem={giveItemToPlayer}
           takeItem={takeItemFromPlayer}
+        />
+
+        <CampRepair
+          resources={resources}
+          camp={camp}
+          setResources={setResources}
+          setCamp={setCamp}
+          pushLog={pushLog}
         />
 
         <CampPanel resources={resources} setResources={setResources} />
@@ -808,7 +907,12 @@ function CardView(props:{
 function NoCardActions({onExplore, onPassNight, phase}:{onExplore:()=>void; onPassNight:()=>void; phase:Phase}){
   return (
     <div className="card bg-neutral-900 border-neutral-800 p-6 flex flex-wrap items-center gap-3">
-      <button className="btn btn-ghost" onClick={onExplore}>🔎 Explorar (consume tiempo)</button>
+      <button 
+        onClick={onExplore}
+        className="px-6 py-3 bg-red-900 hover:bg-red-800 rounded-xl font-bold transition-all"
+      >
+        🧭 Explorar (saqueo y riesgo)
+      </button>
       {(phase==="dusk"||phase==="night") && (
         <button className="btn btn-red text-white" onClick={onPassNight}>🌙 Pasar la noche</button>
       )}
@@ -958,6 +1062,56 @@ function InventoryPanel({stash, players, giveItem, takeItem}:{stash:string[]; pl
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function CampRepair({resources, camp, setResources, setCamp, pushLog}:{resources:Resources; camp:Camp; setResources:React.Dispatch<React.SetStateAction<Resources>>; setCamp:React.Dispatch<React.SetStateAction<Camp>>; pushLog:(s:string)=>void}){
+  const canRepairDefense = resources.materials >= 3 && camp.defense < 20;
+  const canRepairComfort = resources.materials >= 2 && camp.comfort < 20;
+
+  const repairDefense = () => {
+    if(!canRepairDefense) return;
+    setResources(prev => ({ ...prev, materials: prev.materials - 3 }));
+    setCamp(prev => ({ ...prev, defense: Math.min(20, prev.defense + 2) }));
+    pushLog("Reparación: +2 Defensa (coste 3 materiales)");
+  };
+
+  const repairComfort = () => {
+    if(!canRepairComfort) return;
+    setResources(prev => ({ ...prev, materials: prev.materials - 2 }));
+    setCamp(prev => ({ ...prev, comfort: Math.min(20, prev.comfort + 2) }));
+    pushLog("Reparación: +2 Comodidad (coste 2 materiales)");
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-neutral-900 to-black border border-neutral-800 rounded-2xl p-6">
+      <h3 className="text-2xl font-bold mb-4">🛠️ Reparaciones del Campamento</h3>
+      <p className="text-sm text-neutral-400 mb-4">
+        Usa materiales para restaurar Defensa y Comodidad dañadas.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <button
+          onClick={repairDefense}
+          disabled={!canRepairDefense}
+          className={`px-4 py-3 rounded-xl font-bold transition-all ${
+            canRepairDefense ? 'bg-blue-900 hover:bg-blue-800' : 'bg-neutral-800 opacity-50 cursor-not-allowed'
+          }`}
+        >
+          🛡️ Reparar Defensa (+2) — Coste: 3 🔨
+        </button>
+
+        <button
+          onClick={repairComfort}
+          disabled={!canRepairComfort}
+          className={`px-4 py-3 rounded-xl font-bold transition-all ${
+            canRepairComfort ? 'bg-green-900 hover:bg-green-800' : 'bg-neutral-800 opacity-50 cursor-not-allowed'
+          }`}
+        >
+          🛏️ Reparar Comodidad (+2) — Coste: 2 🔨
+        </button>
+      </div>
     </div>
   );
 }
