@@ -1,0 +1,40 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in .25s ease-out both; }
+
+.card {
+  @apply rounded-2xl border transition-all;
+}
+.card-red {
+  @apply bg-gradient-to-br from-red-950/40 to-black border-red-800;
+}
+.card-purple {
+  @apply bg-gradient-to-br from-purple-950/40 to-black border-purple-800;
+}
+.btn {
+  @apply px-4 py-2 rounded-lg font-semibold transition-all;
+}
+.btn-ghost {
+  @apply bg-neutral-900 hover:bg-neutral-800 border border-neutral-700;
+}
+.btn-red {
+  @apply bg-red-900 hover:bg-red-800;
+}
+.btn-purple {
+  @apply bg-purple-900 hover:bg-purple-800;
+}
+.btn-green {
+  @apply bg-green-900 hover:bg-green-800;
+}
+.badge {
+  @apply px-2 py-1 rounded text-xs bg-neutral-900 border border-neutral-800;
+}
+.scrollbar-hide::-webkit-scrollbar { display:none }
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
