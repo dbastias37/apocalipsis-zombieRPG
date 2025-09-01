@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --------- Utilidades globales que ya usa la UI --------- */
+
+.shadow-red {
+  text-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+}
+
+/* Scrollbar estética oscura */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #171717;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #525252;
+}
+
+/* Ocultar scrollbar en contenedores horizontales */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Suaviza el renderizado de fuentes */
+html, body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fondo por defecto sutil, la UI ya pinta gradientes propios en cada pantalla */
+body {
+  background: #0a0a0a;
+  color: #e5e5e5;
+}
