@@ -1,6 +1,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { clsx } from "clsx";
+import { ITEMS_CATALOG } from "./data/items";
+import { GAME_NOTES, GameNote } from "./data/notes";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -199,6 +201,9 @@ export default function App(){
   // Enemigos cuando hay combate
   const [enemies, setEnemies] = useState<Enemy[]>([]);
 
+  const [foundNotes, setFoundNotes] = useState<GameNote[]>([]);
+  const [explorationActive, setExplorationActive] = useState<boolean>(false);
+
   // Evento con cuenta regresiva
   const [timedEvent, setTimedEvent] = useState<TimedEvent|null>(null);
 
@@ -217,7 +222,7 @@ export default function App(){
       setClockMs((ms)=>{
         const next = ms - 1000;
         if(next <= 0){
-          nextDay();
+          endOfDay('timer');
           return DAY_LENGTH_MS;
         }
         return next;
@@ -270,6 +275,8 @@ export default function App(){
   function start(){
     setState("playing");
     setLog([`📝 Día ${day}: El mundo ya no es el mismo.`]);
+    setFoundNotes([]);
+    setExplorationActive(false);
   }
 
   function pushLog(entry:string){
@@ -356,23 +363,23 @@ export default function App(){
 
   function passNight(){
     pushLog("⏭️ Deciden aguantar hasta el amanecer...");
-    nextDay(true);
+    endOfDay('manual');
   }
 
-  function endOfDeckAdvanceDay(){
+  function endOfDay(reason:'deck'|'timer'|'manual'='manual'){
     setDecisionDeck(shuffle([...decisionDeckSeed]));
     setDiscardDecision([]);
-    pushLog("El mazo se agotó. La jornada termina y el grupo descansa.");
+    if(reason==='deck') pushLog("El mazo se agotó. La jornada termina y el grupo descansa.");
 
-    if(phase !== "night"){
+    if(phase !== 'night'){
       setThreat(t=>t+10);
       pushLog("La noche cae. La amenaza aumenta.");
-      setPhase("night");
+      setPhase('night');
     }
 
     const upcoming = day + 1;
     nextDay(true);
-    pushLog(`=== DÍA ${upcoming} COMIENZA ===`);
+    pushLog(`=== DÍA ${upcoming} COMIENZA (${reason === 'deck' ? 'mazo agotado' : reason === 'timer' ? 'fin del tiempo' : 'continuación'}) ===`);
     setMorale(m=>clamp(m+3,0,100));
   }
 
@@ -383,7 +390,7 @@ export default function App(){
       deck = shuffle(discardDecision);
       setDiscardDecision([]);
     }
-    if(deck.length===0){ endOfDeckAdvanceDay(); return; }
+    if(deck.length===0){ endOfDay('deck'); return; }
     const card = deck[0];
     setDecisionDeck(deck.slice(1));
     setCurrentCard(card);
@@ -548,15 +555,80 @@ export default function App(){
     setPlayers(ps=> ps.map(p => p.id===id ? {...p, ...patch} : p));
   }
 
+  function getItemById(id?: string) {
+    return ITEMS_CATALOG.find(it => it.id === id);
+  }
+
+  function discoverRandomNote(prob = 0.2) {
+    if (Math.random() > prob) return;
+    const undiscovered = GAME_NOTES.filter(n => !foundNotes.some(f => f.id === n.id));
+    if (undiscovered.length === 0) return;
+    const note = undiscovered[Math.floor(Math.random() * undiscovered.length)];
+    setFoundNotes(prev => [...prev, note]);
+    pushLog(`Encuentras una nota: “${note.title}”${note.hintLocation ? ` (pista: ${note.hintLocation})` : ''}`);
+  }
+
+  function followNote(noteId: number) {
+    const note = foundNotes.find(n => n.id === noteId);
+    if (!note || note.resolved) return;
+
+    if (note.leadType === 'combat') {
+      const base = note.leadDifficulty ?? 1;
+      const count = base + Math.floor(Math.random() * 2);
+      spawnEnemies(count);
+      setCurrentCard({ id: uid(), type: 'combat', title: 'Sigues la pista', text: 'Un peligro acecha.' });
+      setExplorationActive(true);
+      pushLog(`Sigues la pista hacia ${note.hintLocation ?? 'un lugar incierto'}: ¡${count} enemigos!`);
+    } else if (note.leadType === 'cache') {
+      const r = note.rewards || {};
+      setResources(prev => ({
+        ...prev,
+        food: (prev.food || 0) + (r.food || 0),
+        water: (prev.water || 0) + (r.water || 0),
+        materials: (prev.materials || 0) + (r.materials || 0),
+        ammo: (prev.ammo || 0) + (r.ammo || 0),
+        medicine: (prev.medicine || 0) + (r.medicine || 0),
+        fuel: (prev.fuel || 0) + (r.fuel || 0),
+      }));
+      if (r.itemId) {
+        const vivos = players.filter(p => p.status !== 'dead');
+        if (vivos.length > 0) {
+          const pick = vivos[Math.floor(Math.random() * vivos.length)];
+          const idx = players.findIndex(p => p.id === pick.id);
+          const item = getItemById(r.itemId);
+          if (item) updatePlayer(pick.id, { inventory: [...players[idx].inventory, item.name] });
+        }
+      }
+      setFoundNotes(prev => prev.map(n => n.id === noteId ? { ...n, resolved: true } : n));
+      pushLog(`Sigues la pista: ${note.hintLocation ?? 'ubicación secreta'} — caché encontrado.`);
+    } else {
+      pushLog("Esta nota no contiene pista accionable.");
+    }
+  }
+
+  useEffect(() => {
+    if (explorationActive && enemies.length === 0 && !currentCard) {
+      setExplorationActive(false);
+      pushLog("Evento de exploración resuelto.");
+    }
+  }, [enemies.length, currentCard, explorationActive]);
+
   // ——— Acciones fuera de combate ———
   function exploreArea(){
+    if(explorationActive){
+      pushLog("Ya hay una exploración/evento activo. Resuélvelo primero.");
+      return;
+    }
+    setExplorationActive(true);
+
+    timePenalty(60 + Math.floor(Math.random()*60));
+
     const roll = Math.random();
     if(roll < 0.2){
       const count = 1 + Math.floor(Math.random()*3);
       spawnEnemies(count);
       setCurrentCard({ id: uid(), type: "combat", title: "Encuentro inesperado", text: "Durante la exploración aparecen enemigos." });
       pushLog(`Exploración interrumpida: ¡${count} enemigos!`);
-      timePenalty(30);
       advanceTurn();
       return;
     }
@@ -574,21 +646,19 @@ export default function App(){
       fuel: (prev.fuel || 0) + (r.fuel || 0),
     }));
 
+    discoverRandomNote(0.25);
+
     if(r.item){
       const vivos = players.filter(p=>p.status!=="dead");
       if(vivos.length>0){
         const pick = vivos[Math.floor(Math.random()*vivos.length)];
         const idx = players.findIndex(p=>p.id===pick.id);
         updatePlayer(pick.id, { inventory: [...players[idx].inventory, r.item] });
-        pushLog(`${ev.text} — Recompensa: ${Object.keys(r).map(k=>k==='item'?r[k]:`${k}+${r[k]}`).join(', ')}`);
-      }else{
-        pushLog(`${ev.text} — Recompensa enviada al almacén.`);
       }
-    }else{
-      pushLog(`${ev.text} — Recompensa: ${Object.keys(r).map(k=>`${k}+${r[k]}`).join(', ')}`);
     }
 
-    timePenalty(20);
+    pushLog(`${ev.text} — Recompensa obtenida.`);
+    setExplorationActive(false);
     advanceTurn();
   }
 
@@ -734,7 +804,7 @@ export default function App(){
             }}
           />
         ) : (
-          <NoCardActions onExplore={exploreArea} onPassNight={passNight} phase={phase} />
+          <NoCardActions onExplore={exploreArea} onPassNight={passNight} phase={phase} explorationActive={explorationActive} />
         )}
 
         {timedEvent && (
@@ -756,6 +826,8 @@ export default function App(){
           players={players}
           giveItem={giveItemToPlayer}
           takeItem={takeItemFromPlayer}
+          foundNotes={foundNotes}
+          followNote={followNote}
         />
 
         <CampRepair
@@ -904,14 +976,17 @@ function CardView(props:{
   );
 }
 
-function NoCardActions({onExplore, onPassNight, phase}:{onExplore:()=>void; onPassNight:()=>void; phase:Phase}){
+function NoCardActions({onExplore, onPassNight, phase, explorationActive}:{onExplore:()=>void; onPassNight:()=>void; phase:Phase; explorationActive:boolean}){
   return (
     <div className="card bg-neutral-900 border-neutral-800 p-6 flex flex-wrap items-center gap-3">
-      <button 
+      <button
         onClick={onExplore}
-        className="px-6 py-3 bg-red-900 hover:bg-red-800 rounded-xl font-bold transition-all"
+        disabled={explorationActive}
+        className={`px-6 py-3 rounded-xl font-bold transition-all ${
+          explorationActive ? 'bg-neutral-800 cursor-not-allowed opacity-60' : 'bg-red-900 hover:bg-red-800'
+        }`}
       >
-        🧭 Explorar (saqueo y riesgo)
+        🧭 Explorar {explorationActive ? '(en curso...)' : '(saqueo y riesgo)'}
       </button>
       {(phase==="dusk"||phase==="night") && (
         <button className="btn btn-red text-white" onClick={onPassNight}>🌙 Pasar la noche</button>
@@ -1023,46 +1098,83 @@ function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Play
   );
 }
 
-function InventoryPanel({stash, players, giveItem, takeItem}:{stash:string[]; players:Player[]; giveItem:(id:string,item:string)=>void; takeItem:(id:string,item:string)=>void}){
+function InventoryPanel({stash, players, giveItem, takeItem, foundNotes, followNote}:{stash:string[]; players:Player[]; giveItem:(id:string,item:string)=>void; takeItem:(id:string,item:string)=>void; foundNotes:GameNote[]; followNote:(id:number)=>void}){
   const [selectedPlayer, setSelectedPlayer] = useState(players[0]?.id ?? "");
   useEffect(()=>{
     if(!players.find(p=>p.id===selectedPlayer) && players[0]) setSelectedPlayer(players[0].id);
   }, [players]);
   const player = players.find(p=>p.id===selectedPlayer);
   return (
-    <div className="card bg-neutral-900 border-neutral-800 p-6">
-      <h3 className="text-xl font-bold mb-4">🎒 Inventario & Alijo</h3>
-      <div className="flex flex-wrap items-center gap-3 mb-3">
-        <span className="text-sm text-neutral-400">Selecciona:</span>
-        <select className="bg-neutral-800 rounded px-2 py-1" value={selectedPlayer} onChange={e=>setSelectedPlayer(e.target.value)}>
-          {players.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
-        </select>
-      </div>
-      {!player ? <p>Sin jugador</p> : (
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <h4 className="text-sm text-neutral-400 mb-1">Alijo del Campamento</h4>
-            <div className="flex flex-wrap gap-2">
-              {stash.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
-                stash.map((it,i)=>(
-                  <button key={i} className="btn btn-ghost" onClick={()=>giveItem(player.id,it)}>{it} ➜</button>
-                ))
-              }
-            </div>
-          </div>
-          <div>
-            <h4 className="text-sm text-neutral-400 mb-1">Inventario de {player.name}</h4>
-            <div className="flex flex-wrap gap-2">
-              {player.inventory.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
-                player.inventory.map((it,i)=>(
-                  <button key={i} className="btn btn-ghost" onClick={()=>takeItem(player.id,it)}>⟵ {it}</button>
-                ))
-              }
-            </div>
-          </div>
+    <>
+      <div className="card bg-neutral-900 border-neutral-800 p-6">
+        <h3 className="text-xl font-bold mb-4">🎒 Inventario & Alijo</h3>
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <span className="text-sm text-neutral-400">Selecciona:</span>
+          <select className="bg-neutral-800 rounded px-2 py-1" value={selectedPlayer} onChange={e=>setSelectedPlayer(e.target.value)}>
+            {players.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
+          </select>
         </div>
-      )}
-    </div>
+        {!player ? <p>Sin jugador</p> : (
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-sm text-neutral-400 mb-1">Alijo del Campamento</h4>
+              <div className="flex flex-wrap gap-2">
+                {stash.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
+                  stash.map((it,i)=>(
+                    <button key={i} className="btn btn-ghost" onClick={()=>giveItem(player.id,it)}>{it} ➜</button>
+                  ))
+                }
+              </div>
+            </div>
+            <div>
+              <h4 className="text-sm text-neutral-400 mb-1">Inventario de {player.name}</h4>
+              <div className="flex flex-wrap gap-2">
+                {player.inventory.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
+                  player.inventory.map((it,i)=>(
+                    <button key={i} className="btn btn-ghost" onClick={()=>takeItem(player.id,it)}>⟵ {it}</button>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 bg-gradient-to-br from-neutral-900 to-black border border-neutral-800 rounded-2xl p-6">
+        <h3 className="text-xl font-bold mb-4">🗒️ Notas encontradas</h3>
+        {foundNotes.length === 0 ? (
+          <p className="text-neutral-500">Aún no has encontrado notas.</p>
+        ) : (
+          <div className="space-y-3">
+            {foundNotes.map(n => (
+              <div key={n.id} className="p-4 bg-neutral-800 rounded-xl">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold">{n.title}</h4>
+                    <p className="text-sm text-neutral-300 mt-1">{n.body}</p>
+                    {n.hintLocation && (
+                      <p className="text-xs text-neutral-400 mt-1">
+                        Pista: <span className="text-neutral-200">{n.hintLocation}</span>
+                      </p>
+                    )}
+                  </div>
+                  {n.leadType && !n.resolved ? (
+                    <button
+                      onClick={() => followNote(n.id)}
+                      className="px-3 py-2 bg-red-900 hover:bg-red-800 rounded-lg text-sm font-bold"
+                    >
+                      Seguir pista
+                    </button>
+                  ) : (
+                    <span className="text-xs text-green-400">✓ Resuelta</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
