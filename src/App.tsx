@@ -27,18 +27,20 @@ export default function App() {
   if (showStart)
     return <StartScreen onStart={() => { setShowStart(false); campaignStore.setState("setup"); }} />;
   if (state === "setup") return <CharacterSetupPanel />;
+  if (state === "playing")
+    return (
+      <>
+        <GameRoot />
+        <DevStatusBadge
+          state={state}
+          showStart={showStart}
+          playersLen={roster.length}
+          turnIndex={0}
+          day={day}
+          timers={{ clock: tickEnabled, event: false }}
+        />
+      </>
+    );
 
-  return (
-    <>
-      <GameRoot />
-      <DevStatusBadge
-        state={state}
-        showStart={showStart}
-        playersLen={roster.length}
-        turnIndex={0}
-        day={day}
-        timers={{ clock: tickEnabled, event: false }}
-      />
-    </>
-  );
+  return null;
 }
