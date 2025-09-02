@@ -1,0 +1,10 @@
+[
+  {
+    "id": "b1",
+    "day": 1,
+    "title": "Encuentro con zombis",
+    "enemies": [{"type": "zombi", "count": 3}],
+    "difficulty": "fácil",
+    "rewards": {"supplies": 2}
+  }
+]

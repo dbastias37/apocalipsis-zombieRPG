@@ -1,0 +1,11 @@
+[
+  {
+    "id": "e1",
+    "day": 1,
+    "location": "Supermercado",
+    "description": "Rebuscar entre los estantes",
+    "risk": "bajo",
+    "timeCostMin": 30,
+    "lootTable": [{"item": "comida", "qty": 2, "chance": 0.6}]
+  }
+]
