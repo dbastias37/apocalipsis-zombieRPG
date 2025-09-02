@@ -9,7 +9,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  // App now boots directly into character creation
-  mode: "character-creation",
+  // App boots directly into running mode with a default player
+  mode: "running",
   setMode: (m) => set({ mode: m }),
 }));

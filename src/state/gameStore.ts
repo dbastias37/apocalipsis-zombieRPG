@@ -1,7 +1,5 @@
 import { create } from "zustand";
 
-export type UIMode = "character-creation" | "running" | "paused";
-
 export type Player = {
   id: string;
   name: string;
@@ -10,7 +8,6 @@ export type Player = {
 };
 
 export type UIState = {
-  mode: UIMode;
   paused: boolean;
   characterInitial?: {
     id: string;
@@ -24,28 +21,37 @@ export type GameState = {
   ui: UIState;
   players: Player[];
   tick: (ms: number) => void;
-  setMode: (m: UIMode) => void;
+  setPaused: (p: boolean) => void;
   createPlayer: (p: Omit<Player, "id">) => void;
+  updatePlayer: (id: string, p: Omit<Player, "id">) => void;
+  removePlayer: (id: string) => void;
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
-  ui: { mode: "character-creation", paused: true },
+  ui: { paused: true },
   players: [],
   tick: (ms) => {
     const { ui } = get();
-    if (ui.mode === "character-creation" || ui.paused) return;
+    if (ui.paused) return;
     // advance game clock here
   },
-  setMode: (m) =>
+  setPaused: (p) =>
     set((state) => ({
       ui: {
         ...state.ui,
-        mode: m,
-        paused: m === "running" ? false : true,
+        paused: p,
       },
     })),
   createPlayer: (p) =>
     set((state) => ({
       players: [...state.players, { id: crypto.randomUUID(), ...p }],
     })),
+  // Update existing player data
+  updatePlayer: (id, p) =>
+    set((state) => ({
+      players: state.players.map((pl) => (pl.id === id ? { ...pl, ...p } : pl)),
+    })),
+  // Remove player from roster
+  removePlayer: (id) =>
+    set((state) => ({ players: state.players.filter((pl) => pl.id !== id) })),
 }));
