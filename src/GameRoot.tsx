@@ -65,6 +65,7 @@ type Card = {
   type: CardType;
   title: string;
   text: string;
+  description?: string;
   scene?: "almacen" | "callejon" | "azotea" | "carretera";
   choices?: { text: string; effect: Partial<Resources> & { morale?: number; threat?: number; spawnEnemies?: number } }[];
   difficulty?: number; // para cartas de combate opcional
@@ -281,6 +282,7 @@ export default function GameRoot(){
   // Resolver eventos con countdown
   const nowRef = useRef<number>(Date.now());
   useEffect(()=>{
+    if(state !== "playing") return;
     const id = window.setInterval(()=>{
       nowRef.current = Date.now();
       if(timedEvent){
@@ -293,7 +295,7 @@ export default function GameRoot(){
       }
     }, 500);
     return ()=> clearInterval(id);
-  }, [timedEvent]);
+  }, [timedEvent, state]);
 
   // Reglas de fin de partida por moral
   useEffect(()=>{
@@ -304,6 +306,7 @@ export default function GameRoot(){
   }, [morale, state]);
 
   useEffect(() => {
+    if(state !== "playing") return;
     // Solo avanzar automáticamente si se agota el tiempo Y aún estamos antes del límite de demo (día 1).
     if (dayState.remainingMs <= 0) {
       if (day >= 1) {
@@ -316,7 +319,9 @@ export default function GameRoot(){
       advanceToNextDay((dayState.day + 1) as any);
       setDay(d => d + 1);
     }
-  }, [dayState.remainingMs]);function createPlayer(name:string, professionId:string, bio:string = ""): Player{
+  }, [dayState.remainingMs, state]);
+
+  function createPlayer(name:string, professionId:string, bio:string = ""): Player{
     const attrs: Attributes = { Fuerza: 12, Destreza: 12, Constitucion: 13, Inteligencia: 11, Carisma: 11 };
     const hpMax = attrs.Constitucion*2 + 5;
     const prof = professions.find(p=>p.id===professionId);
@@ -720,11 +725,12 @@ export default function GameRoot(){
   }
 
   useEffect(() => {
+    if (state !== "playing") return;
     if (explorationActive && enemies.length === 0 && !currentCard) {
       setExplorationActive(false);
       pushLog("Evento de exploración resuelto.");
     }
-  }, [enemies.length, currentCard, explorationActive]);
+  }, [state, enemies.length, currentCard, explorationActive]);
 
   // ——— Acciones fuera de combate ———
   function exploreArea(){
@@ -1153,7 +1159,12 @@ function CardView(props:{
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className={clsx("text-2xl font-bold", isDecision && "text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-600")}>{props.card.title}</h3>
-          <p className="text-neutral-300 mt-1">{props.card.text}</p>
+          {props.card.description && (
+            <p className="text-neutral-400 mt-1 whitespace-pre-wrap leading-relaxed">
+              {props.card.description}
+            </p>
+          )}
+          <p className="text-neutral-300 mt-1 whitespace-pre-wrap leading-relaxed">{props.card.text}</p>
         </div>
         <button className="btn btn-ghost" onClick={props.onClose}>✖</button>
       </div>

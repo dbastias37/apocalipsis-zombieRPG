@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useCampaign } from "@/state/campaign";
 
 // Simple toast system: call toast(message) to show
 // Positioned at bottom-right, auto hides after ~3.5s
@@ -13,6 +14,7 @@ export function toast(msg: string) {
 
 export function ToastContainer() {
   const [toastState, setToastState] = useState<ToastState>(null);
+  const state = useCampaign((s) => s.state);
 
   useEffect(() => {
     trigger = (msg: string) => setToastState({ id: Date.now(), text: msg });
@@ -22,10 +24,10 @@ export function ToastContainer() {
   }, []);
 
   useEffect(() => {
-    if (!toastState) return;
+    if (state !== "playing" || !toastState) return;
     const id = setTimeout(() => setToastState(null), 3500);
     return () => clearTimeout(id);
-  }, [toastState]);
+  }, [toastState, state]);
 
   if (!toastState) return null;
 

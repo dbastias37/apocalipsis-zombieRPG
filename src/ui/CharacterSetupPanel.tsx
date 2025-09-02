@@ -33,20 +33,19 @@ export default function CharacterSetupPanel() {
     seededOnce.current = false;
   };
 
-  const handleStart = () => {
-    if (!campaignStore.canStartCampaign()) {
+  const onStartCampaign = async () => {
+    if (roster.length === 0) {
       toast("Necesitas al menos un jugador");
       return;
     }
-    campaignStore.startCampaign();
+    await campaignStore.ensureDayLoaded(1);
+    campaignStore.setState("playing");
   };
 
   const stopAllKeysCapture: React.KeyboardEventHandler = (e) => {
     if (e.key === "Enter") e.preventDefault();
     e.stopPropagation();
   };
-
-  const canStart = campaignStore.canStartCampaign();
 
   return (
     <div
@@ -118,8 +117,8 @@ export default function CharacterSetupPanel() {
         <button
           type="button"
           className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50"
-          onClick={handleStart}
-          disabled={!canStart}
+          onClick={onStartCampaign}
+          disabled={roster.length === 0}
         >
           Iniciar campaña
         </button>
