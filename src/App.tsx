@@ -3,6 +3,29 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
 import { decisionCards as decisionData } from "./data/decisionCards";
+import TurnOverlay from "./components/TurnOverlay";
+import CountdownBar from "./components/CountdownBar";
+import {
+  createTimeState,
+  tickTime,
+  applyTimeCost,
+  shouldAdvanceDay,
+  advanceDay,
+} from "./systems/time";
+import {
+  createTurnState,
+  resetCupos,
+  nextPlayer,
+  type PlayerCupos,
+} from "./systems/turns";
+import {
+  type CombatActor,
+  setCooldown,
+  tickCooldown,
+  enemyImmediateStrike,
+  dealDamage,
+  isAlive,
+} from "./systems/combat";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -22,6 +45,7 @@ type Player = {
   ammo: number;
   inventory: string[];
   attrs: Attributes;
+  cupos: PlayerCupos;
 };
 
 type Enemy = { id: string; name: string; hp: number; hpMax: number; def: number; atk: number; special?: string; };
@@ -263,7 +287,8 @@ export default function App(){
       status: "ok",
       ammo: 20,
       inventory: ["Navaja"],
-      attrs
+      attrs,
+      cupos: resetCupos(),
     };
   }
 
