@@ -1,11 +1,1069 @@
 [
   {
-    "id": "e1",
+    "id": "D1-EXP-001",
     "day": 1,
-    "location": "Supermercado",
-    "description": "Rebuscar entre los estantes",
+    "location": "Estación de metro",
+    "description": "Registro rápido en estación de metro. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 3,
+        "chance": 70
+      },
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-002",
+    "day": 1,
+    "location": "Edificio en demolición",
+    "description": "Registro rápido en edificio en demolición. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 1,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-003",
+    "day": 1,
+    "location": "Edificio en demolición",
+    "description": "Registro rápido en edificio en demolición. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 40
+      },
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-004",
+    "day": 1,
+    "location": "Escuela pública",
+    "description": "Registro rápido en escuela pública. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 70
+      },
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 40
+      },
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-005",
+    "day": 1,
+    "location": "Escuela pública",
+    "description": "Registro rápido en escuela pública. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 1,
+        "chance": 70
+      },
+      {
+        "item": "agua",
+        "qty": 1,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-006",
+    "day": 1,
+    "location": "Terminal de buses",
+    "description": "Registro rápido en terminal de buses. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "herramientas",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-007",
+    "day": 1,
+    "location": "Clínica en ruinas",
+    "description": "Registro rápido en clínica en ruinas. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 70
+      },
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-008",
+    "day": 1,
+    "location": "Edificio en demolición",
+    "description": "Registro rápido en edificio en demolición. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "municiones",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-009",
+    "day": 1,
+    "location": "Edificio en demolición",
+    "description": "Registro rápido en edificio en demolición. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-010",
+    "day": 1,
+    "location": "Supermercado saqueado",
+    "description": "Registro rápido en supermercado saqueado. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 55
+      },
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-011",
+    "day": 1,
+    "location": "Estación de metro",
+    "description": "Registro rápido en estación de metro. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-012",
+    "day": 1,
+    "location": "Escuela pública",
+    "description": "Registro rápido en escuela pública. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 40
+      },
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-013",
+    "day": 1,
+    "location": "Terminal de buses",
+    "description": "Registro rápido en terminal de buses. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-014",
+    "day": 1,
+    "location": "Edificio en demolición",
+    "description": "Registro rápido en edificio en demolición. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 1,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-015",
+    "day": 1,
+    "location": "Edificio en demolición",
+    "description": "Registro rápido en edificio en demolición. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-016",
+    "day": 1,
+    "location": "Supermercado saqueado",
+    "description": "Registro rápido en supermercado saqueado. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 3,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-017",
+    "day": 1,
+    "location": "Edificio en demolición",
+    "description": "Registro rápido en edificio en demolición. Podría haber algo útil.",
     "risk": "bajo",
     "timeCostMin": 30,
-    "lootTable": [{"item": "comida", "qty": 2, "chance": 0.6}]
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 1,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-018",
+    "day": 1,
+    "location": "Taller mecánico",
+    "description": "Registro rápido en taller mecánico. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 3,
+        "chance": 40
+      },
+      {
+        "item": "comida",
+        "qty": 1,
+        "chance": 70
+      },
+      {
+        "item": "herramientas",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-019",
+    "day": 1,
+    "location": "Taller mecánico",
+    "description": "Registro rápido en taller mecánico. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "herramientas",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-020",
+    "day": 1,
+    "location": "Comisaría vacía",
+    "description": "Registro rápido en comisaría vacía. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "comida",
+        "qty": 2,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-021",
+    "day": 1,
+    "location": "Almacén abandonado",
+    "description": "Registro rápido en almacén abandonado. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 70
+      },
+      {
+        "item": "agua",
+        "qty": 3,
+        "chance": 85
+      },
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-022",
+    "day": 1,
+    "location": "Comisaría vacía",
+    "description": "Registro rápido en comisaría vacía. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 40
+      },
+      {
+        "item": "medicinas",
+        "qty": 3,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-023",
+    "day": 1,
+    "location": "Edificio en demolición",
+    "description": "Registro rápido en edificio en demolición. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-024",
+    "day": 1,
+    "location": "Taller mecánico",
+    "description": "Registro rápido en taller mecánico. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "municiones",
+        "qty": 3,
+        "chance": 40
+      },
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-025",
+    "day": 1,
+    "location": "Supermercado saqueado",
+    "description": "Registro rápido en supermercado saqueado. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 40
+      },
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-026",
+    "day": 1,
+    "location": "Comisaría vacía",
+    "description": "Registro rápido en comisaría vacía. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-027",
+    "day": 1,
+    "location": "Terminal de buses",
+    "description": "Registro rápido en terminal de buses. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 3,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-028",
+    "day": 1,
+    "location": "Comisaría vacía",
+    "description": "Registro rápido en comisaría vacía. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 1,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-029",
+    "day": 1,
+    "location": "Comisaría vacía",
+    "description": "Registro rápido en comisaría vacía. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 40
+      },
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-030",
+    "day": 1,
+    "location": "Comisaría vacía",
+    "description": "Registro rápido en comisaría vacía. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-031",
+    "day": 1,
+    "location": "Escuela pública",
+    "description": "Registro rápido en escuela pública. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-032",
+    "day": 1,
+    "location": "Almacén abandonado",
+    "description": "Registro rápido en almacén abandonado. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 70
+      },
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-033",
+    "day": 1,
+    "location": "Comisaría vacía",
+    "description": "Registro rápido en comisaría vacía. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "herramientas",
+        "qty": 3,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-034",
+    "day": 1,
+    "location": "Supermercado saqueado",
+    "description": "Registro rápido en supermercado saqueado. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 55
+      },
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-035",
+    "day": 1,
+    "location": "Taller mecánico",
+    "description": "Registro rápido en taller mecánico. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 40
+      },
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-036",
+    "day": 1,
+    "location": "Supermercado saqueado",
+    "description": "Registro rápido en supermercado saqueado. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 40
+      },
+      {
+        "item": "comida",
+        "qty": 2,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-037",
+    "day": 1,
+    "location": "Clínica en ruinas",
+    "description": "Registro rápido en clínica en ruinas. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 85
+      },
+      {
+        "item": "herramientas",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-038",
+    "day": 1,
+    "location": "Terminal de buses",
+    "description": "Registro rápido en terminal de buses. Podría haber algo útil.",
+    "risk": "alto",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-039",
+    "day": 1,
+    "location": "Edificio en demolición",
+    "description": "Registro rápido en edificio en demolición. Podría haber algo útil.",
+    "risk": "bajo",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 1,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-040",
+    "day": 1,
+    "location": "Supermercado saqueado",
+    "description": "Registro rápido en supermercado saqueado. Podría haber algo útil.",
+    "risk": "medio",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
   }
 ]
