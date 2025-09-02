@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useGameStore } from "@/state/gameStore";
 import { toast } from "@/components/Toast";
 
@@ -29,23 +29,25 @@ export default function CharacterCreationPanel() {
   const hasPlayers = useGameStore((s) => s.players.length > 0);
 
   const [draft, setDraft] = useState<Draft>({
-    name: "Sara", // borrador inicial
+    name: "",
     profession: "", // valor por defecto del select
     bio: "",
   });
 
   const initial = useGameStore((s) => s.ui.characterInitial || null);
-  const prevInitialId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (initial && initial.id !== prevInitialId.current) {
-      setDraft({
+    if (!initial) return;
+    setDraft((prev) => {
+      const userTyped =
+        prev.name.trim() || prev.profession.trim() || prev.bio.trim();
+      if (userTyped) return prev; // no pisar si ya escribió
+      return {
         name: initial.name ?? "",
         profession: initial.profession ?? "",
         bio: initial.bio ?? "",
-      });
-      prevInitialId.current = initial.id;
-    }
+      };
+    });
   }, [initial]);
 
   // disparar toast una sola vez al montar
@@ -93,8 +95,12 @@ export default function CharacterCreationPanel() {
       <h2 className="text-xl font-bold">Crear Personaje</h2>
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium">Nombre</label>
+        <label htmlFor="player-name" className="block text-sm font-medium">
+          Nombre
+        </label>
         <input
+          id="player-name"
+          name="playerName"
           className="w-full border rounded px-3 py-2"
           type="text"
           placeholder="Ingresa nombre…"
@@ -106,8 +112,12 @@ export default function CharacterCreationPanel() {
       </div>
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium">Profesión</label>
+        <label htmlFor="player-profession" className="block text-sm font-medium">
+          Profesión
+        </label>
         <select
+          id="player-profession"
+          name="playerProfession"
           className="w-full border rounded px-3 py-2"
           value={draft.profession}
           onChange={(e) => onChange("profession", e.target.value)}
@@ -123,8 +133,12 @@ export default function CharacterCreationPanel() {
       </div>
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium">Bio</label>
+        <label htmlFor="player-bio" className="block text-sm font-medium">
+          Bio
+        </label>
         <textarea
+          id="player-bio"
+          name="playerBio"
           className="w-full border rounded px-3 py-2 h-28"
           placeholder="Breve historia / rasgos…"
           value={draft.bio}
