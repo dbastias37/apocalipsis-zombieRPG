@@ -1,0 +1,782 @@
+[
+  {
+    "id": "D1-BAT-001",
+    "day": 1,
+    "title": "Encuentro: Saqueadores armados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Saqueadores armados",
+        "count": 8
+      }
+    ],
+    "difficulty": "fácil",
+    "rewards": {
+      "supplies": 3,
+      "ammo": 6
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-002",
+    "day": 1,
+    "title": "Encuentro: Mutados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Mutados",
+        "count": 6
+      }
+    ],
+    "difficulty": "media",
+    "rewards": {
+      "supplies": 2,
+      "ammo": 2
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-003",
+    "day": 1,
+    "title": "Encuentro: Banda hostil",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Banda hostil",
+        "count": 11
+      }
+    ],
+    "difficulty": "fácil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 1
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-004",
+    "day": 1,
+    "title": "Encuentro: Saqueadores armados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Saqueadores armados",
+        "count": 10
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 1,
+      "ammo": 5
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-005",
+    "day": 1,
+    "title": "Encuentro: Mutados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Mutados",
+        "count": 10
+      }
+    ],
+    "difficulty": "fácil",
+    "rewards": {
+      "supplies": 0,
+      "ammo": 2
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": -1
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-006",
+    "day": 1,
+    "title": "Encuentro: Horda errante",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Horda errante",
+        "count": 7
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 2
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-007",
+    "day": 1,
+    "title": "Encuentro: Perros infectados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Perros infectados",
+        "count": 9
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 2
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-008",
+    "day": 1,
+    "title": "Encuentro: Mutados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Mutados",
+        "count": 7
+      }
+    ],
+    "difficulty": "media",
+    "rewards": {
+      "supplies": 2,
+      "ammo": 1
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-009",
+    "day": 1,
+    "title": "Encuentro: Horda errante",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Horda errante",
+        "count": 8
+      }
+    ],
+    "difficulty": "fácil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 6
+    },
+    "penalties": {
+      "injuries": 2,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-010",
+    "day": 1,
+    "title": "Encuentro: Horda errante",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Horda errante",
+        "count": 6
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 3,
+      "ammo": 2
+    },
+    "penalties": {
+      "injuries": 2,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-011",
+    "day": 1,
+    "title": "Encuentro: Banda hostil",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Banda hostil",
+        "count": 4
+      }
+    ],
+    "difficulty": "fácil",
+    "rewards": {
+      "supplies": 2,
+      "ammo": 1
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-012",
+    "day": 1,
+    "title": "Encuentro: Banda hostil",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Banda hostil",
+        "count": 3
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 1
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-013",
+    "day": 1,
+    "title": "Encuentro: Caminantes",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Caminantes",
+        "count": 11
+      }
+    ],
+    "difficulty": "media",
+    "rewards": {
+      "supplies": 1,
+      "ammo": 5
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-014",
+    "day": 1,
+    "title": "Encuentro: Caminantes",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Caminantes",
+        "count": 12
+      }
+    ],
+    "difficulty": "media",
+    "rewards": {
+      "supplies": 3,
+      "ammo": 3
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": -1
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-015",
+    "day": 1,
+    "title": "Encuentro: Acechadores",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Acechadores",
+        "count": 3
+      }
+    ],
+    "difficulty": "media",
+    "rewards": {
+      "supplies": 3,
+      "ammo": 0
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": -1
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-016",
+    "day": 1,
+    "title": "Encuentro: Mutados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Mutados",
+        "count": 4
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 0,
+      "ammo": 1
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-017",
+    "day": 1,
+    "title": "Encuentro: Banda hostil",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Banda hostil",
+        "count": 4
+      }
+    ],
+    "difficulty": "fácil",
+    "rewards": {
+      "supplies": 0,
+      "ammo": 4
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-018",
+    "day": 1,
+    "title": "Encuentro: Horda errante",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Horda errante",
+        "count": 11
+      }
+    ],
+    "difficulty": "media",
+    "rewards": {
+      "supplies": 3,
+      "ammo": 3
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-019",
+    "day": 1,
+    "title": "Encuentro: Saqueadores armados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Saqueadores armados",
+        "count": 7
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 0
+    },
+    "penalties": {
+      "injuries": 2,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-020",
+    "day": 1,
+    "title": "Encuentro: Corredores",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Corredores",
+        "count": 6
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 1,
+      "ammo": 2
+    },
+    "penalties": {
+      "injuries": 2,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-021",
+    "day": 1,
+    "title": "Encuentro: Acechadores",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Acechadores",
+        "count": 6
+      }
+    ],
+    "difficulty": "fácil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 0
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-022",
+    "day": 1,
+    "title": "Encuentro: Saqueadores armados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Saqueadores armados",
+        "count": 10
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 3
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-023",
+    "day": 1,
+    "title": "Encuentro: Horda errante",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Horda errante",
+        "count": 7
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 2,
+      "ammo": 5
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-024",
+    "day": 1,
+    "title": "Encuentro: Horda errante",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Horda errante",
+        "count": 7
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 5
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": -1
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-025",
+    "day": 1,
+    "title": "Encuentro: Corredores",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Corredores",
+        "count": 11
+      }
+    ],
+    "difficulty": "fácil",
+    "rewards": {
+      "supplies": 1,
+      "ammo": 2
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": -2
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-026",
+    "day": 1,
+    "title": "Encuentro: Caminantes",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Caminantes",
+        "count": 5
+      }
+    ],
+    "difficulty": "media",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 5
+    },
+    "penalties": {
+      "injuries": 2,
+      "morale": -1
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-027",
+    "day": 1,
+    "title": "Encuentro: Mutados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Mutados",
+        "count": 4
+      }
+    ],
+    "difficulty": "media",
+    "rewards": {
+      "supplies": 2,
+      "ammo": 5
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": -1
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-028",
+    "day": 1,
+    "title": "Encuentro: Mutados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Mutados",
+        "count": 10
+      }
+    ],
+    "difficulty": "fácil",
+    "rewards": {
+      "supplies": 4,
+      "ammo": 0
+    },
+    "penalties": {
+      "injuries": 1,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-029",
+    "day": 1,
+    "title": "Encuentro: Perros infectados",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Perros infectados",
+        "count": 12
+      }
+    ],
+    "difficulty": "media",
+    "rewards": {
+      "supplies": 0,
+      "ammo": 0
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": 0
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-BAT-030",
+    "day": 1,
+    "title": "Encuentro: Caminantes",
+    "description": "El encuentro no es solo físico: el hedor, la velocidad y la memoria del día anterior pesan en cada golpe. Las botas resbalan en suelos empapados, y los gritos se parecen demasiado a los de personas que ya no están. El liderazgo se prueba en segundos, repartiéndose posiciones y racionando la munición con precisión quirúrgica. Si derrotan a los enemigos, no ganan gloria: ganan minutos, aire y la posibilidad de volver a hablar de mañana.",
+    "enemies": [
+      {
+        "type": "Caminantes",
+        "count": 7
+      }
+    ],
+    "difficulty": "difícil",
+    "rewards": {
+      "supplies": 0,
+      "ammo": 6
+    },
+    "penalties": {
+      "injuries": 0,
+      "morale": -1
+    },
+    "unique": true,
+    "tags": [
+      "batalla",
+      "dia1"
+    ]
+  }
+]

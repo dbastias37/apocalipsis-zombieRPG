@@ -1,0 +1,1140 @@
+[
+  {
+    "id": "D1-EXP-001",
+    "day": 1,
+    "location": "Terminal de buses con carros volcados",
+    "description": "En terminal de buses con carros volcados, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 3,
+        "chance": 85
+      },
+      {
+        "item": "baterías",
+        "qty": 2,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-002",
+    "day": 1,
+    "location": "Comisaría abandonada con archivos regados",
+    "description": "En comisaría abandonada con archivos regados, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-003",
+    "day": 1,
+    "location": "Escuela básica con murales rotos",
+    "description": "En escuela básica con murales rotos, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-004",
+    "day": 1,
+    "location": "Almacén municipal clausurado",
+    "description": "En almacén municipal clausurado, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 1,
+        "chance": 70
+      },
+      {
+        "item": "herramientas",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-005",
+    "day": 1,
+    "location": "Supermercado con estanterías volcadas",
+    "description": "En supermercado con estanterías volcadas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 3,
+        "chance": 85
+      },
+      {
+        "item": "comida",
+        "qty": 1,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-006",
+    "day": 1,
+    "location": "Pasillo profundo del metro",
+    "description": "En pasillo profundo del metro, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "vendajes",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-007",
+    "day": 1,
+    "location": "Taller mecánico con herramientas dispersas",
+    "description": "En taller mecánico con herramientas dispersas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "vendajes",
+        "qty": 2,
+        "chance": 85
+      },
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-008",
+    "day": 1,
+    "location": "Supermercado con estanterías volcadas",
+    "description": "En supermercado con estanterías volcadas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-009",
+    "day": 1,
+    "location": "Taller mecánico con herramientas dispersas",
+    "description": "En taller mecánico con herramientas dispersas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "bajo",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 3,
+        "chance": 85
+      },
+      {
+        "item": "vendajes",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "herramientas",
+        "qty": 2,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-010",
+    "day": 1,
+    "location": "Terminal de buses con carros volcados",
+    "description": "En terminal de buses con carros volcados, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "herramientas",
+        "qty": 2,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-011",
+    "day": 1,
+    "location": "Almacén municipal clausurado",
+    "description": "En almacén municipal clausurado, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "vendajes",
+        "qty": 2,
+        "chance": 85
+      },
+      {
+        "item": "baterías",
+        "qty": 3,
+        "chance": 55
+      },
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-012",
+    "day": 1,
+    "location": "Biblioteca pública hecha trizas",
+    "description": "En biblioteca pública hecha trizas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 85
+      },
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-013",
+    "day": 1,
+    "location": "Pasillo profundo del metro",
+    "description": "En pasillo profundo del metro, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "bajo",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 3,
+        "chance": 85
+      },
+      {
+        "item": "baterías",
+        "qty": 1,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-014",
+    "day": 1,
+    "location": "Terminal de buses con carros volcados",
+    "description": "En terminal de buses con carros volcados, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 2,
+        "chance": 40
+      },
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "baterías",
+        "qty": 3,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-015",
+    "day": 1,
+    "location": "Clínica de barrio sin energía",
+    "description": "En clínica de barrio sin energía, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "agua",
+        "qty": 3,
+        "chance": 70
+      },
+      {
+        "item": "comida",
+        "qty": 1,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-016",
+    "day": 1,
+    "location": "Taller mecánico con herramientas dispersas",
+    "description": "En taller mecánico con herramientas dispersas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "herramientas",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-017",
+    "day": 1,
+    "location": "Pasillo profundo del metro",
+    "description": "En pasillo profundo del metro, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "bajo",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "herramientas",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "municiones",
+        "qty": 3,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-018",
+    "day": 1,
+    "location": "Taller mecánico con herramientas dispersas",
+    "description": "En taller mecánico con herramientas dispersas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 3,
+        "chance": 55
+      },
+      {
+        "item": "comida",
+        "qty": 2,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-019",
+    "day": 1,
+    "location": "Taller mecánico con herramientas dispersas",
+    "description": "En taller mecánico con herramientas dispersas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "agua",
+        "qty": 2,
+        "chance": 85
+      },
+      {
+        "item": "comida",
+        "qty": 1,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-020",
+    "day": 1,
+    "location": "Comisaría abandonada con archivos regados",
+    "description": "En comisaría abandonada con archivos regados, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 40
+      },
+      {
+        "item": "herramientas",
+        "qty": 3,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-021",
+    "day": 1,
+    "location": "Supermercado con estanterías volcadas",
+    "description": "En supermercado con estanterías volcadas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 1,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-022",
+    "day": 1,
+    "location": "Pasillo profundo del metro",
+    "description": "En pasillo profundo del metro, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 1,
+        "chance": 70
+      },
+      {
+        "item": "vendajes",
+        "qty": 2,
+        "chance": 40
+      },
+      {
+        "item": "herramientas",
+        "qty": 2,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-023",
+    "day": 1,
+    "location": "Taller mecánico con herramientas dispersas",
+    "description": "En taller mecánico con herramientas dispersas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 1,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-024",
+    "day": 1,
+    "location": "Terminal de buses con carros volcados",
+    "description": "En terminal de buses con carros volcados, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "vendajes",
+        "qty": 2,
+        "chance": 70
+      },
+      {
+        "item": "baterías",
+        "qty": 2,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-025",
+    "day": 1,
+    "location": "Clínica de barrio sin energía",
+    "description": "En clínica de barrio sin energía, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "bajo",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 3,
+        "chance": 85
+      },
+      {
+        "item": "vendajes",
+        "qty": 3,
+        "chance": 70
+      },
+      {
+        "item": "comida",
+        "qty": 2,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-026",
+    "day": 1,
+    "location": "Terminal de buses con carros volcados",
+    "description": "En terminal de buses con carros volcados, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "bajo",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 3,
+        "chance": 70
+      },
+      {
+        "item": "herramientas",
+        "qty": 2,
+        "chance": 70
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-027",
+    "day": 1,
+    "location": "Supermercado con estanterías volcadas",
+    "description": "En supermercado con estanterías volcadas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "herramientas",
+        "qty": 2,
+        "chance": 55
+      },
+      {
+        "item": "baterías",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "baterías",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-028",
+    "day": 1,
+    "location": "Pasillo profundo del metro",
+    "description": "En pasillo profundo del metro, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "bajo",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 40
+      },
+      {
+        "item": "agua",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-029",
+    "day": 1,
+    "location": "Azotea con vista a la ciudad silenciosa",
+    "description": "En azotea con vista a la ciudad silenciosa, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 3,
+        "chance": 55
+      },
+      {
+        "item": "municiones",
+        "qty": 3,
+        "chance": 40
+      },
+      {
+        "item": "vendajes",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-030",
+    "day": 1,
+    "location": "Almacén municipal clausurado",
+    "description": "En almacén municipal clausurado, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-031",
+    "day": 1,
+    "location": "Clínica de barrio sin energía",
+    "description": "En clínica de barrio sin energía, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 2,
+        "chance": 40
+      },
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 55
+      },
+      {
+        "item": "comida",
+        "qty": 2,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-032",
+    "day": 1,
+    "location": "Supermercado con estanterías volcadas",
+    "description": "En supermercado con estanterías volcadas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "vendajes",
+        "qty": 2,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-033",
+    "day": 1,
+    "location": "Biblioteca pública hecha trizas",
+    "description": "En biblioteca pública hecha trizas, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "bajo",
+    "timeCostMin": 30,
+    "lootTable": [
+      {
+        "item": "agua",
+        "qty": 3,
+        "chance": 55
+      },
+      {
+        "item": "vendajes",
+        "qty": 1,
+        "chance": 70
+      },
+      {
+        "item": "vendajes",
+        "qty": 1,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-034",
+    "day": 1,
+    "location": "Pasillo profundo del metro",
+    "description": "En pasillo profundo del metro, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "bajo",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 3,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-035",
+    "day": 1,
+    "location": "Almacén municipal clausurado",
+    "description": "En almacén municipal clausurado, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "medicinas",
+        "qty": 1,
+        "chance": 55
+      },
+      {
+        "item": "baterías",
+        "qty": 2,
+        "chance": 40
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-036",
+    "day": 1,
+    "location": "Clínica de barrio sin energía",
+    "description": "En clínica de barrio sin energía, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "herramientas",
+        "qty": 3,
+        "chance": 40
+      },
+      {
+        "item": "municiones",
+        "qty": 3,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-037",
+    "day": 1,
+    "location": "Almacén municipal clausurado",
+    "description": "En almacén municipal clausurado, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "baterías",
+        "qty": 1,
+        "chance": 40
+      },
+      {
+        "item": "municiones",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_radio_code"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-038",
+    "day": 1,
+    "location": "Clínica de barrio sin energía",
+    "description": "En clínica de barrio sin energía, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 90,
+    "lootTable": [
+      {
+        "item": "comida",
+        "qty": 2,
+        "chance": 55
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-039",
+    "day": 1,
+    "location": "Pasillo profundo del metro",
+    "description": "En pasillo profundo del metro, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "medio",
+    "timeCostMin": 60,
+    "lootTable": [
+      {
+        "item": "herramientas",
+        "qty": 3,
+        "chance": 70
+      },
+      {
+        "item": "municiones",
+        "qty": 3,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  },
+  {
+    "id": "D1-EXP-040",
+    "day": 1,
+    "location": "Clínica de barrio sin energía",
+    "description": "En clínica de barrio sin energía, el polvo es una segunda piel y cada estornudo podría delatar su presencia. En estantes aún firmes hay huecos con formas de cosas útiles, como fantasmas de la abundancia pasada. El grupo debate si lo que perteneció a alguien aún pertenece a alguien, o si el hambre firma documentos invisibles. Una puerta interior parece prometer algo; otra, una emboscada. El silencio, en ambos casos, es una respuesta incompleta. Decidan rápido: la luz cambia, y con ella el ánimo y la brújula moral.",
+    "risk": "alto",
+    "timeCostMin": 45,
+    "lootTable": [
+      {
+        "item": "municiones",
+        "qty": 1,
+        "chance": 85
+      },
+      {
+        "item": "medicinas",
+        "qty": 2,
+        "chance": 85
+      }
+    ],
+    "onSuccessFlagsSet": [
+      "day2_safehouse_known"
+    ],
+    "tags": [
+      "exploracion",
+      "saqueo",
+      "dia1"
+    ]
+  }
+]

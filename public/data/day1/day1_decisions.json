@@ -1,0 +1,3029 @@
+[
+  {
+    "id": "D1-DEC-001",
+    "day": 1,
+    "title": "La radio insiste con un código incompleto",
+    "text": "Dilema: ¿La verdad cruda fortalece o destruye cuando la esperanza es lo único que sostiene la marcha? Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-001-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": -1,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-001-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-001-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-001-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-002",
+    "day": 1,
+    "title": "Sombras frente a la farmacia vacía",
+    "text": "Dilema: ¿Cuándo la propiedad deja de existir y se convierte en necesidad compartida sin permiso? La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-002-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-002-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-002-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-003",
+    "day": 1,
+    "title": "Carteles que prohíben lo que ya pasó",
+    "text": "Dilema: ¿Merece más moral quien arriesga por desconocidos o quien cuida únicamente a su pequeño círculo? Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-003-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-003-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-003-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-003-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-004",
+    "day": 1,
+    "title": "Un niño pregunta por su casa que ya no existe",
+    "text": "Dilema: ¿El liderazgo es mandato o servicio, y quién vigila a quien manda cuando las instituciones ya no existen? Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-004-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": -1,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-004-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-004-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-005",
+    "day": 1,
+    "title": "Un coche con llaves y una foto en el tablero",
+    "text": "Dilema: ¿Puede el pasado seguir dictando reglas cuando el presente ya no se parece a nada conocido? La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-005-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-005-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [
+            "day2_increased_horde"
+          ],
+          "nextDayModifiers": {
+            "hordeIntensity": 2
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-005-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-005-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-006",
+    "day": 1,
+    "title": "Una fila de velas marca un pasillo oscuro",
+    "text": "Dilema: ¿El orden se construye obedeciendo normas antiguas o inventando otras con consecuencias imprevisibles? Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-006-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-006-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-006-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -1,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-007",
+    "day": 1,
+    "title": "Toques en la pared: una clave aprendida tarde",
+    "text": "Dilema: ¿Qué precio tiene la calma si se compra con silencio frente a la injusticia de otros grupos? Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-007-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [
+            "day2_safehouse_known"
+          ],
+          "nextDayModifiers": {
+            "safehouseRevealed": true
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-007-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-007-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-007-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-008",
+    "day": 1,
+    "title": "Un dron civil sobrevuela sin piloto",
+    "text": "Dilema: ¿Somos los mismos cuando tomamos decisiones con hambre y miedo? El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-008-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-008-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-008-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-009",
+    "day": 1,
+    "title": "Fuego lejano tras el cerro",
+    "text": "Dilema: ¿Importa la belleza de las palabras si la realidad solo entiende de ruido y carne? En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-009-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-009-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-009-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-009-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-010",
+    "day": 1,
+    "title": "Una puerta que resiste golpes suaves",
+    "text": "Dilema: ¿Salvar a muchos sacrificando a uno, o preservar la dignidad del individuo incluso si todos pierden un poco más? La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-010-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-010-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [
+            "day2_radio_code"
+          ],
+          "nextDayModifiers": {
+            "eventUnlocks": [
+              "radio_rescue_signal"
+            ]
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-010-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-011",
+    "day": 1,
+    "title": "La radio insiste con un código incompleto",
+    "text": "Dilema: ¿La verdad cruda fortalece o destruye cuando la esperanza es lo único que sostiene la marcha? La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-011-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-011-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -1,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-011-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-011-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-012",
+    "day": 1,
+    "title": "Sombras frente a la farmacia vacía",
+    "text": "Dilema: ¿Cuándo la propiedad deja de existir y se convierte en necesidad compartida sin permiso? En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-012-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-012-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-012-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-013",
+    "day": 1,
+    "title": "Carteles que prohíben lo que ya pasó",
+    "text": "Dilema: ¿Merece más moral quien arriesga por desconocidos o quien cuida únicamente a su pequeño círculo? Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-013-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-013-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -2,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-013-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-013-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-014",
+    "day": 1,
+    "title": "Un niño pregunta por su casa que ya no existe",
+    "text": "Dilema: ¿El liderazgo es mandato o servicio, y quién vigila a quien manda cuando las instituciones ya no existen? Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-014-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [
+            "day2_supply_shortage"
+          ],
+          "nextDayModifiers": {
+            "shopPricesMultiplier": 1.25
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-014-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-014-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-015",
+    "day": 1,
+    "title": "Un coche con llaves y una foto en el tablero",
+    "text": "Dilema: ¿Puede el pasado seguir dictando reglas cuando el presente ya no se parece a nada conocido? En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-015-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-015-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [
+            "day2_increased_horde"
+          ],
+          "nextDayModifiers": {
+            "hordeIntensity": 2
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-015-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-015-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 1,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-016",
+    "day": 1,
+    "title": "Una fila de velas marca un pasillo oscuro",
+    "text": "Dilema: ¿El orden se construye obedeciendo normas antiguas o inventando otras con consecuencias imprevisibles? Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-016-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-016-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-016-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 1,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-017",
+    "day": 1,
+    "title": "Toques en la pared: una clave aprendida tarde",
+    "text": "Dilema: ¿Qué precio tiene la calma si se compra con silencio frente a la injusticia de otros grupos? Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-017-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-017-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-017-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-017-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-018",
+    "day": 1,
+    "title": "Un dron civil sobrevuela sin piloto",
+    "text": "Dilema: ¿Somos los mismos cuando tomamos decisiones con hambre y miedo? El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-018-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-018-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-018-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-019",
+    "day": 1,
+    "title": "Fuego lejano tras el cerro",
+    "text": "Dilema: ¿Importa la belleza de las palabras si la realidad solo entiende de ruido y carne? En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-019-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-019-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-019-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-019-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-020",
+    "day": 1,
+    "title": "Una puerta que resiste golpes suaves",
+    "text": "Dilema: ¿Salvar a muchos sacrificando a uno, o preservar la dignidad del individuo incluso si todos pierden un poco más? La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-020-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-020-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [
+            "day2_supply_shortage"
+          ],
+          "nextDayModifiers": {
+            "shopPricesMultiplier": 1.25
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-020-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-021",
+    "day": 1,
+    "title": "La radio insiste con un código incompleto",
+    "text": "Dilema: ¿La verdad cruda fortalece o destruye cuando la esperanza es lo único que sostiene la marcha? En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-021-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [
+            "day2_increased_horde"
+          ],
+          "nextDayModifiers": {
+            "hordeIntensity": 2
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-021-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": -1,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-021-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-021-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-022",
+    "day": 1,
+    "title": "Sombras frente a la farmacia vacía",
+    "text": "Dilema: ¿Cuándo la propiedad deja de existir y se convierte en necesidad compartida sin permiso? El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-022-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-022-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-022-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -2,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-023",
+    "day": 1,
+    "title": "Carteles que prohíben lo que ya pasó",
+    "text": "Dilema: ¿Merece más moral quien arriesga por desconocidos o quien cuida únicamente a su pequeño círculo? El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-023-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-023-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 0,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-023-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-023-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-024",
+    "day": 1,
+    "title": "Un niño pregunta por su casa que ya no existe",
+    "text": "Dilema: ¿El liderazgo es mandato o servicio, y quién vigila a quien manda cuando las instituciones ya no existen? Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-024-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 1,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-024-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-024-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-025",
+    "day": 1,
+    "title": "Un coche con llaves y una foto en el tablero",
+    "text": "Dilema: ¿Puede el pasado seguir dictando reglas cuando el presente ya no se parece a nada conocido? Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-025-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-025-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [
+            "day2_safehouse_known"
+          ],
+          "nextDayModifiers": {
+            "safehouseRevealed": true
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-025-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": -1,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-025-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-026",
+    "day": 1,
+    "title": "Una fila de velas marca un pasillo oscuro",
+    "text": "Dilema: ¿El orden se construye obedeciendo normas antiguas o inventando otras con consecuencias imprevisibles? El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-026-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-026-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 1,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-026-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-027",
+    "day": 1,
+    "title": "Toques en la pared: una clave aprendida tarde",
+    "text": "Dilema: ¿Qué precio tiene la calma si se compra con silencio frente a la injusticia de otros grupos? Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-027-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-027-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-027-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-027-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-028",
+    "day": 1,
+    "title": "Un dron civil sobrevuela sin piloto",
+    "text": "Dilema: ¿Somos los mismos cuando tomamos decisiones con hambre y miedo? El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-028-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [
+            "day2_radio_code"
+          ],
+          "nextDayModifiers": {
+            "eventUnlocks": [
+              "radio_rescue_signal"
+            ]
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-028-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -2,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-028-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-029",
+    "day": 1,
+    "title": "Fuego lejano tras el cerro",
+    "text": "Dilema: ¿Importa la belleza de las palabras si la realidad solo entiende de ruido y carne? La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-029-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-029-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-029-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-029-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-030",
+    "day": 1,
+    "title": "Una puerta que resiste golpes suaves",
+    "text": "Dilema: ¿Salvar a muchos sacrificando a uno, o preservar la dignidad del individuo incluso si todos pierden un poco más? Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-030-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": -2,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-030-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 0,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [
+            "day2_radio_code"
+          ],
+          "nextDayModifiers": {
+            "eventUnlocks": [
+              "radio_rescue_signal"
+            ]
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-030-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-031",
+    "day": 1,
+    "title": "La radio insiste con un código incompleto",
+    "text": "Dilema: ¿La verdad cruda fortalece o destruye cuando la esperanza es lo único que sostiene la marcha? El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-031-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-031-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-031-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-031-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-032",
+    "day": 1,
+    "title": "Sombras frente a la farmacia vacía",
+    "text": "Dilema: ¿Cuándo la propiedad deja de existir y se convierte en necesidad compartida sin permiso? Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-032-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": -1,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-032-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": -1,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-032-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-033",
+    "day": 1,
+    "title": "Carteles que prohíben lo que ya pasó",
+    "text": "Dilema: ¿Merece más moral quien arriesga por desconocidos o quien cuida únicamente a su pequeño círculo? La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-033-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-033-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-033-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-033-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-034",
+    "day": 1,
+    "title": "Un niño pregunta por su casa que ya no existe",
+    "text": "Dilema: ¿El liderazgo es mandato o servicio, y quién vigila a quien manda cuando las instituciones ya no existen? Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-034-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-034-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-034-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-035",
+    "day": 1,
+    "title": "Un coche con llaves y una foto en el tablero",
+    "text": "Dilema: ¿Puede el pasado seguir dictando reglas cuando el presente ya no se parece a nada conocido? El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-035-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 1,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [
+            "day2_radio_code"
+          ],
+          "nextDayModifiers": {
+            "eventUnlocks": [
+              "radio_rescue_signal"
+            ]
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-035-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [
+            "day2_supply_shortage"
+          ],
+          "nextDayModifiers": {
+            "shopPricesMultiplier": 1.25
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-035-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-035-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-036",
+    "day": 1,
+    "title": "Una fila de velas marca un pasillo oscuro",
+    "text": "Dilema: ¿El orden se construye obedeciendo normas antiguas o inventando otras con consecuencias imprevisibles? La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-036-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-036-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-036-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-037",
+    "day": 1,
+    "title": "Toques en la pared: una clave aprendida tarde",
+    "text": "Dilema: ¿Qué precio tiene la calma si se compra con silencio frente a la injusticia de otros grupos? El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-037-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-037-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 0,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-037-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-037-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-038",
+    "day": 1,
+    "title": "Un dron civil sobrevuela sin piloto",
+    "text": "Dilema: ¿Somos los mismos cuando tomamos decisiones con hambre y miedo? La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-038-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-038-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-038-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-039",
+    "day": 1,
+    "title": "Fuego lejano tras el cerro",
+    "text": "Dilema: ¿Importa la belleza de las palabras si la realidad solo entiende de ruido y carne? La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-039-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 0,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-039-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-039-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-039-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-040",
+    "day": 1,
+    "title": "Una puerta que resiste golpes suaves",
+    "text": "Dilema: ¿Salvar a muchos sacrificando a uno, o preservar la dignidad del individuo incluso si todos pierden un poco más? Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-040-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-040-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 0,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [
+            "day2_radio_code"
+          ],
+          "nextDayModifiers": {
+            "eventUnlocks": [
+              "radio_rescue_signal"
+            ]
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-040-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-041",
+    "day": 1,
+    "title": "La radio insiste con un código incompleto",
+    "text": "Dilema: ¿La verdad cruda fortalece o destruye cuando la esperanza es lo único que sostiene la marcha? La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-041-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-041-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -1,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-041-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-041-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 2,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-042",
+    "day": 1,
+    "title": "Sombras frente a la farmacia vacía",
+    "text": "Dilema: ¿Cuándo la propiedad deja de existir y se convierte en necesidad compartida sin permiso? El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. En medio de todo, un gesto pequeño—compartir agua, sostener la mirada—parece más revolucionario que cualquier plan. Un eco distante recuerda que la ciudad respira a trompicones; cada esquina guarda un secreto y una deuda. Las mochilas pesan más por las dudas que por los víveres; cada paso es un pacto con el cansancio. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-042-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [
+            "day2_safehouse_known"
+          ],
+          "nextDayModifiers": {
+            "safehouseRevealed": true
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-042-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-042-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-043",
+    "day": 1,
+    "title": "Carteles que prohíben lo que ya pasó",
+    "text": "Dilema: ¿Merece más moral quien arriesga por desconocidos o quien cuida únicamente a su pequeño círculo? La noche llega temprano, y con ella una conversación eterna entre la cobardía prudente y la valentía estúpida. Las calles huelen a metal oxidado y promesas rotas; el viento arrastra papeles con fechas que ya no significan nada. La radio chisporrotea nombres de lugares que quizás ya no existan, o que existen para otros. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-043-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-043-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": 3,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-043-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 3,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-043-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 2,
+            "supplies": -2,
+            "injuries": 1,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-044",
+    "day": 1,
+    "title": "Un niño pregunta por su casa que ya no existe",
+    "text": "Dilema: ¿El liderazgo es mandato o servicio, y quién vigila a quien manda cuando las instituciones ya no existen? Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. Una línea roja de sangre seca marca el suelo como un subrayado en el libro de la historia reciente. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-044-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 2,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-044-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": -2,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "bajo"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-044-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 0,
+            "injuries": 1,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  },
+  {
+    "id": "D1-DEC-045",
+    "day": 1,
+    "title": "Un coche con llaves y una foto en el tablero",
+    "text": "Dilema: ¿Puede el pasado seguir dictando reglas cuando el presente ya no se parece a nada conocido? El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. Los edificios, cáscaras vacías, devuelven el rumor de decisiones viejas que hoy cobran impuestos nuevos. El grupo mira al cielo buscando señales que nadie sabe leer, pero que igual tranquilizan por un segundo. El hambre muerde la paciencia y el miedo afila los límites de lo que antes llamábamos moral. La elección no es técnica, es moral: el grupo definirá quiénes son realmente cuando nadie mira.",
+    "options": [
+      {
+        "id": "D1-DEC-045-OPT1",
+        "label": "Actuar por el bien mayor",
+        "outcome": {
+          "effects": {
+            "morale": 3,
+            "supplies": 0,
+            "injuries": 1,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: actuar por el bien mayor.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-045-OPT2",
+        "label": "Proteger al individuo",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": 1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: proteger al individuo.",
+          "flagsSet": [
+            "day2_radio_code"
+          ],
+          "nextDayModifiers": {
+            "eventUnlocks": [
+              "radio_rescue_signal"
+            ]
+          }
+        }
+      },
+      {
+        "id": "D1-DEC-045-OPT3",
+        "label": "Decidir después de observar",
+        "outcome": {
+          "effects": {
+            "morale": 0,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "medio"
+          },
+          "log": "El grupo eligió: decidir después de observar.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      },
+      {
+        "id": "D1-DEC-045-OPT4",
+        "label": "Negociar con otras facciones",
+        "outcome": {
+          "effects": {
+            "morale": 1,
+            "supplies": -1,
+            "injuries": 0,
+            "risk": "alto"
+          },
+          "log": "El grupo eligió: negociar con otras facciones.",
+          "flagsSet": [],
+          "nextDayModifiers": {}
+        }
+      }
+    ],
+    "tags": [
+      "decision",
+      "dia1",
+      "filosofia"
+    ]
+  }
+]
