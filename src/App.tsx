@@ -1,12 +1,11 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { clsx } from "clsx";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
-type GameState = "menu" | "playing" | "paused" | "victory" | "gameover";
+type GameState = "menu" | "setup" | "playing" | "paused" | "victory" | "gameover";
 type CardType = "decision" | "combat";
 
 type Attributes = { Fuerza: number; Destreza: number; Constitucion: number; Inteligencia: number; Carisma: number };
@@ -14,6 +13,7 @@ type Player = {
   id: string;
   name: string;
   profession: string;
+  bio?: string;
   hp: number; hpMax: number;
   energy: number; energyMax: number;
   defense: number;
@@ -62,6 +62,10 @@ function roll(times:number, faces:number, mod=0){
 
 function mod(score:number){ return Math.floor((score-10)/2); }
 
+function clsx(...classes: (string | false | null | undefined)[]){
+  return classes.filter(Boolean).join(' ');
+}
+
 const philosopherQuotes = [
   { a:"Albert Camus", q:"En medio del odio me pareció que había dentro de mí un amor invencible." },
   { a:"Friedrich Nietzsche", q:"Quien con monstruos lucha cuide de convertirse a su vez en monstruo." },
@@ -71,6 +75,14 @@ const philosopherQuotes = [
   { a:"Zygmunt Bauman", q:"El miedo es el precio a pagar por sentirnos vivos." },
   { a:"Michel Foucault", q:"El poder es tolerable solo si produce placer." },
 ].sort(()=>Math.random()-0.5);
+
+const professions = [
+  { id: 'medic', name: 'Médica' },
+  { id: 'soldier', name: 'Soldado' },
+  { id: 'psychologist', name: 'Psicóloga' },
+  { id: 'scavenger', name: 'Chatarrero' },
+  { id: 'engineer', name: 'Ingeniero' },
+];
 
 const baseEnemies: Enemy[] = [
   { id: uid(), name: "Zombi Común", hp: 15, hpMax: 15, def: 10, atk: 2 },
@@ -176,18 +188,15 @@ export default function App(){
   const [day, setDay] = useState(1);
   const [phase, setPhase] = useState<Phase>("dawn");
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
-  const [timeRunning, setTimeRunning] = useState(true);
+  const [timeRunning, setTimeRunning] = useState(false);
 
   const [morale, setMorale] = useState(60);
   const [threat, setThreat] = useState(10);
   const [resources, setResources] = useState<Resources>({ food: 15, water: 15, medicine: 6, fuel: 10, ammo: 30, materials: 12 });
   const [camp, setCamp] = useState<Camp>({ defense: 10, comfort: 10 });
 
-  const [players, setPlayers] = useState<Player[]>([
-    mkPlayer("Sarah", "Médica"),
-    mkPlayer("Marcus", "Soldado"),
-    mkPlayer("Elena", "Psicóloga"),
-  ]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [roster, setRoster] = useState<Player[]>([]);
   const [turn, setTurn] = useState(0);
   const alivePlayers = useMemo(()=>players.filter(p=>p.status!=="dead"), [players]);
 
@@ -197,6 +206,7 @@ export default function App(){
   const [discardDecision, setDiscardDecision] = useState<Card[]>([]);
   const [discardCombat, setDiscardCombat] = useState<Card[]>([]);
   const [currentCard, setCurrentCard] = useState<Card|null>(null);
+  const [tab, setTab] = useState<'story'|'manual'>('story');
 
   // Enemigos cuando hay combate
   const [enemies, setEnemies] = useState<Enemy[]>([]);
@@ -256,12 +266,15 @@ export default function App(){
     }
   }, [morale, state]);
 
-  function mkPlayer(name:string, profession:string): Player{
+  function createPlayer(name:string, professionId:string, bio:string = ""): Player{
     const attrs: Attributes = { Fuerza: 12, Destreza: 12, Constitucion: 13, Inteligencia: 11, Carisma: 11 };
     const hpMax = attrs.Constitucion*2 + 5;
+    const prof = professions.find(p=>p.id===professionId);
     return {
       id: uid(),
-      name, profession,
+      name,
+      profession: prof?prof.name:professionId,
+      bio,
       hp: hpMax, hpMax,
       energy: 10, energyMax: 10,
       defense: 10 + mod(attrs.Destreza),
@@ -272,11 +285,31 @@ export default function App(){
     };
   }
 
-  function start(){
-    setState("playing");
-    setLog([`📝 Día ${day}: El mundo ya no es el mismo.`]);
+  function startCampaign(initialPlayers: Player[]){
+    setPlayers(initialPlayers);
+    setRoster([]);
+    setTurn(0);
+    setDay(1);
+    setPhase('dawn');
+    setClockMs(DAY_LENGTH_MS);
+    setTimeRunning(false);
+    setMorale(60);
+    setThreat(10);
+    setResources({ food: 15, water: 15, medicine: 6, fuel: 10, ammo: 30, materials: 12 });
+    setCamp({ defense: 10, comfort: 10 });
+    setDecisionDeck(shuffle([...decisionDeckSeed]));
+    setCombatDeck(shuffle([...combatDeckSeed]));
+    setDiscardDecision([]);
+    setDiscardCombat([]);
+    setCurrentCard(null);
+    setEnemies([]);
     setFoundNotes([]);
     setExplorationActive(false);
+    setTimedEvent(null);
+    setLog(["=== CAMPAÑA INICIADA ===", "Crea tu historia. Pulsa ▶️ para comenzar el Día 1."]);
+    setStash(["Pistola","Botiquín","Linterna","Cuerda","Chatarra"]);
+    setState('paused');
+    setTab('story');
   }
 
   function pushLog(entry:string){
@@ -726,6 +759,80 @@ export default function App(){
     setMorale(m=>clamp(m-6,0,100));
   }
 
+  function CharacterSetupPanel(){
+    const [name, setName] = useState('');
+    const [professionId, setProfessionId] = useState(professions[0]?.id || 'medic');
+    const [bio, setBio] = useState('');
+
+    function addToRoster(){
+      const trimmed = name.trim();
+      if(!trimmed) return;
+      const newP = createPlayer(trimmed, professionId, bio.trim());
+      setRoster(prev=>[...prev, newP]);
+      setName('');
+      setBio('');
+    }
+
+    function removeFromRoster(id:string){
+      setRoster(prev=>prev.filter(p=>p.id!==id));
+    }
+
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950 text-neutral-100">
+        <header className="sticky top-0 z-40 bg-gradient-to-b from-black via-neutral-950/95 to-transparent backdrop-blur-md border-b border-red-900/50">
+          <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-700">🧟 APOCALIPSIS ZOMBIE RPG</h1>
+            <button onClick={()=>setState('menu')} className="px-3 py-2 bg-neutral-900 hover:bg-neutral-800 rounded-lg border border-neutral-700">🏠 Menú</button>
+          </div>
+        </header>
+
+        <main className="max-w-6xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-br from-neutral-900 via-neutral-950 to-black border-2 border-red-900 rounded-2xl p-6">
+            <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Crear personaje</h2>
+
+            <label className="text-sm text-neutral-400">Nombre</label>
+            <input value={name} onChange={e=>setName(e.target.value)} className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg outline-none focus:border-red-600 mb-3" placeholder="Ej: Sarah" />
+
+            <label className="text-sm text-neutral-400">Profesión</label>
+            <select value={professionId} onChange={e=>setProfessionId(e.target.value)} className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg outline-none focus:border-red-600 mb-3">
+              {professions.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
+            </select>
+
+            <label className="text-sm text-neutral-400">Bio</label>
+            <textarea value={bio} onChange={e=>setBio(e.target.value)} className="w-full px-3 py-2 h-28 bg-neutral-900 border border-neutral-700 rounded-lg outline-none focus:border-red-600" placeholder="Breve historia o rasgos del personaje..." />
+
+            <button onClick={addToRoster} className="mt-4 w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-xl font-bold transition-all">➕ Agregar al roster</button>
+          </div>
+
+          <div className="bg-gradient-to-br from-neutral-900 via-neutral-950 to-black border-2 border-red-900 rounded-2xl p-6">
+            <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Roster</h2>
+
+            {roster.length===0 ? (
+              <p className="text-neutral-400">Aún no hay personajes creados.</p>
+            ) : (
+              <div className="space-y-3">
+                {roster.map(p=>(
+                  <div key={p.id} className="p-4 rounded-xl border-2 border-neutral-800 bg-neutral-900/50">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-bold text-lg">{p.name}</div>
+                        <div className="text-sm text-neutral-400">{p.profession}</div>
+                        {p.bio && <div className="text-xs text-neutral-500 mt-2 italic">{p.bio}</div>}
+                      </div>
+                      <button onClick={()=>removeFromRoster(p.id)} className="px-3 py-1 bg-red-900 hover:bg-red-800 rounded-lg text-sm">🗑️ Eliminar</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button onClick={()=>startCampaign(roster)} disabled={roster.length===0} className={`mt-6 w-full px-4 py-3 rounded-xl font-bold transition-all ${roster.length===0?'bg-neutral-800 cursor-not-allowed':'bg-green-700 hover:bg-green-600'}`}>▶️ Iniciar campaña</button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   // ——— UI ———
   if(state==="menu"){
     return (
@@ -734,8 +841,7 @@ export default function App(){
           <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">Apocalipsis Zombie RPG</h1>
           <p className="mt-3 text-neutral-300">Sistema ligero con mazos, tiempo real y supervivencia.</p>
           <div className="mt-10 space-x-3">
-            <button className="btn btn-red text-white" onClick={start}>Comenzar</button>
-            <button className="btn btn-ghost" onClick={()=>{setState("playing"); setTimeRunning(false);}}>Entrar en Pausa</button>
+            <button className="btn btn-red text-white" onClick={()=>setState('setup')}>🧰 CREAR PERSONAJES</button>
           </div>
           <div className="mt-16 text-neutral-400 text-sm">
             <p>Consejo: las acciones consumen tiempo del día. La noche es peligrosa.</p>
@@ -744,6 +850,8 @@ export default function App(){
       </div>
     );
   }
+
+  if(state==='setup') return <CharacterSetupPanel/>;
 
   if(state==="gameover"){
     return (
@@ -781,66 +889,76 @@ export default function App(){
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <QuoteBox author={todaysQuote.a} quote={todaysQuote.q} />
+        <div className="flex gap-2">
+          <button className={tab==='story'?"btn btn-red text-white":"btn btn-ghost"} onClick={()=>setTab('story')}>📖 Historia</button>
+          <button className={tab==='manual'?"btn btn-red text-white":"btn btn-ghost"} onClick={()=>setTab('manual')}>📕 Manual</button>
+        </div>
 
-        {/* Zonas principales */}
-        <DeckControls
-          onDrawDecision={drawDecision} onDrawCombat={drawCombat}
-          onShuffle={shuffleDecks} onRecycle={recycleDiscards}
-        />
-
-        {currentCard ? (
-          <CardView
-            card={currentCard}
-            onResolveChoice={resolveChoice}
-            enemies={enemies}
-            onAttack={performAttack}
-            onDefend={defend}
-            onHeal={healSelf}
-            onFlee={flee}
-            onClose={()=>{
-              if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
-              else setDiscardCombat(d=>[currentCard, ...d]);
-              setCurrentCard(null);
-            }}
-          />
+        {tab==='manual' ? (
+          <ManualTab />
         ) : (
-          <NoCardActions onExplore={exploreArea} onPassNight={passNight} phase={phase} explorationActive={explorationActive} />
+          <>
+            {/* Zonas principales */}
+            <DeckControls
+              onDrawDecision={drawDecision} onDrawCombat={drawCombat}
+              onShuffle={shuffleDecks} onRecycle={recycleDiscards}
+            />
+
+            {currentCard ? (
+              <CardView
+                card={currentCard}
+                onResolveChoice={resolveChoice}
+                enemies={enemies}
+                onAttack={performAttack}
+                onDefend={defend}
+                onHeal={healSelf}
+                onFlee={flee}
+                onClose={()=>{
+                  if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
+                  else setDiscardCombat(d=>[currentCard, ...d]);
+                  setCurrentCard(null);
+                }}
+              />
+            ) : (
+              <NoCardActions onExplore={exploreArea} onPassNight={passNight} phase={phase} explorationActive={explorationActive} />
+            )}
+
+            {timedEvent && (
+              <TimedEventBanner
+                event={timedEvent}
+                now={nowRef.current}
+                onResolve={resolveTimedEventPositively}
+              />
+            )}
+
+            <PartyPanel
+              players={players}
+              onUpdatePlayer={updatePlayer}
+              onRemove={removePlayer}
+            />
+
+            <InventoryPanel
+              stash={stash}
+              players={players}
+              giveItem={giveItemToPlayer}
+              takeItem={takeItemFromPlayer}
+              foundNotes={foundNotes}
+              followNote={followNote}
+            />
+
+            <CampRepair
+              resources={resources}
+              camp={camp}
+              setResources={setResources}
+              setCamp={setCamp}
+              pushLog={pushLog}
+            />
+
+            <CampPanel resources={resources} setResources={setResources} />
+
+            <LogPanel log={log} />
+          </>
         )}
-
-        {timedEvent && (
-          <TimedEventBanner
-            event={timedEvent}
-            now={nowRef.current}
-            onResolve={resolveTimedEventPositively}
-          />
-        )}
-
-        <PartyPanel
-          players={players}
-          onUpdatePlayer={updatePlayer}
-          onRemove={removePlayer}
-        />
-
-        <InventoryPanel
-          stash={stash}
-          players={players}
-          giveItem={giveItemToPlayer}
-          takeItem={takeItemFromPlayer}
-          foundNotes={foundNotes}
-          followNote={followNote}
-        />
-
-        <CampRepair
-          resources={resources}
-          camp={camp}
-          setResources={setResources}
-          setCamp={setCamp}
-          pushLog={pushLog}
-        />
-
-        <CampPanel resources={resources} setResources={setResources} />
-
-        <LogPanel log={log} />
       </main>
 
       {state==="paused" && (
@@ -894,6 +1012,21 @@ function QuoteBox({author, quote}:{author:string; quote:string}){
     <div className="card bg-neutral-900 border-neutral-800 p-4">
       <p className="italic text-neutral-300">“{quote}”</p>
       <p className="text-right text-sm text-neutral-500 mt-2">— {author}</p>
+    </div>
+  );
+}
+
+function ManualTab(){
+  return (
+    <div className="max-w-4xl mx-auto bg-gradient-to-br from-neutral-900 to-black border border-neutral-800 rounded-2xl p-6">
+      <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Manual</h2>
+      <ul className="list-disc pl-6 space-y-2 text-neutral-300">
+        <li>Objetivo: sobrevivir, mantener moral y recursos, y tomar decisiones.</li>
+        <li>Fases del día: alba, día, ocaso, noche. (En este paso el tiempo aún no está activo.)</li>
+        <li>Cartas: decisiones (moradas) y combate (rojas). Se resolverán en sus mazos.</li>
+        <li>Explorar: abre instancias con riesgos y recompensas.</li>
+        <li>Game Over: moral 0% o sin supervivientes.</li>
+      </ul>
     </div>
   );
 }
@@ -1080,6 +1213,10 @@ function PartyPanel({players, onUpdatePlayer, onRemove}:{players:Player[]; onUpd
 function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Player>)=>void}){
   return (
     <div className="space-y-2 text-sm">
+      <div>
+        <label className="text-xs text-neutral-400">Bio</label>
+        <textarea className="w-full bg-neutral-800 rounded p-2 mt-1" value={player.bio ?? ''} onChange={e=>onUpdate({bio:e.target.value})} />
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <div>DEF: {player.defense}</div>
         <div>Munición: {player.ammo}</div>
