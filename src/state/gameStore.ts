@@ -23,6 +23,8 @@ export type GameState = {
   tick: (ms: number) => void;
   setPaused: (p: boolean) => void;
   createPlayer: (p: Omit<Player, "id">) => void;
+  updatePlayer: (id: string, p: Omit<Player, "id">) => void;
+  removePlayer: (id: string) => void;
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -44,4 +46,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     set((state) => ({
       players: [...state.players, { id: crypto.randomUUID(), ...p }],
     })),
+  // Update existing player data
+  updatePlayer: (id, p) =>
+    set((state) => ({
+      players: state.players.map((pl) => (pl.id === id ? { ...pl, ...p } : pl)),
+    })),
+  // Remove player from roster
+  removePlayer: (id) =>
+    set((state) => ({ players: state.players.filter((pl) => pl.id !== id) })),
 }));

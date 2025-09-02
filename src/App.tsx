@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { useUIStore } from "@/state/ui";
-import StartScreen from "@/ui/StartScreen";
 import CharacterCreationPanel from "@/ui/CharacterCreationPanel";
 import GameRoot from "./GameRoot";
 import { useGameStore } from "@/state/gameStore";
@@ -14,7 +13,7 @@ export default function App() {
     console.log("[UI] mode:", mode);
   }, [mode]);
 
-  if (mode === "start") return <StartScreen />;
+  // Start screen removed; app boots directly into character creation
   if (mode === "character-creation") return <CharacterCreationPanel />;
   if (mode === "running") {
     if (!players || players.length === 0) {
