@@ -23,3 +23,12 @@ npm run build
 npm run preview
 ```
 Publica la carpeta `dist`.
+
+## Nuevo flujo de inicio
+
+1. Pantalla de Inicio → botón **Comenzar**.
+2. **Manual** (2 páginas) → **Iniciar juego**.
+3. El juego inicia en **PAUSA**, con personaje demo **jugador1** (editable).
+4. Aparece un toast de bienvenida (cerrable) con instrucciones.
+5. El tiempo solo avanza al presionar **Play**. Se puede pausar en cualquier momento.
+6. La gestión de personajes (agregar/editar) está disponible dentro del juego.

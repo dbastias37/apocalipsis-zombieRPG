@@ -1,46 +1,25 @@
-import React, { useEffect, useState } from "react";
-import StartScreen from "@/ui/StartScreen";
-import CharacterSetupPanel from "@/ui/CharacterSetupPanel";
-import DevStatusBadge from "@/components/DevStatusBadge";
-import GameRoot from "@/GameRoot";
-import { campaignStore, useCampaign } from "@/state/campaign";
+import React from 'react'
+import GameRoot from './GameRoot'
+import StartScreen from './screens/StartScreen'
+import ManualScreen from './screens/ManualScreen'
+import { useGameState } from './state/gameState'
 
 export default function App() {
-  const state = useCampaign((s) => s.state);
-  const day = useCampaign((s) => s.day);
-  const roster = useCampaign((s) => s.roster);
-  const tickEnabled = useCampaign((s) => s.tickEnabled);
-  const [showStart, setShowStart] = useState(true);
+  const phase = useGameState((s) => s.phase)
+  const setPhase = useGameState((s) => s.setPhase)
 
-  useEffect(() => {
-    campaignStore.setTickEnabled(state === "playing");
-  }, [state]);
+  if (phase === 'intro') return <StartScreen />
+  if (phase === 'manual') return <ManualScreen />
 
-  useEffect(() => {
-    if (state !== "playing") return;
-    const id = setInterval(() => {
-      // placeholder tick
-    }, 1000);
-    return () => clearInterval(id);
-  }, [state]);
-
-  if (showStart)
-    return <StartScreen onStart={() => { setShowStart(false); campaignStore.setState("setup"); }} />;
-  if (state === "setup") return <CharacterSetupPanel />;
-  if (state === "playing")
-    return (
-      <>
-        <GameRoot />
-        <DevStatusBadge
-          state={state}
-          showStart={showStart}
-          playersLen={roster.length}
-          turnIndex={0}
-          day={day}
-          timers={{ clock: tickEnabled, event: false }}
-        />
-      </>
-    );
-
-  return null;
+  return (
+    <>
+      <GameRoot />
+      <button
+        className="fixed top-2 right-2 px-3 py-1 bg-neutral-800 rounded z-50"
+        onClick={() => setPhase(phase === 'running' ? 'paused' : 'running')}
+      >
+        {phase === 'running' ? '⏸' : '▶︎'}
+      </button>
+    </>
+  )
 }

@@ -65,7 +65,6 @@ type Card = {
   type: CardType;
   title: string;
   text: string;
-  description?: string;
   scene?: "almacen" | "callejon" | "azotea" | "carretera";
   choices?: { text: string; effect: Partial<Resources> & { morale?: number; threat?: number; spawnEnemies?: number } }[];
   difficulty?: number; // para cartas de combate opcional
@@ -282,7 +281,6 @@ export default function GameRoot(){
   // Resolver eventos con countdown
   const nowRef = useRef<number>(Date.now());
   useEffect(()=>{
-    if(state !== "playing") return;
     const id = window.setInterval(()=>{
       nowRef.current = Date.now();
       if(timedEvent){
@@ -295,7 +293,7 @@ export default function GameRoot(){
       }
     }, 500);
     return ()=> clearInterval(id);
-  }, [timedEvent, state]);
+  }, [timedEvent]);
 
   // Reglas de fin de partida por moral
   useEffect(()=>{
@@ -306,20 +304,12 @@ export default function GameRoot(){
   }, [morale, state]);
 
   useEffect(() => {
-    if(state !== "playing") return;
-    // Solo avanzar automáticamente si se agota el tiempo Y aún estamos antes del límite de demo (día 1).
-    if (dayState.remainingMs <= 0) {
-      if (day >= 1) {
-        // Demo: terminar al completar el Día 1
-        setTimeRunning(false);
-        setGamePhase('paused');
-        pushLog("🎬 Fin de la demo: Día 1 completado. (Usa más días cuando estén listos)");
-        return;
-      }
+    const reason = checkEndConditions();
+    if (reason) {
       advanceToNextDay((dayState.day + 1) as any);
       setDay(d => d + 1);
     }
-  }, [dayState.remainingMs, state]);
+  }, [dayState.remainingMs]);
 
   function createPlayer(name:string, professionId:string, bio:string = ""): Player{
     const attrs: Attributes = { Fuerza: 12, Destreza: 12, Constitucion: 13, Inteligencia: 11, Carisma: 11 };
@@ -457,12 +447,6 @@ export default function GameRoot(){
   }
 
   function endOfDay(reason:'deck'|'timer'|'manual'='manual'){
-    if (day >= 1) {
-      setTimeRunning(false);
-      setGamePhase('paused');
-      pushLog('🎬 Fin de la demo: Día 1 completado.');
-      return;
-    }
     advanceToNextDay((dayState.day + 1) as any);
     setDay(d => d + 1);
     setTurn(0);
@@ -725,12 +709,11 @@ export default function GameRoot(){
   }
 
   useEffect(() => {
-    if (state !== "playing") return;
     if (explorationActive && enemies.length === 0 && !currentCard) {
       setExplorationActive(false);
       pushLog("Evento de exploración resuelto.");
     }
-  }, [state, enemies.length, currentCard, explorationActive]);
+  }, [enemies.length, currentCard, explorationActive]);
 
   // ——— Acciones fuera de combate ———
   function exploreArea(){
@@ -1159,12 +1142,7 @@ function CardView(props:{
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className={clsx("text-2xl font-bold", isDecision && "text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-600")}>{props.card.title}</h3>
-          {props.card.description && (
-            <p className="text-neutral-400 mt-1 whitespace-pre-wrap leading-relaxed">
-              {props.card.description}
-            </p>
-          )}
-          <p className="text-neutral-300 mt-1 whitespace-pre-wrap leading-relaxed">{props.card.text}</p>
+          <p className="text-neutral-300 mt-1">{props.card.text}</p>
         </div>
         <button className="btn btn-ghost" onClick={props.onClose}>✖</button>
       </div>
@@ -1513,7 +1491,7 @@ function LogPanel({log}:{log:string[]}){
       <h3 className="text-xl font-bold mb-4">📜 Registro</h3>
       <div className="max-h-72 overflow-y-auto scrollbar-hide space-y-2">
         {log.length===0 ? <p className="text-neutral-500">Sin eventos aún.</p> :
-          log.map((l,i)=>(<div key={i} className="p-2 bg-neutral-800/60 rounded whitespace-pre-wrap leading-relaxed">{l}</div>))
+          log.map((l,i)=>(<div key={i} className="p-2 bg-neutral-800/60 rounded">{l}</div>))
         }
       </div>
     </div>
