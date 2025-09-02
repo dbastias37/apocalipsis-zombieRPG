@@ -1,19 +1,14 @@
-import { useEffect } from "react";
-import { useGameStore } from "@/state/gameStore";
-import { useUIStore } from "@/state/ui";
+import { useEffect } from 'react'
+import { useGameState } from '@/state/gameState'
 
 export function useGameClock() {
-  const paused = useGameStore((s) => s.ui.paused);
-  const mode = useUIStore((s) => s.mode);
-  const tick = useGameStore((s) => s.tick);
+  const phase = useGameState((s) => s.phase)
 
   useEffect(() => {
-    if (paused || mode === "character-creation") return;
-
+    if (phase !== 'running') return
     const id = setInterval(() => {
-      tick(1000);
-    }, 1000);
-
-    return () => clearInterval(id);
-  }, [paused, mode, tick]);
+      // game tick placeholder
+    }, 1000)
+    return () => clearInterval(id)
+  }, [phase])
 }
