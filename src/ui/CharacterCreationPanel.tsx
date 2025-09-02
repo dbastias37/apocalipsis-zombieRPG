@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useGameStore } from "@/state/gameStore";
+import { useUIStore } from "@/state/ui";
 
 type Draft = { name: string; profession: string; bio: string };
 
@@ -9,7 +10,8 @@ const PROFESSIONS = [
 ];
 
 export default function CharacterCreationPanel() {
-  const { ui, players, createPlayer, setMode } = useGameStore();
+  const { ui, players, createPlayer, setPaused } = useGameStore();
+  const { setMode } = useUIStore();
   const [draft, setDraft] = useState<Draft>({ name: "", profession: PROFESSIONS[0], bio: "" });
   const seededOnce = useRef(false);
 
@@ -41,7 +43,10 @@ export default function CharacterCreationPanel() {
   };
 
   const handleStart = () => {
-    if (players.length > 0) setMode("running");
+    if (players.length > 0) {
+      setMode("running");
+      setPaused(false); // resume game clock
+    }
   };
 
   // Bloquea atajos globales mientras estás en esta pantalla

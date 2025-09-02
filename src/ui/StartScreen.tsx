@@ -1,6 +1,9 @@
 import React from "react";
+import { useUIStore } from "@/state/ui";
 
-export default function StartScreen({ onStart }: { onStart: () => void }) {
+// Start screen simply moves UI mode to character creation
+export default function StartScreen() {
+  const setMode = useUIStore((s) => s.setMode);
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="card card-red max-w-2xl w-full p-6 space-y-6 animate-fade-in">
@@ -19,7 +22,10 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
         </div>
 
         <div className="flex justify-end">
-          <button className="btn btn-red px-5 py-2 rounded-2xl border border-red-800" onClick={onStart}>
+          <button
+            className="btn btn-red px-5 py-2 rounded-2xl border border-red-800"
+            onClick={() => setMode("character-creation")}
+          >
             Comenzar
           </button>
         </div>
