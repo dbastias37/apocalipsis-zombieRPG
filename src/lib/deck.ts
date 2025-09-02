@@ -20,6 +20,15 @@ export type ChoiceEffect = {
   survivors?: number;
   casualties?: "random";
   karma?: number;
+  damage?: number;
+  selfDamage?: number;
+  heal?: number;
+  block?: number;
+  stunEnemy?: boolean;
+  bleedEnemy?: boolean;
+  escape?: boolean;
+  loot?: Record<string, number>;
+  time?: number;
 };
 
 export type DeckState = {
@@ -195,7 +204,7 @@ export function getCard(deck: DeckBundle, id: number): AnyCard | undefined {
 export function toPreview(card: AnyCard) {
   return {
     id: card.id,
-    category: card.category,
+    category: isStory(card) ? "story" : "combat",
     title: card.title,
   };
 }
@@ -204,8 +213,8 @@ export function toPreview(card: AnyCard) {
  * Helpers de categoría para UI
  */
 export function isStory(card: AnyCard): card is StoryCard {
-  return card.category === "story";
+  return (card as StoryCard).category === "story";
 }
 export function isCombat(card: AnyCard): card is CombatCard {
-  return card.category === "combat";
+  return "enemy" in card;
 }
