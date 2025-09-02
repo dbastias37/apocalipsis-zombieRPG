@@ -304,19 +304,14 @@ export default function GameRoot(){
   }, [morale, state]);
 
   useEffect(() => {
-    // Solo avanzar automáticamente si se agota el tiempo Y aún estamos antes del límite de demo (día 1).
-    if (dayState.remainingMs <= 0) {
-      if (day >= 1) {
-        // Demo: terminar al completar el Día 1
-        setTimeRunning(false);
-        setGamePhase('paused');
-        pushLog("🎬 Fin de la demo: Día 1 completado. (Usa más días cuando estén listos)");
-        return;
-      }
+    const reason = checkEndConditions();
+    if (reason) {
       advanceToNextDay((dayState.day + 1) as any);
       setDay(d => d + 1);
     }
-  }, [dayState.remainingMs]);function createPlayer(name:string, professionId:string, bio:string = ""): Player{
+  }, [dayState.remainingMs]);
+
+  function createPlayer(name:string, professionId:string, bio:string = ""): Player{
     const attrs: Attributes = { Fuerza: 12, Destreza: 12, Constitucion: 13, Inteligencia: 11, Carisma: 11 };
     const hpMax = attrs.Constitucion*2 + 5;
     const prof = professions.find(p=>p.id===professionId);
@@ -452,12 +447,6 @@ export default function GameRoot(){
   }
 
   function endOfDay(reason:'deck'|'timer'|'manual'='manual'){
-    if (day >= 1) {
-      setTimeRunning(false);
-      setGamePhase('paused');
-      pushLog('🎬 Fin de la demo: Día 1 completado.');
-      return;
-    }
     advanceToNextDay((dayState.day + 1) as any);
     setDay(d => d + 1);
     setTurn(0);
