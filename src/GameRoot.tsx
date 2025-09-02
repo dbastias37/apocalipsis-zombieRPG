@@ -1513,7 +1513,7 @@ function LogPanel({log}:{log:string[]}){
       <h3 className="text-xl font-bold mb-4">📜 Registro</h3>
       <div className="max-h-72 overflow-y-auto scrollbar-hide space-y-2">
         {log.length===0 ? <p className="text-neutral-500">Sin eventos aún.</p> :
-          log.map((l,i)=>(<div key={i} className="p-2 bg-neutral-800/60 rounded">{l}</div>))
+          log.map((l,i)=>(<div key={i} className="p-2 bg-neutral-800/60 rounded whitespace-pre-wrap leading-relaxed">{l}</div>))
         }
       </div>
     </div>
