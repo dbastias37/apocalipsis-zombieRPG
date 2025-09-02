@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
 import { decisionCards as decisionData } from "./data/decisionCards";
+import { combatCards as combatData } from "./data/combatCards";
 import TurnOverlay from "./components/TurnOverlay";
 import CountdownBar from "./components/CountdownBar";
 import {
@@ -26,6 +27,9 @@ import {
   dealDamage,
   isAlive,
 } from "./systems/combat";
+import { useLevel } from "@/state/levelStore";
+import { DayHud } from "@/components/hud/DayHud";
+import { TurnTransitionModal } from "@/components/overlays/TurnTransitionModal";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -125,24 +129,12 @@ const decisionDeckSeed: Card[] = decisionData.map((c) => ({
   choices: c.choices,
 }));
 
-const combatDeckSeed: Card[] = [
-  {
-    id: uid(),
-    type: "combat",
-    title: "Callejón Estrecho",
-    scene: "callejon",
-    text: "Gritos al final del callejón. La acústica confunde a los muertos: se acercan desordenados.",
-    difficulty: 12,
-  },
-  {
-    id: uid(),
-    type: "combat",
-    title: "Almacén en Penumbra",
-    scene: "almacen",
-    text: "Palés volcados, sombras tensas. Algo se mueve entre estanterías metálicas.",
-    difficulty: 14,
-  },
-];
+const combatDeckSeed: Card[] = combatData.map((c) => ({
+  id: String(c.id),
+  type: "combat",
+  title: c.title,
+  text: c.text,
+}));
 
 type Reward = Partial<{
   food: number; water: number; materials: number; ammo: number; medicine: number; fuel: number; item: string;
@@ -226,6 +218,21 @@ export default function App(){
   // Registro de narrativa
   const [log, setLog] = useState<string[]>([]);
 
+  const {
+    dayState,
+    initDay,
+    markCardUsed,
+    spendDecision,
+    spendCombat,
+    spendExplore,
+    startExploreInstance,
+    resolveExploreInstance,
+    drawCard,
+    endTurn,
+    checkEndConditions,
+    advanceToNextDay,
+  } = useLevel();
+
   // Cita visible
   const todaysQuote = useMemo(()=> philosopherQuotes[(day-1) % philosopherQuotes.length], [day]);
 
@@ -272,6 +279,14 @@ export default function App(){
     }
   }, [morale, state]);
 
+  useEffect(() => {
+    const reason = checkEndConditions();
+    if (reason) {
+      advanceToNextDay((dayState.day + 1) as any);
+      setDay(d => d + 1);
+    }
+  }, [dayState.remainingMs]);
+
   function createPlayer(name:string, professionId:string, bio:string = ""): Player{
     const attrs: Attributes = { Fuerza: 12, Destreza: 12, Constitucion: 13, Inteligencia: 11, Carisma: 11 };
     const hpMax = attrs.Constitucion*2 + 5;
@@ -317,6 +332,7 @@ export default function App(){
     setStash(["Pistola","Botiquín","Linterna","Cuerda","Chatarra"]);
     setState('paused');
     setTab('story');
+    initDay(1, initialPlayers.map(p => p.name));
   }
 
   function pushLog(entry:string){
@@ -407,6 +423,9 @@ export default function App(){
   }
 
   function endOfDay(reason:'deck'|'timer'|'manual'='manual'){
+    advanceToNextDay((dayState.day + 1) as any);
+    setDay(d => d + 1);
+    setTurn(0);
     setDecisionDeck(shuffle([...decisionDeckSeed]));
     setDecisionDiscard([]);
     if(reason==='deck') pushLog("El mazo se agotó. La jornada termina y el grupo descansa.");
@@ -433,6 +452,7 @@ export default function App(){
     const [card, ...rest] = decisionDeck;
     setDecisionDeck(rest);
     setCurrentCard(card);
+    markCardUsed("decision", Number(card.id));
   }
   function drawCombat(){
     let deck = [...combatDeck];
@@ -444,7 +464,9 @@ export default function App(){
     const card = deck[0];
     setCombatDeck(deck.slice(1));
     setCurrentCard(card);
-    // activar enemigos según dificultad (simple)
+    markCardUsed("combat", Number(card.id));
+    const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
+    if(actor) spendCombat(actor.name);
     const count = Math.max(1, Math.floor((card.difficulty||12)/6));
     const spawned = Array.from({length: count}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
     setEnemies(spawned);
@@ -473,6 +495,12 @@ export default function App(){
         return next;
       });
       if(zombies){
+        const cardId = drawCard("combat");
+        if(cardId != null){
+          markCardUsed("combat", cardId);
+          const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
+          if(actor) spendCombat(actor.name);
+        }
         const spawned = Array.from({length: zombies}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
         setEnemies(spawned);
         setCurrentCard({ ...(currentCard as Card), type: "combat" });
@@ -486,6 +514,10 @@ export default function App(){
       if(currentCard.type==="decision") setDecisionDiscard(d=>[currentCard, ...d]);
       else setDiscardCombat(d=>[currentCard, ...d]);
     }
+    if(currentCard?.type === "decision"){
+      const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
+      if(actor) spendDecision(actor.name);
+    }
     setCurrentCard(null);
     advanceTurn(); timePenalty(45);
   }
@@ -493,6 +525,12 @@ export default function App(){
   // ——— Combate muy simplificado ———
   function cloneEnemy(e: Enemy): Enemy{ return { ...e, id: uid() }; }
   function spawnEnemies(count:number){
+    const cardId = drawCard("combat");
+    if(cardId != null){
+      markCardUsed("combat", cardId);
+      const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
+      if(actor) spendCombat(actor.name);
+    }
     const spawned = Array.from({length: count}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
     setEnemies(spawned);
   }
@@ -579,6 +617,14 @@ export default function App(){
   }
 
   function advanceTurn(){
+    const reason = checkEndConditions();
+    if (reason) {
+      advanceToNextDay((dayState.day + 1) as any);
+      setDay(d => d + 1);
+      setTurn(0);
+      return;
+    }
+    endTurn();
     const next = (turn+1) % Math.max(1, alivePlayers.length);
     setTurn(next);
   }
@@ -647,10 +693,19 @@ export default function App(){
 
   // ——— Acciones fuera de combate ———
   function exploreArea(){
-    if(explorationActive){
+    if(explorationActive || dayState.activeExploreInstance){
       pushLog("Ya hay una exploración/evento activo. Resuélvelo primero.");
       return;
     }
+    const cardId = drawCard("explore");
+    if(cardId == null){
+      pushLog("No quedan eventos de exploración.");
+      return;
+    }
+    startExploreInstance(cardId);
+    markCardUsed("explore", cardId);
+    const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
+    if(actor) spendExplore(actor.name);
     setExplorationActive(true);
 
     timePenalty(60 + Math.floor(Math.random()*60));
@@ -661,6 +716,8 @@ export default function App(){
       spawnEnemies(count);
       setCurrentCard({ id: uid(), type: "combat", title: "Encuentro inesperado", text: "Durante la exploración aparecen enemigos." });
       pushLog(`Exploración interrumpida: ¡${count} enemigos!`);
+      setExplorationActive(false);
+      resolveExploreInstance(cardId);
       advanceTurn();
       return;
     }
@@ -691,6 +748,7 @@ export default function App(){
 
     pushLog(`${ev.text} — Recompensa obtenida.`);
     setExplorationActive(false);
+    resolveExploreInstance(cardId);
     advanceTurn();
   }
 
@@ -879,6 +937,8 @@ export default function App(){
   // HUD superior
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950">
+      <DayHud />
+      <TurnTransitionModal />
       <HeaderHUD
         day={day} phase={phase} clock={formatTime(clockMs)} progress={progressPercent(clockMs)}
         morale={morale} threat={threat}
@@ -920,7 +980,7 @@ export default function App(){
                 }}
               />
             ) : (
-              <NoCardActions onExplore={exploreArea} onPassNight={passNight} phase={phase} explorationActive={explorationActive} />
+              <NoCardActions onExplore={exploreArea} onPassNight={passNight} phase={phase} explorationActive={explorationActive || !!dayState.activeExploreInstance} />
             )}
 
             {timedEvent && (
