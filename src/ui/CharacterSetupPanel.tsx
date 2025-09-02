@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useGameStore } from "@/state/gameStore";
+import { campaignStore, useCampaign } from "@/state/campaign";
+import { toast } from "@/components/Toast";
 
 type Draft = { name: string; profession: string; bio: string };
 
@@ -8,63 +9,55 @@ const PROFESSIONS = [
   "Bombero/a","Cocinero/a","Agricultor/a","Electricista","Policía","Militar"
 ];
 
-export default function CharacterCreationPanel() {
-  const { ui, players, createPlayer, setMode } = useGameStore();
+export default function CharacterSetupPanel() {
+  const roster = useCampaign((s) => s.roster);
   const [draft, setDraft] = useState<Draft>({ name: "", profession: PROFESSIONS[0], bio: "" });
   const seededOnce = useRef(false);
 
-  // Prefill SOLO si el usuario aún no escribió nada
   useEffect(() => {
     if (seededOnce.current) return;
     if (!draft.name.trim() && !draft.bio.trim()) {
-      if (ui?.characterInitial) {
-        setDraft({
-          name: ui.characterInitial.name ?? "Sara",
-          profession: ui.characterInitial.profession ?? PROFESSIONS[0],
-          bio: ui.characterInitial.bio ?? "",
-        });
-      } else {
-        setDraft((prev) => ({ ...prev, name: "Sara" }));
-      }
+      setDraft((prev) => ({ ...prev, name: "Sara" }));
       seededOnce.current = true;
     }
-  }, [ui?.characterInitial, draft.name, draft.bio]);
+  }, [draft.name, draft.bio]);
 
-  const onChange = (k: keyof Draft, v: string) => setDraft(prev => ({ ...prev, [k]: v }));
+  const onChange = (k: keyof Draft, v: string) => setDraft((p) => ({ ...p, [k]: v }));
 
-  const handleAdd = () => {
+  const addToRoster = () => {
     const nm = draft.name.trim();
     if (!nm) return;
-    createPlayer({ name: nm, profession: draft.profession, bio: draft.bio });
+    const newPlayer = { id: crypto.randomUUID(), name: nm, profession: draft.profession, bio: draft.bio };
+    campaignStore.setRoster([...roster, newPlayer]);
     setDraft({ name: "", profession: PROFESSIONS[0], bio: "" });
-    seededOnce.current = false; // permite prefill de nuevo si vuelves a entrar
+    seededOnce.current = false;
   };
 
   const handleStart = () => {
-    if (players.length > 0) setMode("running");
+    if (!campaignStore.canStartCampaign()) {
+      toast("Necesitas al menos un jugador");
+      return;
+    }
+    campaignStore.startCampaign();
   };
 
-  // Bloquea atajos globales mientras estás en esta pantalla
   const stopAllKeysCapture: React.KeyboardEventHandler = (e) => {
-    // Evita submits fantasmas
     if (e.key === "Enter") e.preventDefault();
     e.stopPropagation();
   };
 
-  const hasPlayers = players.length > 0;
+  const canStart = campaignStore.canStartCampaign();
 
   return (
     <div
       className="max-w-2xl mx-auto card card-red p-6 space-y-6 animate-fade-in"
-      // Captura antes que burbujee a listeners globales
       onKeyDownCapture={stopAllKeysCapture}
       onKeyUpCapture={(e) => e.stopPropagation()}
       onKeyPressCapture={(e) => e.stopPropagation()}
     >
       <h2 className="text-2xl font-bold">Crear personaje</h2>
 
-      <div className="grid gap-4">
-        {/* Nombre */}
+      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); addToRoster(); }} noValidate>
         <div>
           <label htmlFor="player-name" className="block text-sm font-medium">Nombre</label>
           <input
@@ -80,7 +73,6 @@ export default function CharacterCreationPanel() {
           />
         </div>
 
-        {/* Profesión */}
         <div>
           <label htmlFor="player-profession" className="block text-sm font-medium">Profesión</label>
           <select
@@ -97,7 +89,6 @@ export default function CharacterCreationPanel() {
           </select>
         </div>
 
-        {/* Bio */}
         <div>
           <label htmlFor="player-bio" className="block text-sm font-medium">Bio</label>
           <textarea
@@ -113,23 +104,24 @@ export default function CharacterCreationPanel() {
 
         <div className="flex items-center gap-3">
           <button
+            type="submit"
             className="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50"
-            onClick={handleAdd}
             disabled={!draft.name.trim()}
           >
             Agregar
           </button>
           <span className="text-xs text-neutral-400">Puedes crear varios personajes antes de iniciar.</span>
         </div>
-      </div>
+      </form>
 
       <div className="flex justify-end gap-3">
         <button
+          type="button"
           className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50"
           onClick={handleStart}
-          disabled={!hasPlayers}
+          disabled={!canStart}
         >
-          Iniciar
+          Iniciar campaña
         </button>
       </div>
 
@@ -139,4 +131,3 @@ export default function CharacterCreationPanel() {
     </div>
   );
 }
-

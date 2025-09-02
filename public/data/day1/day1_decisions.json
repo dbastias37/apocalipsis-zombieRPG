@@ -1,0 +1,28 @@
+[
+  {
+    "id": "d1",
+    "day": 1,
+    "title": "Primer día",
+    "text": "Decide tu estrategia inicial",
+    "options": [
+      {
+        "id": "explore",
+        "label": "Explorar",
+        "outcome": {
+          "effects": { "morale": 1 },
+          "flagsSet": ["explored"],
+          "nextDayModifiers": { "hordeIntensity": 1 }
+        }
+      },
+      {
+        "id": "hide",
+        "label": "Esconderse",
+        "outcome": {
+          "effects": { "morale": -1 },
+          "flagsUnset": ["explored"],
+          "nextDayModifiers": { "hordeIntensity": -1 }
+        }
+      }
+    ]
+  }
+]
