@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
+import { decisionCards as decisionData } from "./data/decisionCards";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -91,33 +92,14 @@ const baseEnemies: Enemy[] = [
   { id: uid(), name: "Acechador", hp: 12, hpMax: 12, def: 15, atk: 4 },
 ];
 
-// === Cartas (ejemplos; puedes ampliar) ===
-const decisionDeckSeed: Card[] = [
-  {
-    id: uid(),
-    type: "decision",
-    title: "El Jardín en la Azotea",
-    scene: "azotea",
-    text: "Una anciana ofrece semillas a cambio de agua. Cuidar belleza en ruinas requiere sacrificio.",
-    choices: [
-      { text: "Compartir agua", effect: { water: -3, morale: +6 } },
-      { text: "Negarse", effect: { morale: -4, threat: +2 } },
-      { text: "Intercambio justo", effect: { water: -1, materials: -1, morale: +3 } },
-    ],
-  },
-  {
-    id: uid(),
-    type: "decision",
-    title: "El Tren con Sitios Limitados",
-    scene: "carretera",
-    text: "Un viejo tren puede evacuar a pocos. ¿Prioridad por utilidad o azar?",
-    choices: [
-      { text: "Lotería", effect: { morale: -2 } },
-      { text: "Seleccionar por oficio", effect: { morale: -5, threat: +4 } },
-      { text: "Quedarse juntos", effect: { morale: +2, threat: +6 } },
-    ],
-  },
-];
+// === Cartas ===
+const decisionDeckSeed: Card[] = decisionData.map((c) => ({
+  id: String(c.id),
+  type: "decision",
+  title: c.title,
+  text: c.text,
+  choices: c.choices,
+}));
 
 const combatDeckSeed: Card[] = [
   {
@@ -203,7 +185,7 @@ export default function App(){
   // Mazo de cartas
   const [decisionDeck, setDecisionDeck] = useState<Card[]>(shuffle([...decisionDeckSeed]));
   const [combatDeck, setCombatDeck] = useState<Card[]>(shuffle([...combatDeckSeed]));
-  const [discardDecision, setDiscardDecision] = useState<Card[]>([]);
+  const [decisionDiscard, setDecisionDiscard] = useState<Card[]>([]);
   const [discardCombat, setDiscardCombat] = useState<Card[]>([]);
   const [currentCard, setCurrentCard] = useState<Card|null>(null);
   const [tab, setTab] = useState<'story'|'manual'>('story');
@@ -299,7 +281,7 @@ export default function App(){
     setCamp({ defense: 10, comfort: 10 });
     setDecisionDeck(shuffle([...decisionDeckSeed]));
     setCombatDeck(shuffle([...combatDeckSeed]));
-    setDiscardDecision([]);
+    setDecisionDiscard([]);
     setDiscardCombat([]);
     setCurrentCard(null);
     setEnemies([]);
@@ -401,7 +383,7 @@ export default function App(){
 
   function endOfDay(reason:'deck'|'timer'|'manual'='manual'){
     setDecisionDeck(shuffle([...decisionDeckSeed]));
-    setDiscardDecision([]);
+    setDecisionDiscard([]);
     if(reason==='deck') pushLog("El mazo se agotó. La jornada termina y el grupo descansa.");
 
     if(phase !== 'night'){
@@ -418,14 +400,13 @@ export default function App(){
 
   // ——— Decks ———
   function drawDecision(){
-    let deck = [...decisionDeck];
-    if(deck.length===0 && discardDecision.length>0){
-      deck = shuffle(discardDecision);
-      setDiscardDecision([]);
+    if(currentCard) return;
+    if(decisionDeck.length===0){
+      pushLog("No quedan cartas de decisión. Usa 'Integrar descartes' o 'Barajar restantes'.");
+      return;
     }
-    if(deck.length===0){ endOfDay('deck'); return; }
-    const card = deck[0];
-    setDecisionDeck(deck.slice(1));
+    const [card, ...rest] = decisionDeck;
+    setDecisionDeck(rest);
     setCurrentCard(card);
   }
   function drawCombat(){
@@ -444,51 +425,44 @@ export default function App(){
     setEnemies(spawned);
     pushLog(`⚔️ ¡Encuentro! (${spawned.length} enemigos)`);
   }
-  function shuffleDecks(){
-    setDecisionDeck(shuffle(decisionDeck));
-    setCombatDeck(shuffle(combatDeck));
-    pushLog("🔀 Barajas los mazos restantes.");
+  function shuffleDecisionRemaining(){
+    setDecisionDeck(d=>shuffle(d));
+    pushLog("🔀 Barajas las decisiones restantes.");
   }
-  function recycleDiscards(){
-    setDecisionDeck(d=>[...d, ...shuffle(discardDecision)]);
-    setCombatDeck(d=>[...d, ...shuffle(discardCombat)]);
-    setDiscardDecision([]);
-    setDiscardCombat([]);
-    pushLog("♻️ Reintegras descartes a los mazos.");
+  function mergeDecisionDiscards(){
+    setDecisionDeck(d=>shuffle([...d, ...decisionDiscard]));
+    setDecisionDiscard([]);
+    pushLog("♻️ Reintegras descartes al mazo de decisiones.");
   }
-
-  function resolveChoice(choice: NonNullable<Card["choices"]>[number]){
-    // aplicar efectos
+  function resolveDecisionChoice(choice: NonNullable<Card["choices"]>[number]){
     if(choice.effect){
-      const { morale: dm, threat: dt, spawnEnemies, ...res } = choice.effect as any;
+      const { morale: dm, threat: dt, spawnEnemies, zombies, ...rest } = choice.effect as any;
       if(dm) setMorale(m=>clamp(m+dm,0,100));
       if(dt) setThreat(t=>Math.max(0,t+dt));
-      const rDelta = res as Partial<Resources>;
-      if(Object.keys(rDelta).length){
-        setResources(r=>{
-          const next = { ...r };
-          (Object.keys(rDelta) as (keyof Resources)[]).forEach(k => {
-            next[k] = Math.max(0, (r[k] ?? 0) + (rDelta[k] as number));
-          });
-          return next;
+      const resourceKeys: (keyof Resources)[] = ["food","water","medicine","fuel","ammo","materials"];
+      setResources(r=>{
+        const next = { ...r };
+        resourceKeys.forEach(k=>{
+          if(typeof rest[k] === "number"){ next[k] = Math.max(0, (r[k]??0) + (rest[k] as number)); delete rest[k]; }
         });
-      }
-      if(spawnEnemies && spawnEnemies>0){
-        const spawned = Array.from({length: spawnEnemies}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
+        return next;
+      });
+      if(zombies){
+        const spawned = Array.from({length: zombies}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
         setEnemies(spawned);
         setCurrentCard({ ...(currentCard as Card), type: "combat" });
         pushLog(`⚔️ Tu decisión provocó un combate (${spawned.length}).`);
       }
+      if(rest.karma){ pushLog(`🔮 Karma ${rest.karma>0?"+":""}${rest.karma}`); }
+      if(rest.survivors){ pushLog(`👥 Se unen ${rest.survivors} supervivientes.`); }
     }
-    // narrativa
     pushLog(`📖 Decisión tomada: ${choice.text}`);
-    // descartar carta
     if(currentCard){
-      if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
+      if(currentCard.type==="decision") setDecisionDiscard(d=>[currentCard, ...d]);
       else setDiscardCombat(d=>[currentCard, ...d]);
     }
     setCurrentCard(null);
-    advanceTurn(); timePenalty(45); // penalizar ~45s
+    advanceTurn(); timePenalty(45);
   }
 
   // ——— Combate muy simplificado ———
@@ -900,21 +874,22 @@ export default function App(){
           <>
             {/* Zonas principales */}
             <DeckControls
-              onDrawDecision={drawDecision} onDrawCombat={drawCombat}
-              onShuffle={shuffleDecks} onRecycle={recycleDiscards}
+              onDrawDecision={drawDecision}
+              onShuffleDecision={shuffleDecisionRemaining}
+              onMergeDecision={mergeDecisionDiscards}
             />
 
             {currentCard ? (
               <CardView
                 card={currentCard}
-                onResolveChoice={resolveChoice}
+                onResolveChoice={resolveDecisionChoice}
                 enemies={enemies}
                 onAttack={performAttack}
                 onDefend={defend}
                 onHeal={healSelf}
                 onFlee={flee}
                 onClose={()=>{
-                  if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
+                  if(currentCard.type==="decision") setDecisionDiscard(d=>[currentCard, ...d]);
                   else setDiscardCombat(d=>[currentCard, ...d]);
                   setCurrentCard(null);
                 }}
@@ -1031,14 +1006,12 @@ function ManualTab(){
   );
 }
 
-function DeckControls(props: { onDrawDecision:()=>void; onDrawCombat:()=>void; onShuffle:()=>void; onRecycle:()=>void }){
+function DeckControls(props: { onDrawDecision:()=>void; onShuffleDecision:()=>void; onMergeDecision:()=>void }){
   return (
     <div className="flex flex-wrap gap-2">
-      <button className="btn btn-purple text-white" onClick={props.onDrawDecision}>🎴 Sacar Carta (Decisión)</button>
-      <button className="btn btn-red text-white" onClick={props.onDrawCombat}>🩸 Sacar Carta (Combate)</button>
-      <div className="flex-1" />
-      <button className="btn btn-ghost" onClick={props.onShuffle}>🔀 Barajar</button>
-      <button className="btn btn-ghost" onClick={props.onRecycle}>♻️ Reintegrar descartes</button>
+      <button className="btn btn-purple text-white" onClick={props.onDrawDecision}>🎴 Robar decisión</button>
+      <button className="btn btn-ghost" onClick={props.onShuffleDecision}>🔀 Barajar restantes</button>
+      <button className="btn btn-ghost" onClick={props.onMergeDecision}>♻️ Integrar descartes</button>
     </div>
   );
 }
@@ -1054,11 +1027,12 @@ function CardView(props:{
   onFlee: ()=>void;
 }){
   const isDecision = props.card.type==="decision";
+  const containerCls = isDecision ? "bg-gradient-to-br from-purple-900/30 to-black border-2 border-purple-700" : "card-red";
   return (
-    <div className={clsx("card p-6 animate-fade-in", isDecision?"card-purple":"card-red")}>
+    <div className={clsx("card p-6 animate-fade-in", containerCls)}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-2xl font-bold">{props.card.title}</h3>
+          <h3 className={clsx("text-2xl font-bold", isDecision && "text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-600")}>{props.card.title}</h3>
           <p className="text-neutral-300 mt-1">{props.card.text}</p>
         </div>
         <button className="btn btn-ghost" onClick={props.onClose}>✖</button>
