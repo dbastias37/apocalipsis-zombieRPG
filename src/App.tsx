@@ -30,6 +30,7 @@ import {
 import { useLevel } from "@/state/levelStore";
 import { DayHud } from "@/components/hud/DayHud";
 import { TurnTransitionModal } from "@/components/overlays/TurnTransitionModal";
+import StartScreen from "@/ui/StartScreen";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -183,6 +184,7 @@ const EXPLORATION_EVENTS: ExplorationEvent[] = [
 export default function App(){
   // Estado base
   const [state, setState] = useState<GameState>("menu");
+  const [showStart, setShowStart] = useState(true);
   const [day, setDay] = useState(1);
   const [phase, setPhase] = useState<Phase>("dawn");
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
@@ -197,6 +199,10 @@ export default function App(){
   const [roster, setRoster] = useState<Player[]>([]);
   const [turn, setTurn] = useState(0);
   const alivePlayers = useMemo(()=>players.filter(p=>p.status!=="dead"), [players]);
+
+  if (showStart) {
+    return <StartScreen onStart={() => { setShowStart(false); setState('setup'); }} />;
+  }
 
   // Mazo de cartas
   const [decisionDeck, setDecisionDeck] = useState<Card[]>(shuffle([...decisionDeckSeed]));
