@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
-// Global UI mode for screen routing
-export type UIMode = "start" | "character-creation" | "running";
+// Global UI mode for screen routing (start screen removed)
+export type UIMode = "character-creation" | "running";
 
 interface UIState {
   mode: UIMode;
@@ -9,6 +9,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  mode: "start",
+  // App now boots directly into character creation
+  mode: "character-creation",
   setMode: (m) => set({ mode: m }),
 }));

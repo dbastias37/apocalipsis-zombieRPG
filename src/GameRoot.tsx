@@ -183,7 +183,6 @@ const EXPLORATION_EVENTS: ExplorationEvent[] = [
 // Main gameplay component
 export default function GameRoot(){
   // Estado base
-  // Start directly in setup phase; StartScreen handled outside
   const [state, setState] = useState<GameState>("setup");
   const [day, setDay] = useState(1);
   const [phase, setPhase] = useState<Phase>("dawn");
