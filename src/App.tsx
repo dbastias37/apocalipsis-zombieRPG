@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import StartScreen from "@/ui/StartScreen";
 import CharacterSetupPanel from "@/ui/CharacterSetupPanel";
 import DevStatusBadge from "@/components/DevStatusBadge";
+import GameRoot from "@/GameRoot";
 import { campaignStore, useCampaign } from "@/state/campaign";
 
 export default function App() {
@@ -28,10 +29,16 @@ export default function App() {
   if (state === "setup") return <CharacterSetupPanel />;
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-neutral-100 p-4">
-      <h1 className="text-xl font-bold">Día {day}</h1>
-      <p>Jugadores: {roster.length}</p>
-      <DevStatusBadge state={state} showStart={showStart} playersLen={roster.length} turnIndex={0} day={day} timers={{ clock: tickEnabled, event: false }} />
-    </div>
+    <>
+      <GameRoot />
+      <DevStatusBadge
+        state={state}
+        showStart={showStart}
+        playersLen={roster.length}
+        turnIndex={0}
+        day={day}
+        timers={{ clock: tickEnabled, event: false }}
+      />
+    </>
   );
 }
