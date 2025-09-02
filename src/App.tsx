@@ -239,6 +239,36 @@ export default function App(){
   // Cita visible
   const todaysQuote = useMemo(()=> philosopherQuotes[(day-1) % philosopherQuotes.length], [day]);
 
+  const devBadge = (
+    <DevStatusBadge
+      state={state}
+      showStart={showStart}
+      playersLen={players.length}
+      turnIndex={turn}
+      day={dayState.day}
+      timers={{ clock: state === 'playing' && timeRunning, event: state === 'playing' && !!timedEvent }}
+    />
+  );
+
+  // Early returns before heavy effects
+  if (showStart) {
+    return (
+      <>
+        <StartScreen onStart={() => { setShowStart(false); setState('setup'); }} />
+        {devBadge}
+      </>
+    );
+  }
+
+  if (state === 'setup') {
+    return (
+      <>
+        <CharacterSetupPanel />
+        {devBadge}
+      </>
+    );
+  }
+
   useEffect(() => {
     setFlag('paused', state !== 'playing');
   }, [state, setFlag]);
@@ -293,17 +323,6 @@ export default function App(){
       setDay(d => d + 1);
     }
   }, [state, dayState.remainingMs]);
-
-  const devBadge = (
-    <DevStatusBadge
-      state={state}
-      showStart={showStart}
-      playersLen={players.length}
-      turnIndex={turn}
-      day={dayState.day}
-      timers={{ clock: state === 'playing' && timeRunning, event: state === 'playing' && !!timedEvent }}
-    />
-  );
 
   function createPlayer(name:string, professionId:string, bio:string = ""): Player{
     const attrs: Attributes = { Fuerza: 12, Destreza: 12, Constitucion: 13, Inteligencia: 11, Carisma: 11 };
@@ -847,6 +866,7 @@ export default function App(){
     const [name, setName] = useState('');
     const [professionId, setProfessionId] = useState(professions[0]?.id || 'medic');
     const [bio, setBio] = useState('');
+    const nameRef = useRef<HTMLInputElement>(null);
 
     function addToRoster(){
       const trimmed = name.trim();
@@ -855,6 +875,7 @@ export default function App(){
       setRoster(prev=>[...prev, newP]);
       setName('');
       setBio('');
+      nameRef.current?.focus();
     }
 
     function removeFromRoster(id:string){
@@ -874,18 +895,41 @@ export default function App(){
           <div className="bg-gradient-to-br from-neutral-900 via-neutral-950 to-black border-2 border-red-900 rounded-2xl p-6">
             <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Crear personaje</h2>
 
-            <label className="text-sm text-neutral-400">Nombre</label>
-            <input value={name} onChange={e=>setName(e.target.value)} className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg outline-none focus:border-red-600 mb-3" placeholder="Ej: Sarah" />
+            <form onSubmit={e => { e.preventDefault(); addToRoster(); }} className="space-y-3">
+              <label htmlFor="name" className="text-sm text-neutral-400">Nombre</label>
+              <input
+                ref={nameRef}
+                id="name"
+                name="name"
+                value={name}
+                onChange={e=>setName(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg outline-none focus:border-red-600"
+                placeholder="Ej: Sarah"
+              />
 
-            <label className="text-sm text-neutral-400">Profesión</label>
-            <select value={professionId} onChange={e=>setProfessionId(e.target.value)} className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg outline-none focus:border-red-600 mb-3">
-              {professions.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
-            </select>
+              <label htmlFor="profession" className="text-sm text-neutral-400">Profesión</label>
+              <select
+                id="profession"
+                name="profession"
+                value={professionId}
+                onChange={e=>setProfessionId(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg outline-none focus:border-red-600"
+              >
+                {professions.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
+              </select>
 
-            <label className="text-sm text-neutral-400">Bio</label>
-            <textarea value={bio} onChange={e=>setBio(e.target.value)} className="w-full px-3 py-2 h-28 bg-neutral-900 border border-neutral-700 rounded-lg outline-none focus:border-red-600" placeholder="Breve historia o rasgos del personaje..." />
+              <label htmlFor="bio" className="text-sm text-neutral-400">Bio</label>
+              <textarea
+                id="bio"
+                name="bio"
+                value={bio}
+                onChange={e=>setBio(e.target.value)}
+                className="w-full px-3 py-2 h-28 bg-neutral-900 border border-neutral-700 rounded-lg outline-none focus:border-red-600"
+                placeholder="Breve historia o rasgos del personaje..."
+              />
 
-            <button onClick={addToRoster} className="mt-4 w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-xl font-bold transition-all">➕ Agregar al roster</button>
+              <button type="submit" className="mt-4 w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-xl font-bold transition-all">➕ Agregar al roster</button>
+            </form>
           </div>
 
           <div className="bg-gradient-to-br from-neutral-900 via-neutral-950 to-black border-2 border-red-900 rounded-2xl p-6">
@@ -918,15 +962,6 @@ export default function App(){
   }
 
   // ——— UI ———
-  if (showStart) {
-    return (
-      <>
-        <StartScreen onStart={() => { setShowStart(false); setState('setup'); }} />
-        {devBadge}
-      </>
-    );
-  }
-
   if(state==="menu"){
     return (
       <>
@@ -946,13 +981,6 @@ export default function App(){
       </>
     );
   }
-
-  if(state==='setup') return (
-    <>
-      <CharacterSetupPanel/>
-      {devBadge}
-    </>
-  );
 
   if(state==="gameover"){
     return (

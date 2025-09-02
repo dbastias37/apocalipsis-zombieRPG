@@ -5,7 +5,7 @@ import App from './App'
 import './styles.css'
 import { LevelProvider } from '@/state/levelStore'
 import { ToastContainer } from '@/components/Toast'
-import { ErrorBoundary } from '@/ui/ErrorBoundary'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 const root = createRoot(document.getElementById('root')!)
 root.render(
