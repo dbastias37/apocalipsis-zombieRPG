@@ -82,10 +82,12 @@ export default function CharacterCreationPanel() {
         <label className="block text-sm font-medium">Nombre</label>
         <input
           className="w-full border rounded px-3 py-2"
+          type="text"
           placeholder="Ingresa nombre…"
           value={draft.name}
           onChange={(e) => onChange("name", e.target.value)}
           onFocus={randomizeProfessionOnce}
+          onKeyDown={(e) => e.stopPropagation()} // evita que los atajos globales intercepten la escritura
         />
       </div>
 
@@ -95,6 +97,7 @@ export default function CharacterCreationPanel() {
           className="w-full border rounded px-3 py-2"
           value={draft.profession}
           onChange={(e) => onChange("profession", e.target.value)}
+          onKeyDown={(e) => e.stopPropagation()} // evita que los atajos globales intercepten la escritura
         >
           <option value="">Selecciona…</option>
           {PROFESSIONS.map((p) => (
@@ -112,6 +115,7 @@ export default function CharacterCreationPanel() {
           placeholder="Breve historia / rasgos…"
           value={draft.bio}
           onChange={(e) => onChange("bio", e.target.value)}
+          onKeyDown={(e) => e.stopPropagation()} // evita que los atajos globales intercepten la escritura
         />
       </div>
 
