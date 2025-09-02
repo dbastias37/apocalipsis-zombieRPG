@@ -179,11 +179,12 @@ export const LevelProvider: React.FC<{
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
+    if (state.flags.paused || !state.dayState.endsAt) return;
     const t = setInterval(() => {
       dispatch({ type: "TICK", nowMs: Date.now() });
     }, 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [state.flags.paused, state.dayState.endsAt]);
 
   const api = useMemo<LevelContextAPI>(() => {
     const drawFrom = (deck: DeckId): number | null => {
