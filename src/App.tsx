@@ -30,6 +30,8 @@ import {
 import { useLevel } from "@/state/levelStore";
 import { DayHud } from "@/components/hud/DayHud";
 import { TurnTransitionModal } from "@/components/overlays/TurnTransitionModal";
+import CharacterCreationPanel from "@/ui/CharacterCreationPanel";
+import { useGameStore } from "@/state/gameStore";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -181,6 +183,11 @@ const EXPLORATION_EVENTS: ExplorationEvent[] = [
 
 // === Componente principal ===
 export default function App(){
+  const ui = useGameStore((s) => s.ui);
+  if (ui.mode === "character-creation") {
+    return <CharacterCreationPanel />;
+  }
+
   // Estado base
   const [state, setState] = useState<GameState>("menu");
   const [day, setDay] = useState(1);
@@ -936,7 +943,12 @@ export default function App(){
 
   // HUD superior
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950">
+    <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950 relative">
+      {ui.paused && (
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-2xl">
+          Pausado
+        </div>
+      )}
       <DayHud />
       <TurnTransitionModal />
       <HeaderHUD
