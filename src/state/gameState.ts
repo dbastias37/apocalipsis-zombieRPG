@@ -16,6 +16,8 @@ interface GameState {
   setPhase: (p: GamePhase) => void
   hasSeenManual: boolean
   setHasSeenManual: (v: boolean) => void
+  showWelcome: boolean
+  setShowWelcome: (v: boolean) => void
   roster: Personaje[]
   addPersonaje: (p: Personaje) => void
   upsertPersonaje: (p: Personaje) => void
@@ -29,6 +31,8 @@ export const useGameState = create<GameState>()(
       setPhase: (p) => set({ phase: p }),
       hasSeenManual: false,
       setHasSeenManual: (v) => set({ hasSeenManual: v }),
+      showWelcome: true,
+      setShowWelcome: (v) => set({ showWelcome: v }),
       roster: [],
       addPersonaje: (p) => set((s) => ({ roster: [...s.roster, p] })),
       upsertPersonaje: (p) =>

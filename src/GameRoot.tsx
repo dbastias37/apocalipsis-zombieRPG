@@ -30,6 +30,10 @@ import {
 import { useLevel } from "@/state/levelStore";
 import { DayHud } from "@/components/hud/DayHud";
 import { TurnTransitionModal } from "@/components/overlays/TurnTransitionModal";
+import StoryHome from "@/screens/StoryHome";
+import PauseBanner from "@/components/PauseBanner";
+import WelcomeOverlay from "@/components/WelcomeOverlay";
+import { useGameState } from "@/state/gameState";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -182,6 +186,25 @@ const EXPLORATION_EVENTS: ExplorationEvent[] = [
 // === Componente principal ===
 // Main gameplay component
 export default function GameRoot(){
+  const { phase: gamePhase, setPhase: setGamePhase, showWelcome, setShowWelcome } = useGameState();
+
+  if (gamePhase !== 'running') {
+    const handleStart = () => {
+      setShowWelcome(false);
+      setGamePhase('running');
+    };
+
+    return (
+      <div className="relative min-h-screen bg-neutral-950 text-neutral-100">
+        <StoryHome />
+        {gamePhase === 'paused' && <PauseBanner />}
+        {gamePhase === 'paused' && showWelcome && (
+          <WelcomeOverlay onStart={handleStart} onClose={() => setShowWelcome(false)} />
+        )}
+      </div>
+    );
+  }
+
   // Estado base
   const [state, setState] = useState<GameState>("setup");
   const [day, setDay] = useState(1);
@@ -198,7 +221,6 @@ export default function GameRoot(){
   const [roster, setRoster] = useState<Player[]>([]);
   const [turn, setTurn] = useState(0);
   const alivePlayers = useMemo(()=>players.filter(p=>p.status!=="dead"), [players]);
-
 
   // Mazo de cartas
   const [decisionDeck, setDecisionDeck] = useState<Card[]>(shuffle([...decisionDeckSeed]));
