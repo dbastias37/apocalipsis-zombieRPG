@@ -3,7 +3,8 @@ import type { DayId, DayRules, DayDecks } from "@/types/level";
 
 // IMPORTA mazos existentes
 // Ajusta las rutas reales:
-import { decisionCards } from "@/data/decisionCards";
+// Sustituye el mazo global por el específico del Día 1
+import { day1DecisionCards } from "@/data/days/day1/decisionCards.day1";
 import { combatCards } from "@/data/combatCards";
 
 // Exploración: usa el archivo que tengas. Si no existe, crea src/data/explorationNodes.ts con export const explorationNodes = [{id:1},...]
@@ -20,10 +21,10 @@ export const defaultDayRules: DayRules = {
   timeScale: 1.0,
 };
 
-// Día 1 usa los mazos actuales tal cual
+// Día 1 usa su propio mazo de decisiones
 export const dayDecksById: Record<DayId, DayDecks> = {
   1: {
-    decisionIds: ids(decisionCards),
+    decisionIds: ids(day1DecisionCards),          // ← ahora usa el mazo del Día 1
     combatIds: ids(combatCards),
     exploreIds: explorationNodes ? ids(explorationNodes as any) : [],
   },
