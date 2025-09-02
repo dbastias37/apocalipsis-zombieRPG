@@ -31,6 +31,7 @@ import { useLevel } from "@/state/levelStore";
 import { DayHud } from "@/components/hud/DayHud";
 import { TurnTransitionModal } from "@/components/overlays/TurnTransitionModal";
 import StartScreen from "@/ui/StartScreen";
+import DevStatusBadge from "@/components/DevStatusBadge";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -199,11 +200,6 @@ export default function App(){
   const [roster, setRoster] = useState<Player[]>([]);
   const [turn, setTurn] = useState(0);
   const alivePlayers = useMemo(()=>players.filter(p=>p.status!=="dead"), [players]);
-
-  if (showStart) {
-    return <StartScreen onStart={() => { setShowStart(false); setState('setup'); }} />;
-  }
-
   // Mazo de cartas
   const [decisionDeck, setDecisionDeck] = useState<Card[]>(shuffle([...decisionDeckSeed]));
   const [combatDeck, setCombatDeck] = useState<Card[]>(shuffle([...combatDeckSeed]));
@@ -237,10 +233,15 @@ export default function App(){
     endTurn,
     checkEndConditions,
     advanceToNextDay,
+    setFlag,
   } = useLevel();
 
   // Cita visible
   const todaysQuote = useMemo(()=> philosopherQuotes[(day-1) % philosopherQuotes.length], [day]);
+
+  useEffect(() => {
+    setFlag('paused', state !== 'playing');
+  }, [state, setFlag]);
 
   // Reloj del día
   useEffect(()=>{
@@ -262,20 +263,19 @@ export default function App(){
 
   // Resolver eventos con countdown
   const nowRef = useRef<number>(Date.now());
-  useEffect(()=>{
-    const id = window.setInterval(()=>{
+  useEffect(() => {
+    if (state !== 'playing' || !timedEvent) return;
+    const id = window.setInterval(() => {
       nowRef.current = Date.now();
-      if(timedEvent){
-        const elapsed = nowRef.current - timedEvent.startedAt;
-        if(elapsed >= timedEvent.durationMs){
-          pushLog(`⏳ El evento "${timedEvent.name}" venció y se resuelve automáticamente.`);
-          timedEvent.onExpire();
-          setTimedEvent(null);
-        }
+      const elapsed = nowRef.current - timedEvent.startedAt;
+      if (elapsed >= timedEvent.durationMs) {
+        pushLog(`⏳ El evento "${timedEvent.name}" venció y se resuelve automáticamente.`);
+        timedEvent.onExpire();
+        setTimedEvent(null);
       }
     }, 500);
-    return ()=> clearInterval(id);
-  }, [timedEvent]);
+    return () => clearInterval(id);
+  }, [state, timedEvent]);
 
   // Reglas de fin de partida por moral
   useEffect(()=>{
@@ -286,12 +286,24 @@ export default function App(){
   }, [morale, state]);
 
   useEffect(() => {
+    if (state !== 'playing') return;
     const reason = checkEndConditions();
     if (reason) {
       advanceToNextDay((dayState.day + 1) as any);
       setDay(d => d + 1);
     }
-  }, [dayState.remainingMs]);
+  }, [state, dayState.remainingMs]);
+
+  const devBadge = (
+    <DevStatusBadge
+      state={state}
+      showStart={showStart}
+      playersLen={players.length}
+      turnIndex={turn}
+      day={dayState.day}
+      timers={{ clock: state === 'playing' && timeRunning, event: state === 'playing' && !!timedEvent }}
+    />
+  );
 
   function createPlayer(name:string, professionId:string, bio:string = ""): Player{
     const attrs: Attributes = { Fuerza: 12, Destreza: 12, Constitucion: 13, Inteligencia: 11, Carisma: 11 };
@@ -541,6 +553,7 @@ export default function App(){
     setEnemies(spawned);
   }
   function performAttack(enemyId: string){
+    if(state !== 'playing') return;
     const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
     if(!actor) return;
     const enemy = enemies.find(e=>e.id===enemyId);
@@ -571,6 +584,7 @@ export default function App(){
   }
 
   function enemyTurn(){
+    if(state !== 'playing') return;
     if(enemies.length===0) return;
     const target = alivePlayers[Math.floor(Math.random()*alivePlayers.length)];
     if(!target) return;
@@ -590,6 +604,7 @@ export default function App(){
   }
 
   function defend(){
+    if(state !== 'playing') return;
     const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
     if(!actor) return;
     updatePlayer(actor.id, { defense: actor.defense + 3 });
@@ -598,6 +613,7 @@ export default function App(){
   }
 
   function healSelf(){
+    if(state !== 'playing') return;
     const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
     if(!actor || resources.medicine<=0) { pushLog("Sin medicina suficiente."); return; }
     updatePlayer(actor.id, { hp: clamp(actor.hp+10, 0, actor.hpMax) });
@@ -607,6 +623,7 @@ export default function App(){
   }
 
   function flee(){
+    if(state !== 'playing') return;
     if(enemies.length===0) return;
     const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
     if(!actor) return;
@@ -623,6 +640,7 @@ export default function App(){
   }
 
   function advanceTurn(){
+    if(state !== 'playing') return;
     const reason = checkEndConditions();
     if (reason) {
       advanceToNextDay((dayState.day + 1) as any);
@@ -691,14 +709,16 @@ export default function App(){
   }
 
   useEffect(() => {
+    if (state !== 'playing') return;
     if (explorationActive && enemies.length === 0 && !currentCard) {
       setExplorationActive(false);
       pushLog("Evento de exploración resuelto.");
     }
-  }, [enemies.length, currentCard, explorationActive]);
+  }, [state, enemies.length, currentCard, explorationActive]);
 
   // ——— Acciones fuera de combate ———
   function exploreArea(){
+    if(state !== 'playing') return;
     if(explorationActive || dayState.activeExploreInstance){
       pushLog("Ya hay una exploración/evento activo. Resuélvelo primero.");
       return;
@@ -782,13 +802,14 @@ export default function App(){
   }
 
   function resolveTimedEventPositively(){
-    if(!timedEvent) return;
+    if(state !== 'playing' || !timedEvent) return;
     timedEvent.onResolvePositive?.();
     setTimedEvent(null);
     timePenalty(40);
   }
 
   function timePenalty(seconds:number){
+    if(state !== 'playing') return;
     setClockMs(ms=> Math.max(0, ms - seconds*1000));
   }
 
@@ -897,67 +918,91 @@ export default function App(){
   }
 
   // ——— UI ———
-  if(state==="menu"){
+  if (showStart) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950">
-        <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-          <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">Apocalipsis Zombie RPG</h1>
-          <p className="mt-3 text-neutral-300">Sistema ligero con mazos, tiempo real y supervivencia.</p>
-          <div className="mt-10 space-x-3">
-            <button className="btn btn-red text-white" onClick={()=>setState('setup')}>🧰 CREAR PERSONAJES</button>
-          </div>
-          <div className="mt-16 text-neutral-400 text-sm">
-            <p>Consejo: las acciones consumen tiempo del día. La noche es peligrosa.</p>
-          </div>
-        </div>
-      </div>
+      <>
+        <StartScreen onStart={() => { setShowStart(false); setState('setup'); }} />
+        {devBadge}
+      </>
     );
   }
 
-  if(state==='setup') return <CharacterSetupPanel/>;
+  if(state==="menu"){
+    return (
+      <>
+        <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950">
+          <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">Apocalipsis Zombie RPG</h1>
+            <p className="mt-3 text-neutral-300">Sistema ligero con mazos, tiempo real y supervivencia.</p>
+            <div className="mt-10 space-x-3">
+              <button className="btn btn-red text-white" onClick={()=>setState('setup')}>🧰 CREAR PERSONAJES</button>
+            </div>
+            <div className="mt-16 text-neutral-400 text-sm">
+              <p>Consejo: las acciones consumen tiempo del día. La noche es peligrosa.</p>
+            </div>
+          </div>
+        </div>
+        {devBadge}
+      </>
+    );
+  }
+
+  if(state==='setup') return (
+    <>
+      <CharacterSetupPanel/>
+      {devBadge}
+    </>
+  );
 
   if(state==="gameover"){
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-950 via-black to-black flex items-center justify-center">
-        <div className="text-center animate-fade-in">
-          <h1 className="text-7xl font-black text-red-600 mb-4">GAME OVER</h1>
-          <p className="text-neutral-300">La voluntad se quebró. Queda el silencio.</p>
-          <button className="mt-8 btn btn-red text-white" onClick={()=>location.reload()}>Reiniciar</button>
+      <>
+        <div className="min-h-screen bg-gradient-to-br from-red-950 via-black to-black flex items-center justify-center">
+          <div className="text-center animate-fade-in">
+            <h1 className="text-7xl font-black text-red-600 mb-4">GAME OVER</h1>
+            <p className="text-neutral-300">La voluntad se quebró. Queda el silencio.</p>
+            <button className="mt-8 btn btn-red text-white" onClick={()=>location.reload()}>Reiniciar</button>
+          </div>
         </div>
-      </div>
+        {devBadge}
+      </>
     );
   }
 
   if(state==="victory"){
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-950 via-black to-black flex items-center justify-center">
-        <div className="text-center animate-fade-in">
-          <h1 className="text-7xl font-black text-green-500 mb-4">¡VICTORIA!</h1>
-          <p className="text-neutral-300">Un nuevo amanecer parece posible.</p>
-          <button className="mt-8 btn btn-green text-white" onClick={()=>location.reload()}>Menú</button>
+      <>
+        <div className="min-h-screen bg-gradient-to-br from-green-950 via-black to-black flex items-center justify-center">
+          <div className="text-center animate-fade-in">
+            <h1 className="text-7xl font-black text-green-500 mb-4">¡VICTORIA!</h1>
+            <p className="text-neutral-300">Un nuevo amanecer parece posible.</p>
+            <button className="mt-8 btn btn-green text-white" onClick={()=>location.reload()}>Menú</button>
+          </div>
         </div>
-      </div>
+        {devBadge}
+      </>
     );
   }
 
   // HUD superior
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950">
-      <DayHud />
-      <TurnTransitionModal />
-      <HeaderHUD
-        day={day} phase={phase} clock={formatTime(clockMs)} progress={progressPercent(clockMs)}
-        morale={morale} threat={threat}
-        timeRunning={timeRunning} setTimeRunning={setTimeRunning}
-        onPause={()=>setState("paused")}
-      />
+    <>
+      <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950">
+        <DayHud />
+        <TurnTransitionModal />
+        <HeaderHUD
+          day={day} phase={phase} clock={formatTime(clockMs)} progress={progressPercent(clockMs)}
+          morale={morale} threat={threat}
+          timeRunning={timeRunning} setTimeRunning={setTimeRunning}
+          onPause={()=>setState("paused")}
+        />
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <QuoteBox author={todaysQuote.a} quote={todaysQuote.q} />
-        <div className="flex gap-2">
-          <button className={tab==='story'?"btn btn-red text-white":"btn btn-ghost"} onClick={()=>setTab('story')}>📖 Historia</button>
-          <button className={tab==='manual'?"btn btn-red text-white":"btn btn-ghost"} onClick={()=>setTab('manual')}>📕 Manual</button>
-        </div>
+        <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+          <QuoteBox author={todaysQuote.a} quote={todaysQuote.q} />
+          <div className="flex gap-2">
+            <button className={tab==='story'?"btn btn-red text-white":"btn btn-ghost"} onClick={()=>setTab('story')}>📖 Historia</button>
+            <button className={tab==='manual'?"btn btn-red text-white":"btn btn-ghost"} onClick={()=>setTab('manual')}>📕 Manual</button>
+          </div>
 
         {tab==='manual' ? (
           <ManualTab />
@@ -1035,7 +1080,9 @@ export default function App(){
           </div>
         </div>
       )}
-    </div>
+      </div>
+      {devBadge}
+    </>
   );
 }
 
