@@ -44,6 +44,6 @@ export const useGameState = create<GameState>()(
       removePersonaje: (id) =>
         set((s) => ({ roster: s.roster.filter((r) => r.id !== id) })),
     }),
-    { name: 'az-game-state' }
+    { name: 'az-game-state-v2' }
   )
 )

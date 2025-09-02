@@ -206,7 +206,7 @@ export default function GameRoot(){
   }
 
   // Estado base
-  const [state, setState] = useState<GameState>("setup");
+  const [state, setState] = useState<GameState>("playing");
   const [day, setDay] = useState(1);
   const [phase, setPhase] = useState<Phase>("dawn");
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
@@ -922,7 +922,7 @@ export default function GameRoot(){
           <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">Apocalipsis Zombie RPG</h1>
           <p className="mt-3 text-neutral-300">Sistema ligero con mazos, tiempo real y supervivencia.</p>
           <div className="mt-10 space-x-3">
-            <button className="btn btn-red text-white" onClick={()=>setState('setup')}>🧰 CREAR PERSONAJES</button>
+            <button className="btn btn-red text-white" onClick={()=>setState('playing')}>🧰 CREAR PERSONAJES</button>
           </div>
           <div className="mt-16 text-neutral-400 text-sm">
             <p>Consejo: las acciones consumen tiempo del día. La noche es peligrosa.</p>
@@ -932,7 +932,7 @@ export default function GameRoot(){
     );
   }
 
-  if(state==='setup') return <CharacterSetupPanel/>;
+  // (disabled) if(state==='setup') return <CharacterSetupPanel/>;
 
   if(state==="gameover"){
     return (
