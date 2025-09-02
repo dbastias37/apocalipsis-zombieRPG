@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useGameStore } from "@/state/gameStore";
+import { toast } from "@/components/Toast";
 
 type Draft = {
   name: string;
@@ -18,6 +19,9 @@ const PROFESSIONS = [
   "Agricultor/a",
 ];
 
+// evita toasts duplicados en la sesión
+let toastShown = false;
+
 export default function CharacterCreationPanel() {
   const ui = useGameStore((s) => s.ui);
   const createPlayer = useGameStore((s) => s.createPlayer);
@@ -25,8 +29,8 @@ export default function CharacterCreationPanel() {
   const hasPlayers = useGameStore((s) => s.players.length > 0);
 
   const [draft, setDraft] = useState<Draft>({
-    name: "",
-    profession: "",
+    name: "Sara", // borrador inicial
+    profession: "", // valor por defecto del select
     bio: "",
   });
 
@@ -43,6 +47,16 @@ export default function CharacterCreationPanel() {
       prevInitialId.current = initial.id;
     }
   }, [initial]);
+
+  // disparar toast una sola vez al montar
+  useEffect(() => {
+    if (!toastShown) {
+      toast(
+        "¡Personaje inicial creado! Puedes cambiar el nombre, elegir una profesión y escribir la bio cuando quieras."
+      );
+      toastShown = true;
+    }
+  }, []);
 
   function onChange<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -142,3 +156,11 @@ export default function CharacterCreationPanel() {
     </div>
   );
 }
+
+/*
+Manual test:
+1. Abrir "Crear personaje" → Nombre = "Sara", profesión por defecto, bio vacía.
+2. Aparece un toast con el mensaje indicado y desaparece solo.
+3. Se pueden editar Nombre/Profesión/Bio normalmente.
+4. Al volver a la pantalla en la misma sesión, no se repite el toast.
+*/
