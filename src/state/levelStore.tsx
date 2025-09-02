@@ -1,5 +1,6 @@
 // src/state/levelStore.tsx
 import React, { createContext, useContext, useMemo, useReducer, useEffect } from "react";
+import { useGameStore } from "@/state/gameStore";
 import type {
   DayId, DayState, LevelContextAPI, NarrativeFlags, DayRules, DeckId, LevelEndReason
 } from "@/types/level";
@@ -177,13 +178,16 @@ export const LevelProvider: React.FC<{
   onEvent?: (e: any) => void;
 }> = ({ children, onEvent }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const paused = useGameStore(s => s.ui.paused);
+  const mode = useGameStore(s => s.ui.mode);
 
   useEffect(() => {
+    if (paused || mode !== "running") return;
     const t = setInterval(() => {
       dispatch({ type: "TICK", nowMs: Date.now() });
     }, 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [paused, mode]);
 
   const api = useMemo<LevelContextAPI>(() => {
     const drawFrom = (deck: DeckId): number | null => {
