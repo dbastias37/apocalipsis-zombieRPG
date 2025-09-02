@@ -19,6 +19,7 @@ const PROFESSIONS = [
 ];
 
 export default function CharacterCreationPanel() {
+  const ui = useGameStore((s) => s.ui);
   const createPlayer = useGameStore((s) => s.createPlayer);
   const setMode = useGameStore((s) => s.setMode);
   const hasPlayers = useGameStore((s) => s.players.length > 0);

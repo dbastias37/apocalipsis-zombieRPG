@@ -30,9 +30,6 @@ import {
 import { useLevel } from "@/state/levelStore";
 import { DayHud } from "@/components/hud/DayHud";
 import { TurnTransitionModal } from "@/components/overlays/TurnTransitionModal";
-import { useGameClock } from "@/hooks/useGameClock";
-import CharacterCreationPanel from "@/ui/CharacterCreationPanel";
-import { useGameStore } from "@/state/gameStore";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -184,15 +181,6 @@ const EXPLORATION_EVENTS: ExplorationEvent[] = [
 
 // === Componente principal ===
 export default function App(){
-  useGameClock();
-  const mode = useGameStore(s => s.ui.mode);
-  const paused = useGameStore(s => s.ui.paused);
-  const playersStore = useGameStore(s => s.players);
-
-  if (mode === "character-creation") {
-    return <CharacterCreationPanel />;
-  }
-
   // Estado base
   const [state, setState] = useState<GameState>("menu");
   const [day, setDay] = useState(1);
@@ -200,21 +188,12 @@ export default function App(){
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
   const [timeRunning, setTimeRunning] = useState(false);
 
-  useEffect(() => {
-    setTimeRunning(!paused);
-  }, [paused]);
-
   const [morale, setMorale] = useState(60);
   const [threat, setThreat] = useState(10);
   const [resources, setResources] = useState<Resources>({ food: 15, water: 15, medicine: 6, fuel: 10, ammo: 30, materials: 12 });
   const [camp, setCamp] = useState<Camp>({ defense: 10, comfort: 10 });
 
   const [players, setPlayers] = useState<Player[]>([]);
-  useEffect(() => {
-    if (mode === "running") {
-      setPlayers(playersStore);
-    }
-  }, [mode, playersStore]);
   const [roster, setRoster] = useState<Player[]>([]);
   const [turn, setTurn] = useState(0);
   const alivePlayers = useMemo(()=>players.filter(p=>p.status!=="dead"), [players]);
@@ -259,7 +238,7 @@ export default function App(){
 
   // Reloj del día
   useEffect(()=>{
-    if(state!=="playing" || paused) return;
+    if(state!=="playing") return;
     let id: number|undefined;
     id = window.setInterval(()=>{
       if(!timeRunning) return;
@@ -273,12 +252,11 @@ export default function App(){
       });
     }, 1000);
     return ()=> clearInterval(id);
-  }, [state, timeRunning, paused]);
+  }, [state, timeRunning]);
 
   // Resolver eventos con countdown
   const nowRef = useRef<number>(Date.now());
   useEffect(()=>{
-    if (paused || mode !== "running") return;
     const id = window.setInterval(()=>{
       nowRef.current = Date.now();
       if(timedEvent){
@@ -291,7 +269,7 @@ export default function App(){
       }
     }, 500);
     return ()=> clearInterval(id);
-  }, [timedEvent, paused, mode]);
+  }, [timedEvent]);
 
   // Reglas de fin de partida por moral
   useEffect(()=>{
@@ -302,13 +280,12 @@ export default function App(){
   }, [morale, state]);
 
   useEffect(() => {
-    if (mode !== "running") return;
     const reason = checkEndConditions();
     if (reason) {
       advanceToNextDay((dayState.day + 1) as any);
       setDay(d => d + 1);
     }
-  }, [dayState.remainingMs, mode]);
+  }, [dayState.remainingMs]);
 
   function createPlayer(name:string, professionId:string, bio:string = ""): Player{
     const attrs: Attributes = { Fuerza: 12, Destreza: 12, Constitucion: 13, Inteligencia: 11, Carisma: 11 };
