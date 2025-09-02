@@ -19,10 +19,12 @@ const PROFESSIONS = [
 ];
 
 export default function CharacterCreationPanel() {
-  const ui = useGameStore((s) => s.ui);
-  const createPlayer = useGameStore((s) => s.createPlayer);
-  const setMode = useGameStore((s) => s.setMode);
-  const hasPlayers = useGameStore((s) => s.players.length > 0);
+  const {
+    ui: { characterInitial: initial },
+    createPlayer,
+    setMode,
+    players,
+  } = useGameStore();
 
   const [draft, setDraft] = useState<Draft>({
     name: "",
@@ -30,7 +32,6 @@ export default function CharacterCreationPanel() {
     bio: "",
   });
 
-  const initial = useGameStore((s) => s.ui.characterInitial || null);
   const prevInitialId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function CharacterCreationPanel() {
       });
       prevInitialId.current = initial.id;
     }
-  }, [initial]);
+  }, [initial?.id]);
 
   function onChange<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -55,7 +56,8 @@ export default function CharacterCreationPanel() {
     }
   }
 
-  function handleCreate() {
+  function handleCreate(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     const name = draft.name.trim();
     const profession = draft.profession.trim();
     if (!name || !profession) return;
@@ -66,16 +68,15 @@ export default function CharacterCreationPanel() {
       bio: draft.bio.trim(),
     });
 
-    setDraft({ name: "", profession: "", bio: "" });
+    setDraft((prev) => ({ ...prev, name: "", bio: "" }));
   }
 
   function handleStart() {
-    if (!hasPlayers) return;
-    setMode("running");
+    if (players.length > 0) setMode("running");
   }
 
   return (
-    <div className="p-4 max-w-xl mx-auto space-y-4">
+    <form onSubmit={handleCreate} className="p-4 max-w-xl mx-auto space-y-4">
       <h2 className="text-xl font-bold">Crear Personaje</h2>
 
       <div className="space-y-2">
@@ -116,17 +117,15 @@ export default function CharacterCreationPanel() {
       </div>
 
       <div className="flex gap-2">
-        <button
-          className="px-4 py-2 rounded bg-blue-600 text-white"
-          onClick={handleCreate}
-        >
+        <button className="px-4 py-2 rounded bg-blue-600 text-white" type="submit">
           Crear personaje
         </button>
 
         <button
+          type="button"
           className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50"
           onClick={handleStart}
-          disabled={!hasPlayers}
+          disabled={players.length === 0}
         >
           Iniciar
         </button>
@@ -135,6 +134,6 @@ export default function CharacterCreationPanel() {
       <p className="text-xs text-muted-foreground">
         Sugerencia: crea varios personajes y luego pulsa “Iniciar”. El juego permanece en pausa durante la creación.
       </p>
-    </div>
+    </form>
   );
 }
