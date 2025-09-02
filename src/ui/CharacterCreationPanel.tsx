@@ -1,105 +1,91 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useGameStore } from "@/state/gameStore";
-import type { Player } from "@/state/gameStore";
-import { useUIStore } from "@/state/ui";
+import React, { useEffect, useRef, useState } from "react"
+import { useGameState, Personaje } from "@/state/gameState"
 
-type Draft = { name: string; profession: string; bio: string };
+type Draft = { name: string; profession: string; bio: string }
 
 const PROFESSIONS = [
   "Médico/a","Mecánico/a","Docente","Scout","Carpintero/a","Enfermero/a",
   "Bombero/a","Cocinero/a","Agricultor/a","Electricista","Policía","Militar"
-];
-const defaultProfession = PROFESSIONS[0];
+]
+const defaultProfession = PROFESSIONS[0]
 
 export default function CharacterCreationPanel() {
-  const { players, createPlayer, updatePlayer, removePlayer, setPaused } = useGameStore();
-  const { setMode } = useUIStore();
+  const { roster, addPersonaje, upsertPersonaje, removePersonaje } = useGameState()
 
-  const [draft, setDraft] = useState<Draft>({ name: "", profession: defaultProfession, bio: "" });
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Draft>({ name: "", profession: defaultProfession, bio: "" })
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   // Autocrear personaje inicial "Sara" la primera vez
-  const autoSeeded = useRef(false);
+  const autoSeeded = useRef(false)
   useEffect(() => {
-    if (!autoSeeded.current && players.length === 0) {
-      createPlayer({ name: "Sara", profession: defaultProfession, bio: "" });
-      autoSeeded.current = true;
+    if (!autoSeeded.current && roster.length === 0) {
+      addPersonaje({ id: crypto.randomUUID(), name: "Sara", profession: defaultProfession, bio: "" })
+      autoSeeded.current = true
     }
-  }, [players.length, createPlayer]);
+  }, [roster.length, addPersonaje])
 
   // Cargar a "Sara" para editar una sola vez
-  const autoLoaded = useRef(false);
+  const autoLoaded = useRef(false)
   useEffect(() => {
-    if (!autoLoaded.current && players.length > 0) {
-      setEditingId(players[0].id);
-      setDraft({ name: "", profession: "", bio: "" });
-      autoLoaded.current = true;
+    if (!autoLoaded.current && roster.length > 0) {
+      setEditingId(roster[0].id)
+      setDraft({ name: "", profession: "", bio: "" })
+      autoLoaded.current = true
     }
-  }, [players]);
+  }, [roster])
 
-  const initial = players.find((p) => p.id === editingId);
-  // Prefill solo cuando el usuario aún no escribió nada
+  const initial = roster.find((p) => p.id === editingId)
   useEffect(() => {
-    if (!initial) return;
+    if (!initial) return
     setDraft((prev) => {
-      const userTyped = (prev.name?.trim() || prev.profession?.trim() || prev.bio?.trim());
-      if (userTyped) return prev; // no sobrescribir si ya empezó a escribir
+      const userTyped = prev.name.trim() || prev.profession.trim() || prev.bio.trim()
+      if (userTyped) return prev
       return {
         name: initial.name ?? "",
         profession: initial.profession ?? defaultProfession,
         bio: initial.bio ?? "",
-      };
-    });
-  }, [initial]);
+      }
+    })
+  }, [initial])
 
-  const onChange = (k: keyof Draft, v: string) => setDraft((prev) => ({ ...prev, [k]: v }));
+  const onChange = (k: keyof Draft, v: string) => setDraft((prev) => ({ ...prev, [k]: v }))
 
-  const startEdit = (p: Player) => {
-    setEditingId(p.id);
-    setDraft({ name: "", profession: "", bio: "" });
-  };
+  const startEdit = (p: Personaje) => {
+    setEditingId(p.id)
+    setDraft({ name: "", profession: "", bio: "" })
+  }
 
   const handleSubmit = () => {
-    const nm = draft.name.trim();
-    if (!nm) return;
+    const nm = draft.name.trim()
+    if (!nm) return
     if (editingId) {
-      updatePlayer(editingId, { name: nm, profession: draft.profession, bio: draft.bio });
-      setEditingId(null);
+      upsertPersonaje({ id: editingId, name: nm, profession: draft.profession, bio: draft.bio })
+      setEditingId(null)
     } else {
-      createPlayer({ name: nm, profession: draft.profession, bio: draft.bio });
+      addPersonaje({ id: crypto.randomUUID(), name: nm, profession: draft.profession, bio: draft.bio })
     }
-    setDraft({ name: "", profession: defaultProfession, bio: "" });
-  };
+    setDraft({ name: "", profession: defaultProfession, bio: "" })
+  }
 
   const handleRemove = (id: string) => {
-    removePlayer(id);
+    removePersonaje(id)
     if (editingId === id) {
-      setEditingId(null);
-      setDraft({ name: "", profession: defaultProfession, bio: "" });
+      setEditingId(null)
+      setDraft({ name: "", profession: defaultProfession, bio: "" })
     }
-  };
+  }
 
-  const handleStart = () => {
-    if (players.length > 0) {
-      setMode("running");
-      setPaused(false); // resume game clock
-    }
-  };
-
-  const submitLabel = editingId ? "Guardar cambios" : "Agregar al roster";
-  const hasPlayers = players.length > 0;
+  const submitLabel = editingId ? "Guardar cambios" : "Agregar al roster"
 
   return (
     <div className="max-w-2xl mx-auto card card-red p-6 space-y-6 animate-fade-in">
       <h2 className="text-2xl font-bold">Crear personaje</h2>
 
       <div className="grid gap-4">
-        {/* Nombre */}
         <div>
           <label htmlFor="player-name" className="block text-sm font-medium">Nombre</label>
           <input
             id="player-name"
-            name="playerName"
             type="text"
             autoComplete="off"
             className="w-full border rounded px-3 py-2"
@@ -110,12 +96,10 @@ export default function CharacterCreationPanel() {
           />
         </div>
 
-        {/* Profesión */}
         <div>
           <label htmlFor="player-profession" className="block text-sm font-medium">Profesión</label>
           <select
             id="player-profession"
-            name="playerProfession"
             className="w-full border rounded px-3 py-2"
             value={draft.profession}
             onChange={(e) => onChange("profession", e.target.value)}
@@ -127,12 +111,10 @@ export default function CharacterCreationPanel() {
           </select>
         </div>
 
-        {/* Bio */}
         <div>
           <label htmlFor="player-bio" className="block text-sm font-medium">Bio</label>
           <textarea
             id="player-bio"
-            name="playerBio"
             className="w-full border rounded px-3 py-2 h-28"
             placeholder="Breve historia / rasgos…"
             value={draft.bio}
@@ -155,10 +137,10 @@ export default function CharacterCreationPanel() {
 
       <div className="space-y-3">
         <h3 className="text-xl font-bold">Roster</h3>
-        {players.length === 0 ? (
+        {roster.length === 0 ? (
           <p className="text-neutral-400">Aún no hay personajes creados.</p>
         ) : (
-          players.map((p) => (
+          roster.map((p) => (
             <div key={p.id} className="p-4 rounded-xl border-2 border-neutral-800 bg-neutral-900/50">
               <div className="flex justify-between items-start">
                 <div>
@@ -186,20 +168,9 @@ export default function CharacterCreationPanel() {
         )}
       </div>
 
-      <div className="flex justify-end gap-3">
-        <button
-          className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50"
-          onClick={handleStart}
-          disabled={!hasPlayers}
-        >
-          Iniciar campaña
-        </button>
-      </div>
-
       <p className="text-xs text-muted-foreground">
         Sugerencia: crea varios personajes y luego pulsa “Iniciar”. El juego permanece en pausa durante la creación.
       </p>
     </div>
-  );
+  )
 }
-
