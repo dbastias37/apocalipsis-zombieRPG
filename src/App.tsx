@@ -4,6 +4,7 @@ import { clsx } from "clsx";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
+import EndTurnOverlay, { EndTurnData } from "./components/EndTurnOverlay";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -190,7 +191,6 @@ export default function App(){
     mkPlayer("Elena", "Psicóloga"),
   ]);
   const [turn, setTurn] = useState(0);
-  const alivePlayers = useMemo(()=>players.filter(p=>p.status!=="dead"), [players]);
 
   // Mazo de cartas
   const [decisionDeck, setDecisionDeck] = useState<Card[]>(shuffle([...decisionDeckSeed]));
@@ -201,6 +201,12 @@ export default function App(){
 
   // Enemigos cuando hay combate
   const [enemies, setEnemies] = useState<Enemy[]>([]);
+
+  // Turnos
+  const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
+  const [enemyIdx, setEnemyIdx] = useState<number>(0);
+  const [actedThisRound, setActedThisRound] = useState<Record<string, boolean>>({});
+  const [endTurnUI, setEndTurnUI] = useState<EndTurnData | null>(null);
 
   const [foundNotes, setFoundNotes] = useState<GameNote[]>([]);
   const [explorationActive, setExplorationActive] = useState<boolean>(false);
@@ -213,6 +219,19 @@ export default function App(){
 
   // Cita visible
   const todaysQuote = useMemo(()=> philosopherQuotes[(day-1) % philosopherQuotes.length], [day]);
+
+  const alivePlayers = players.filter(p => p.status !== "dead");
+  const aliveEnemies = enemies;
+  const activePlayer = alivePlayers.length > 0 ? alivePlayers[turn % Math.max(1, alivePlayers.length)] : null;
+
+  useEffect(() => {
+    if (!isEnemyPhase) {
+      const init: Record<string, boolean> = {};
+      for (const p of alivePlayers) init[p.id] = false;
+      setActedThisRound(init);
+      setTurn(0);
+    }
+  }, [isEnemyPhase, players]);
 
   // Reloj del día
   useEffect(()=>{
@@ -426,6 +445,10 @@ export default function App(){
   }
 
   function resolveChoice(choice: NonNullable<Card["choices"]>[number]){
+    if (isEnemyPhase) return;
+    if (!activePlayer) return;
+    const actor = activePlayer;
+    if (actedThisRound[actor.id]) return;
     // aplicar efectos
     if(choice.effect){
       const { morale: dm, threat: dt, spawnEnemies, ...res } = choice.effect as any;
@@ -456,7 +479,7 @@ export default function App(){
       else setDiscardCombat(d=>[currentCard, ...d]);
     }
     setCurrentCard(null);
-    advanceTurn(); timePenalty(45); // penalizar ~45s
+    timePenalty(45); advanceTurn(); // penalizar ~45s
   }
 
   // ——— Combate muy simplificado ———
@@ -466,8 +489,10 @@ export default function App(){
     setEnemies(spawned);
   }
   function performAttack(enemyId: string){
-    const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
-    if(!actor) return;
+    if (isEnemyPhase) return;
+    if (!activePlayer) return;
+    const actor = activePlayer;
+    if (actedThisRound[actor.id]) return;
     const enemy = enemies.find(e=>e.id===enemyId);
     if(!enemy) return;
     const hasGun = actor.inventory.includes("Pistola") || actor.inventory.includes("Rifle");
@@ -489,42 +514,86 @@ export default function App(){
     }else{
       pushLog(`❌ ${actor.name} falla el golpe; el eco en el ${scene} lo distrae.`);
     }
-    // Enemigos contraatacan brevemente
-    setTimeout(enemyTurn, 400);
     timePenalty(20);
     advanceTurn();
   }
 
-  function enemyTurn(){
-    if(enemies.length===0) return;
-    const target = alivePlayers[Math.floor(Math.random()*alivePlayers.length)];
-    if(!target) return;
-    const atkRoll = roll(1,20, 2);
-    if(atkRoll.total >= target.defense){
-      const dmg = roll(1,6,2).total;
-      updatePlayer(target.id, { hp: Math.max(0, target.hp - dmg) });
-      pushLog(`💥 ${enemies[0].name} golpea a ${target.name}: -${dmg} PV.`);
-      if(target.hp - dmg <= 0){
-        updatePlayer(target.id, { status: "dead" });
-        pushLog(`💀 ${target.name} cae para no levantarse jamás.`);
-        setMorale(m=>clamp(m-12,0,100));
-      }
-    }else{
-      pushLog(`🛡️ ${target.name} esquiva entre sombras.`);
+  function runEnemyTurnRound(idx: number) {
+    const enemy = aliveEnemies[idx];
+    if (!enemy) {
+      // No hay enemigo en idx -> terminar fase enemigos
+      finishEnemyPhase();
+      return;
     }
+
+    // El enemigo intenta golpear a cada jugador vivo (1 golpe por jugador)
+    for (const target of alivePlayers) {
+      const atkRoll = roll(1,20, 2);
+      if (atkRoll.total >= target.defense) {
+        const dmg = roll(1,6,2).total;
+        updatePlayer(target.id, { hp: Math.max(0, target.hp - dmg) });
+        pushLog(`💥 ${enemy.name} golpea a ${target.name}: -${dmg} PV.`);
+        if (target.hp - dmg <= 0) {
+          updatePlayer(target.id, { status: "dead" });
+          pushLog(`💀 ${target.name} cae para no levantarse jamás.`);
+        }
+      } else {
+        pushLog(`🛡️ ${target.name} esquiva el ataque de ${enemy.name}.`);
+      }
+    }
+
+    // Pantalla fin de turno de este enemigo
+    setEndTurnUI({
+      title: `El enemigo ${enemy.name} ha terminado su turno`,
+      subtitle: undefined,
+      onContinue: () => {
+        setEndTurnUI(null);
+        const nextEnemyIdx = idx + 1;
+        if (nextEnemyIdx < aliveEnemies.length) {
+          // Siguiente enemigo
+          setEnemyIdx(nextEnemyIdx);
+          setEndTurnUI({
+            title: `Prepárate le toca a : ${aliveEnemies[nextEnemyIdx].name}`,
+            onContinue: () => {
+              setEndTurnUI(null);
+              runEnemyTurnRound(nextEnemyIdx);
+            }
+          });
+        } else {
+          // Terminan los enemigos
+          finishEnemyPhase();
+        }
+      }
+    });
+  }
+
+  function finishEnemyPhase() {
+    setIsEnemyPhase(false);
+    // Reinicia ronda de jugadores (useEffect ya rearma actedThisRound y turn=0)
+    const firstName = alivePlayers[0]?.name ?? "Jugador";
+    setEndTurnUI({
+      title: `${firstName} prepárate`,
+      subtitle: undefined,
+      onContinue: () => setEndTurnUI(null)
+    });
   }
 
   function defend(){
-    const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
-    if(!actor) return;
+    if (isEnemyPhase) return;
+    if (!activePlayer) return;
+    const actor = activePlayer;
+    if (actedThisRound[actor.id]) return;
     updatePlayer(actor.id, { defense: actor.defense + 3 });
     pushLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
     timePenalty(10); advanceTurn();
   }
 
   function healSelf(){
-    const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
-    if(!actor || resources.medicine<=0) { pushLog("Sin medicina suficiente."); return; }
+    if (isEnemyPhase) return;
+    if (!activePlayer) return;
+    const actor = activePlayer;
+    if (actedThisRound[actor.id]) return;
+    if(resources.medicine<=0) { pushLog("Sin medicina suficiente."); return; }
     updatePlayer(actor.id, { hp: clamp(actor.hp+10, 0, actor.hpMax) });
     setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
     pushLog(`💊 ${actor.name} se venda rápido (+10 PV).`);
@@ -532,9 +601,11 @@ export default function App(){
   }
 
   function flee(){
+    if (isEnemyPhase) return;
+    if (!activePlayer) return;
+    const actor = activePlayer;
+    if (actedThisRound[actor.id]) return;
     if(enemies.length===0) return;
-    const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
-    if(!actor) return;
     const fr = roll(1,20, mod(actor.attrs.Destreza));
     if(fr.total>=15){
       pushLog("🏃 Huyen por pasillos colapsados. ¡Escape exitoso!");
@@ -547,9 +618,58 @@ export default function App(){
     timePenalty(30); advanceTurn();
   }
 
-  function advanceTurn(){
-    const next = (turn+1) % Math.max(1, alivePlayers.length);
-    setTurn(next);
+  function advanceTurn() {
+    if (alivePlayers.length === 0) return;
+
+    let updated = actedThisRound;
+    if (activePlayer) {
+      updated = { ...actedThisRound, [activePlayer.id]: true };
+      setActedThisRound(updated);
+    }
+
+    const len = alivePlayers.length;
+    let nextIdx = (turn + 1) % Math.max(1, len);
+    let looped = 0;
+    let foundNext = false;
+    while (looped < len) {
+      const candidate = alivePlayers[nextIdx];
+      if (candidate && !updated[candidate.id]) { foundNext = true; break; }
+      nextIdx = (nextIdx + 1) % len;
+      looped++;
+    }
+
+    if (foundNext) {
+      const prevName = activePlayer ? activePlayer.name : "Jugador";
+      const nextName = alivePlayers[nextIdx].name;
+      setEndTurnUI({
+        title: `${prevName} tu turno ha terminado`,
+        subtitle: `ahora le toca a: ${nextName}`,
+        onContinue: () => {
+          setEndTurnUI(null);
+          setTurn(nextIdx);
+        }
+      });
+    } else {
+      if (aliveEnemies.length > 0) {
+        setEndTurnUI({
+          title: `Prepárate le toca a : ${aliveEnemies[0].name}`,
+          subtitle: undefined,
+          onContinue: () => {
+            setEndTurnUI(null);
+            setIsEnemyPhase(true);
+            setEnemyIdx(0);
+            runEnemyTurnRound(0);
+          }
+        });
+      } else {
+        const firstName = alivePlayers[0]?.name ?? "Jugador";
+        setEndTurnUI({
+          title: `${firstName} prepárate`,
+          subtitle: undefined,
+          onContinue: () => setEndTurnUI(null)
+        });
+      }
+    }
   }
 
   function updatePlayer(id:string, patch: Partial<Player>){
@@ -820,6 +940,8 @@ export default function App(){
           players={players}
           onUpdatePlayer={updatePlayer}
           onRemove={removePlayer}
+          activePlayerId={activePlayer?.id}
+          isEnemyPhase={isEnemyPhase}
         />
 
         <InventoryPanel
@@ -852,7 +974,7 @@ export default function App(){
           </div>
         </div>
       )}
-
+      <EndTurnOverlay data={endTurnUI} />
       <WelcomeOverlay />
     </div>
   );
@@ -1026,7 +1148,7 @@ function TimedEventBanner({event, now, onResolve}:{event:TimedEvent; now:number;
   );
 }
 
-function PartyPanel({players, onUpdatePlayer, onRemove}:{players:Player[]; onUpdatePlayer:(id:string, patch:Partial<Player>)=>void; onRemove:(id:string)=>void}){
+function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyPhase}:{players:Player[]; onUpdatePlayer:(id:string, patch:Partial<Player>)=>void; onRemove:(id:string)=>void; activePlayerId?: string; isEnemyPhase: boolean}){
   const alive = players.filter(p=>p.status!=="dead");
   const [selected, setSelected] = useState<string | null>(alive[0]?.id ?? null);
   useEffect(()=>{
@@ -1039,7 +1161,14 @@ function PartyPanel({players, onUpdatePlayer, onRemove}:{players:Player[]; onUpd
         <h3 className="text-xl font-bold mb-4">👥 Supervivientes</h3>
         <div className="grid sm:grid-cols-2 gap-3">
           {players.map(p=>(
-            <div key={p.id} className={clsx("p-4 rounded-xl border", p.status==="dead"?"bg-neutral-950 border-neutral-900 opacity-60":"bg-neutral-800/50 border-neutral-700")}>
+            <div
+              key={p.id}
+              className={clsx(
+                "p-4 rounded-xl border",
+                p.status==="dead"?"bg-neutral-950 border-neutral-900 opacity-60":"bg-neutral-800/50 border-neutral-700",
+                (!isEnemyPhase && p.id === activePlayerId) && "ring-2 ring-emerald-400 animate-pulse"
+              )}
+            >
               <div className="flex justify-between items-start gap-2">
                 <input
                   className="font-bold bg-transparent border-b border-neutral-700 outline-none focus:border-red-500"
