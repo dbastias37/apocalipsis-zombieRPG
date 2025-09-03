@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
+import WelcomeOverlay from "./components/WelcomeOverlay";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -851,6 +852,8 @@ export default function App(){
           </div>
         </div>
       )}
+
+      <WelcomeOverlay />
     </div>
   );
 }
