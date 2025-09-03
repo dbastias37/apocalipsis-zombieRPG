@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useGameStore } from "@/state/gameStore";
 
 type Draft = {
@@ -44,9 +44,21 @@ export default function CharacterCreationPanel() {
     }
   }, [initial]);
 
-  function onChange<K extends keyof Draft>(key: K, value: Draft[K]) {
+  const onChange = useCallback(<K extends keyof Draft>(key: K, value: Draft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
-  }
+  }, []);
+
+  const isUpdatingName = useRef(false);
+
+  const handleNameChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (isUpdatingName.current) return; // previene recursión
+      isUpdatingName.current = true;
+      onChange("name", event.target.value);
+      isUpdatingName.current = false;
+    },
+    [onChange]
+  );
 
   function randomizeProfessionOnce() {
     if (!draft.profession) {
@@ -84,7 +96,7 @@ export default function CharacterCreationPanel() {
           className="w-full border rounded px-3 py-2"
           placeholder="Ingresa nombre…"
           value={draft.name}
-          onChange={(e) => onChange("name", e.target.value)}
+          onChange={handleNameChange}
           onFocus={randomizeProfessionOnce}
         />
       </div>
