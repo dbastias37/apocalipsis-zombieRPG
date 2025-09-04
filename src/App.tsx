@@ -34,6 +34,8 @@ import {
   addCondition,
   removeCondition,
   applyStartOfTurnConditions,
+  applyEndOfTurnConditions,
+  cureCondition,
 } from "./systems/status";
 
 // === Tipos ===
@@ -290,6 +292,22 @@ export default function App(){
     if (controlsLocked) return false;
     if (actedThisRoundRef.current?.[pid]) return false;
     return true;
+  }
+
+  function finalizeTurnWithEndConditions(next: () => void){
+    const apId = activePlayerIdRef.current;
+    if (!apId) { next(); return; }
+    const ap = (playersRef.current ?? []).find(p => p.id === apId);
+    if (!ap) { next(); return; }
+
+    const end = applyEndOfTurnConditions(ap, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
+    if (end.hpDelta || end.newConditions) {
+      updatePlayer(ap.id, {
+        hp: Math.max(0, ap.hp + (end.hpDelta || 0)),
+        conditions: end.newConditions
+      });
+    }
+    next();
   }
 
   function startPlayerActionOrBlock(): boolean {
@@ -645,11 +663,13 @@ export default function App(){
         setCurrentCard(null);
       }
     }
-    timePenalty(45);
     if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
       setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
     }
-    advanceTurn();
+    finalizeTurnWithEndConditions(() => {
+      timePenalty(45);
+      advanceTurn();
+    });
   }
 
   // ——— Combate muy simplificado ———
@@ -731,31 +751,44 @@ export default function App(){
         shotsFired: s.shotsFired + (isRanged ? 1 : 0),
       }));
       endPlayerActionAwaitEnter(() => {
-        if (!USE_COUNTERATTACK_MODE) { timePenalty(45); advanceTurn(); return; }
-        const effRoll = pickCounterEffect();
-        const dmg = Math.floor(1 + Math.random()*10);
-        const effText = counterEffectText(effRoll);
+        // Genera contraataque
+        const eff = pickCounterEffect(); // define o reutiliza tu helper
+        const dmg = Math.floor(1 + Math.random()*10); // 1..10
+        const effText = counterEffectText(eff);
 
+        // Aplica daño al jugador activo
         applyDamageToPlayer(actor.id, dmg, enemy);
 
-        if (effRoll === 'bleeding') {
+        // Aplica estado si corresponde
+        if (eff === 'bleeding') {
           updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'bleeding', persistent:true }) });
-        } else if (effRoll === 'stunned') {
+        } else if (eff === 'stunned') {
           updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'stunned', turnsLeft:1 }) });
-        } else if (effRoll === 'infected') {
+        } else if (eff === 'infected') {
           updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'infected', persistent:true, expiresAtMs: Date.now()+120000 }) });
         }
 
+        // Línea principal del contraataque (20 variantes)
         const line = renderCounter(
           ENEMY_COUNTER_20[Math.floor(Math.random()*ENEMY_COUNTER_20.length)],
           { A: enemy.name, P: actor.name, D: dmg, EFF: effText }
         );
         pushBattle(line);
 
-        postActionContinueRef.current = () => {
+        // Línea extra de estado para dejar rastro claro
+        if (eff === 'bleeding') {
+          pushBattle(`🩸 Estado aplicado a ${actor.name}: Sangrado. Recomendación: curar antes de que siga perdiendo PV.`);
+        } else if (eff === 'stunned') {
+          pushBattle(`😵 Estado aplicado a ${actor.name}: Aturdido. Perderá su próximo turno.`);
+        } else if (eff === 'infected') {
+          pushBattle(`🧪 Estado aplicado a ${actor.name}: Infección. Debe usar medicina antes de 2:00 min.`);
+        }
+
+        // Enter final → fin de turno + registro de sangrado
+        postActionContinueRef.current = () => finalizeTurnWithEndConditions(() => {
           timePenalty(45);
           advanceTurn();
-        };
+        });
       });
       return;
     }
@@ -805,10 +838,10 @@ export default function App(){
       maybeOpenCombatEnd();
     }
 
-    endPlayerActionAwaitEnter(() => {
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(45);
       advanceTurn();
-    });
+    }));
   }
 
   function maybeInflictStatusFromEnemyHit(enemy: any, target: Player, dmg: number): string[] {
@@ -921,8 +954,11 @@ function finishEnemyPhase() {
       }
     }
     if (start.skipAction) {
-      setActedThisRound(m => ({ ...(m || {}), [pl.id]: true }));
-      requestAnimationFrame(() => advanceTurn());
+      activePlayerIdRef.current = pl.id;
+      finalizeTurnWithEndConditions(() => {
+        setActedThisRound(m => ({ ...(m || {}), [pl.id]: true }));
+        requestAnimationFrame(() => advanceTurn());
+      });
       return;
     }
     pushBattle?.(`— Turno de ${pl.name} —`);
@@ -938,10 +974,10 @@ function finishEnemyPhase() {
     updatePlayer(actor.id, { defense: actor.defense + 3 });
     pushLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
     pushBattle(`${actor.name} se cubre entre los escombros (+DEF temporal).`);
-    endPlayerActionAwaitEnter(() => {
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(45);
       advanceTurn();
-    });
+    }));
   }
 
   function healSelf(){
@@ -962,14 +998,20 @@ function finishEnemyPhase() {
       setResources(r => ({ ...r, medicine: Math.max(0, (r.medicine ?? 0) - 1) }));
       updatePlayer(p.id, { conditions: removeCondition(p.conditions,'infected') });
       pushBattle(`${p.name} usa medicina y supera la infección.`);
-      endPlayerActionAwaitEnter(()=>{ timePenalty(30); advanceTurn(); });
+      endPlayerActionAwaitEnter(()=> finalizeTurnWithEndConditions(() => {
+        timePenalty(30);
+        advanceTurn();
+      }));
       return;
     }
 
     if (isBle) {
       updatePlayer(p.id, { conditions: removeCondition(p.conditions,'bleeding') });
       pushBattle(`${p.name} detiene la hemorragia y se estabiliza.`);
-      endPlayerActionAwaitEnter(()=>{ timePenalty(20); advanceTurn(); });
+      endPlayerActionAwaitEnter(()=> finalizeTurnWithEndConditions(() => {
+        timePenalty(20);
+        advanceTurn();
+      }));
       return;
     }
 
@@ -989,10 +1031,10 @@ function finishEnemyPhase() {
       next.points = (next.meleeHits + next.rangedHits) * 2 + next.heals * 1;
       return { ...prev, byPlayer: { ...prev.byPlayer, [actor.id]: next } };
     });
-    endPlayerActionAwaitEnter(() => {
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(45);
       advanceTurn();
-    });
+    }));
   }
 
   function flee(){
@@ -1013,10 +1055,10 @@ function finishEnemyPhase() {
       pushLog("⚠️ El escape falla, te rodean por un momento.");
       pushBattle(`${actor.name} no logra escapar.`);
     }
-    endPlayerActionAwaitEnter(() => {
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(45);
       advanceTurn();
-    });
+    }));
   }
 
   function computeCombatSummaryLines(): string[] {
@@ -1315,7 +1357,9 @@ function advanceTurn() {
       if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
         setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
       }
-      advanceTurn();
+      finalizeTurnWithEndConditions(() => {
+        advanceTurn();
+      });
       return;
     }
 
@@ -1375,7 +1419,9 @@ function advanceTurn() {
     if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
       setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
     }
-    advanceTurn();
+    finalizeTurnWithEndConditions(() => {
+      advanceTurn();
+    });
   }
 
   function spawnTimedEvent(){
@@ -1655,9 +1701,17 @@ function advanceTurn() {
                 if (ble) {
                   updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
                   pushBattle(`${actor.name} logra detener la hemorragia de ${target.name}.`);
-                  postActionContinueRef.current = ()=>{ timePenalty(25); advanceTurn(); setControlsLocked(false); };
+                  postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
+                    timePenalty(25);
+                    advanceTurn();
+                    setControlsLocked(false);
+                  });
                 } else {
-                  postActionContinueRef.current = ()=>{ timePenalty(10); advanceTurn(); setControlsLocked(false); };
+                  postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
+                    timePenalty(10);
+                    advanceTurn();
+                    setControlsLocked(false);
+                  });
                 }
                 return r;
               }
@@ -1668,7 +1722,11 @@ function advanceTurn() {
                 updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
                 pushBattle(`Además, ${actor.name} consigue detener la hemorragia de ${target.name}.`);
               }
-              postActionContinueRef.current = ()=>{ timePenalty(30); advanceTurn(); setControlsLocked(false); };
+              postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
+                timePenalty(30);
+                advanceTurn();
+                setControlsLocked(false);
+              });
               return nr;
             });
             return;
@@ -1677,12 +1735,20 @@ function advanceTurn() {
           if (ble) {
             updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
             pushBattle(`${actor.name} detiene la hemorragia de ${target.name}.`);
-            postActionContinueRef.current = ()=>{ timePenalty(20); advanceTurn(); setControlsLocked(false); };
+            postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
+              timePenalty(20);
+              advanceTurn();
+              setControlsLocked(false);
+            });
             return;
           }
 
           pushBattle(`${actor.name} verifica a ${target.name}: no requiere curación ahora.`);
-          postActionContinueRef.current = ()=>{ timePenalty(10); advanceTurn(); setControlsLocked(false); };
+          postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
+            timePenalty(10);
+            advanceTurn();
+            setControlsLocked(false);
+          });
         }}
         onClose={()=>{ setShowHealAlly(false); setControlsLocked(false); }}
       />
