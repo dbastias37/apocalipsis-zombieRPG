@@ -145,7 +145,8 @@ const baseEnemies: Enemy[] = [
 ];
 
 // === Cartas ===
-const decisionDeckSeed: Card[] = decisionData.map((c) => ({
+const decisionDataSafe = decisionData.filter(c => c.id >= 201 && c.id <= 245);
+const decisionDeckSeed: Card[] = decisionDataSafe.map((c) => ({
   id: String(c.id),
   type: "decision",
   title: c.title,

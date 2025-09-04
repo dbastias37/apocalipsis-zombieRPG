@@ -4,631 +4,720 @@ export const day1DecisionCards: DecisionCard[] = [
   {
     id: 201,
     title: "Luces en el almacén municipal",
-    text: `Al caer la tarde, a lo lejos parpadean luces dentro del almacén municipal.
+    text:
+`Al caer la tarde, a lo lejos parpadean luces dentro del almacén municipal.
 El grupo discute si se trata de supervivientes o una trampa.
 Se oyen golpes metálicos, como si alguien buscara en contenedores.
 Entrar ahora implicaría gastar energía y quizá munición.
 Pero si esperamos, alguien más podría vaciarlo antes que nosotros.`,
     choices: [
-      { text: "Entrar en formación y registrar", effect: { materials: 4, ammo: -2, threat: 2, advanceMs: 150000 } },
+      { text: "Entrar en formación y registrar", effect: { materials: +4, ammo: -2, threat: +2, advanceMs: 150000 } },
       { text: "Esperar y observar desde lejos", effect: { morale: -1, advanceMs: 120000 } },
-      { text: "Marcar el lugar y retirarse", effect: { morale: 1, karma: 1, advanceMs: 60000 } },
+      { text: "Marcar el lugar y retirarse", effect: { morale: +1, karma: +1, advanceMs: 60000 } },
     ],
   },
+
   {
     id: 202,
-    title: "Rastro de humo en la autopista",
-    text: `Un hilo de humo negro se eleva tras los coches volcados de la autopista.
-Podría tratarse de una fogata improvisada por otros supervivientes.
-También podría ser una señal para atraer curiosos y emboscarlos.
-La zona abierta expone al grupo a los francotiradores y a las hordas.
-Decidir acercarse o evitar el área consume un tiempo precioso.`,
+    title: "Pozo seco en el barrio viejo",
+    text:
+`El pozo comunitario apenas gotea y el barrio huele a polvo caliente.
+Algunos sugieren cavar más profundo, otros prefieren moverse a otra zona.
+El calor reduce la paciencia y la moral comienza a resentirse.
+Se oyen pasos lejanos; puede haber grupos rivales merodeando.
+Cada minuto sin agua complica el ánimo y la salud del campamento.`,
     choices: [
-      { text: "Avanzar investigando con cautela", effect: { threat: 2, fuel: -1, advanceMs: 120000 } },
-      { text: "Rodear por el viejo túnel", effect: { fuel: -2, morale: 1, advanceMs: 180000 } },
-      { text: "Ignorar el humo y seguir", effect: { morale: -1, karma: 1, advanceMs: 90000 } },
+      { text: "Cavar más y reforzar la estructura", effect: { water: +3, materials: -2, advanceMs: 180000, threat: +1 } },
+      { text: "Buscar otro punto de agua en mapa", effect: { water: +2, fuel: -1, advanceMs: 240000 } },
+      { text: "Racionar estrictamente por hoy", effect: { water: -1, morale: -2, advanceMs: 60000 } },
     ],
   },
+
   {
     id: 203,
-    title: "Ofertas de un mercader solitario",
-    text: `Un hombre armado con chaleco improvisado ofrece trueques desde una furgoneta.
-Tiene cajas con medicinas, munición y herramientas envueltas en tela.
-Dice que la carretera será cerrada por una horda en pocas horas.
-Sus ojos nerviosos no inspiran demasiada confianza al grupo.
-Negociar con él podría ahorrarnos días o costarnos la vida.`,
+    title: "Forastero en la valla",
+    text:
+`Un desconocido golpea la valla pidiendo ayuda con voz quebrada.
+Dice traer información sobre una ruta segura al sur.
+Algunos lo ven como una trampa, otros como oportunidad.
+Su brazo sangra, pero mantiene la mirada fija.
+Aceptar o rechazarlo definirá la confianza del grupo.`,
     choices: [
-      { text: "Comprar medicinas con munición", effect: { medicine: 3, ammo: -5, morale: 2, advanceMs: 60000 } },
-      { text: "Intercambiar trabajo por recursos", effect: { food: 2, water: 2, morale: 1, advanceMs: 120000 } },
-      { text: "Rechazar la oferta y alejarse", effect: { threat: -1, karma: 1, advanceMs: 30000 } },
+      { text: "Dejarlo pasar y curarlo", effect: { medicine: -1, morale: +2, karma: +1, advanceMs: 120000 } },
+      { text: "Darle agua y enviarlo lejos", effect: { water: -1, karma: 0, advanceMs: 60000 } },
+      { text: "Negarle todo, priorizar seguridad", effect: { threat: -1, morale: -2, karma: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 204,
-    title: "Puente de cuerdas sobre el río",
-    text: `Un viejo puente de cuerdas balancea sobre el agua turbia y ruidosa.
-Del otro lado hay un edificio que parece intacto y sin saquear.
-La estructura cruje con cada ráfaga de viento que atraviesa el cañón.
-Cruzarlo con todo el equipo podría terminar en una caída mortal.
-Buscar otra ruta implica retroceder varios kilómetros y perder tiempo.`,
+    title: "Gasolina en el estacionamiento subterráneo",
+    text:
+`Las sombras de un estacionamiento subterráneo esconden bidones rotulados.
+El lugar huele a combustible y a metal oxidado.
+Bajar implica ruido y posible derrumbe de escombros.
+Con más combustible, ampliarían el rango de exploración.
+Sin embargo, cualquier chispazo podría atraer a los hambrientos.`,
     choices: [
-      { text: "Cruzarlo de uno en uno", effect: { materials: 1, threat: 1, advanceMs: 90000 } },
-      { text: "Reforzarlo con cuerdas extra", effect: { materials: -3, advanceMs: 150000 } },
-      { text: "Dar media vuelta y rodear", effect: { fuel: -1, morale: -1, advanceMs: 210000 } },
+      { text: "Descender con cuerdas y recoger bidones", effect: { fuel: +4, materials: -1, threat: +2, advanceMs: 180000 } },
+      { text: "Marcar la zona y volver en grupo grande", effect: { morale: +1, advanceMs: 120000 } },
+      { text: "Ignorar: demasiado peligro por hoy", effect: { morale: -1, threat: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 205,
-    title: "Refugio con normas estrictas",
-    text: `Una comunidad fortificada permite el acceso solo con reglas claras.
-Piden entregar munición y prometer silencio total durante la noche.
-Algunos miembros del grupo desconfían de los ojos vigilantes en la muralla.
-El refugio promete comida caliente y literas limpias para descansar.
-Aceptar o rechazar la invitación podría dividir al grupo.`,
+    title: "Herida infectada",
+    text:
+`Una herida descuidada de anoche huele mal y el dolor aumenta.
+El herido tiembla y no puede sostener su arma con firmeza.
+La discusión gira entre usar medicina cara o improvisar.
+Dejarlo pasar puede costar caro en combate.
+El grupo mira al botiquín con ansiedad y cálculo frío.`,
     choices: [
-      { text: "Aceptar y entregar munición", effect: { ammo: -5, morale: 2, advanceMs: 120000 } },
-      { text: "Negociar otra forma de pago", effect: { materials: -3, morale: 1, karma: 2, advanceMs: 180000 } },
-      { text: "Rechazar y seguir viaje", effect: { morale: -2, advanceMs: 60000 } },
+      { text: "Gastar medicina y desinfectar a fondo", effect: { medicine: -2, morale: +2, advanceMs: 90000 } },
+      { text: "Curación improvisada con alcohol", effect: { water: -1, morale: +0, advanceMs: 60000 } },
+      { text: "Ignorar y seguir", effect: { morale: -3, karma: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 206,
-    title: "Camión frigorífico abandonado",
-    text: `Un camión frigorífico bloquea la calle con su puerta trasera cerrada.
-El generador aún zumba y desprende vapor blanco por un tubo roto.
-Dentro podrían quedar carnes congeladas o algo mucho peor.
-El olor dulce que se filtra despierta el apetito y la sospecha.
-Abrirlo podría atraer a toda criatura hambrienta de la zona.`,
+    title: "Grietas en la empalizada",
+    text:
+`El muro de tablas presenta grietas que dejan pasar el viento.
+Al apoyarse, crujen como si fueran a ceder en cualquier momento.
+La noche se acerca y las sombras se acumulan afuera.
+Reforzar ahora consume materiales y tiempo crítico.
+Dormir con esa debilidad puede ser una invitación al desastre.`,
     choices: [
-      { text: "Forzar la puerta y registrar", effect: { food: 5, zombies: 2, fuel: -1, advanceMs: 120000 } },
-      { text: "Apagar el generador y sellar", effect: { fuel: 2, morale: 1, advanceMs: 60000 } },
-      { text: "Ignorarlo y avanzar", effect: { threat: -1, advanceMs: 30000 } },
+      { text: "Refuerzos urgentes con lo que haya", effect: { materials: -3, threat: -2, advanceMs: 180000 } },
+      { text: "Postergar y montar guardias dobles", effect: { morale: -1, advanceMs: 120000, threat: +1 } },
+      { text: "Mover el campamento de sitio", effect: { fuel: -1, morale: -1, threat: -1, advanceMs: 240000 } },
     ],
   },
+
   {
     id: 207,
-    title: "Niños perdidos en el parque",
-    text: `Entre los columpios oxidados se escuchan risas apagadas y pasos ligeros.
-Dos figuras pequeñas corren entre los arbustos llevando mochilas ajenas.
-Podrían ser niños que sobrevivieron solos o un señuelo para asaltantes.
-El parque abierto deja al grupo expuesto desde todos los ángulos.
-Decidir ayudarlos o dejarlos puede marcar nuestra moral para siempre.`,
+    title: "Ruidos en la escuela",
+    text:
+`Desde el edificio escolar llegan golpes rítmicos en las puertas.
+Podría haber víveres atrapados en la cafetería.
+La estructura suena hueca, como si algo arrastrara pupitres.
+Entrar por la ventana requiere herramientas y valor.
+Si hay sobrevivientes, podrían necesitar rescate inmediato.`,
     choices: [
-      { text: "Llamar y ofrecer comida", effect: { food: -2, morale: 3, karma: 3, advanceMs: 90000 } },
-      { text: "Perseguirlos con armas", effect: { threat: 2, ammo: -1, morale: -2, advanceMs: 60000 } },
-      { text: "Retirarse sin intervenir", effect: { morale: -1, advanceMs: 30000 } },
+      { text: "Forzar entrada y registrar", effect: { food: +3, materials: -1, zombies: 2, advanceMs: 150000 } },
+      { text: "Hacer ruido y atraerlos afuera", effect: { ammo: -1, threat: +2, advanceMs: 120000 } },
+      { text: "Marcar y seguir explorando otra zona", effect: { advanceMs: 60000 } },
     ],
   },
+
   {
     id: 208,
-    title: "Gasolinera cubierta de grafitis",
-    text: `Una gasolinera en ruinas muestra grafitis que advierten de peligro inminente.
-La tienda anexa tiene la persiana medio rota y huellas recientes de botas.
-El surtidor parece intacto pero la alarma podría seguir conectada.
-Quedarse demasiado tiempo aquí puede llamar a merodeadores o zombis.
-Sin combustible no llegaremos a la ciudad antes de anochecer.`,
+    title: "Mapa encontrado",
+    text:
+`En la guantera de un coche aparece un mapa detallado del distrito.
+Se notan rutas secundarias, puestos de control y tachaduras recientes.
+Podría abreviar futuras salidas pero quizá esté desactualizado.
+Alguien tachó una calle con tinta roja y varios signos de peligro.
+Decidir qué creer del papel puede ahorrar o costar vidas.`,
     choices: [
-      { text: "Sifonear combustible rápido", effect: { fuel: 3, threat: 2, advanceMs: 90000 } },
-      { text: "Buscar comida dentro de la tienda", effect: { food: 2, water: 1, zombies: 1, advanceMs: 120000 } },
-      { text: "Dejar una marca y seguir", effect: { karma: 1, morale: -1, advanceMs: 60000 } },
+      { text: "Adoptar rutas secundarias del mapa", effect: { fuel: -1, advanceMs: 120000, threat: -1 } },
+      { text: "Ignorar el mapa por dudoso", effect: { morale: -1, advanceMs: 30000 } },
+      { text: "Cruzar por la calle tachada para verificar", effect: { ammo: -1, zombies: 3, advanceMs: 150000 } },
     ],
   },
+
   {
     id: 209,
-    title: "Campamento improvisado bajo el puente",
-    text: `Debajo del puente se acumulan mantas viejas, latas y un fuego apagado.
-Alguien estuvo aquí hasta hace poco, quizá aún siga cerca observando.
-Los pilares del puente ofrecen cierta cobertura pero limitan la vista.
-Examinar los restos puede revelar pistas de otros grupos errantes.
-No detenerse significa perder posibles suministros escondidos.`,
+    title: "Mercader ambulante",
+    text:
+`Un viejo con gabardina ofrece trueque al borde del camino.
+Saca piezas de metal, municiones sueltas y una cantimplora a medias.
+Dice que el norte está perdido pero más al sur hay refugio.
+Habla sin mirar a los ojos, como escondiendo algo.
+El trueque podría ser ventajoso, o un robo a mano abierta.`,
     choices: [
-      { text: "Registrar entre las mantas", effect: { materials: 2, food: 1, advanceMs: 60000 } },
-      { text: "Esperar al dueño para hablar", effect: { morale: 1, threat: 1, advanceMs: 150000 } },
-      { text: "Continuar la marcha sin mirar", effect: { morale: -1, advanceMs: 30000 } },
+      { text: "Cambiar comida por munición", effect: { food: -2, ammo: +3, karma: 0, advanceMs: 60000 } },
+      { text: "Comprar materiales baratos", effect: { materials: +3, fuel: -1, advanceMs: 60000 } },
+      { text: "Rechazar y alejarse", effect: { morale: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 210,
-    title: "Patrulla militar caída",
-    text: `Un vehículo militar volcado bloquea parte de la avenida principal.
-Los cuerpos con uniformes indican que la patrulla fue atacada por sorpresa.
-Las cajas de suministros están cerradas con cadenas resistentes.
-Tal vez haya un mapa o un transmisor útil entre los restos.
-Manipular el vehículo podría atraer atención desde las azoteas cercanas.`,
+    title: "Incendio en depósito de chatarra",
+    text:
+`Una columna de humo negro sube desde un depósito cercado.
+El calor distorsiona el aire y el ruido atrae carroñeros.
+Entre las chispas se ven piezas útiles para reparar cercas.
+Aproximarse quema tiempo y quizá la piel.
+Ignorarlo hoy podría dejar sin repuestos mañana.`,
     choices: [
-      { text: "Forzar cajas de suministros", effect: { ammo: 6, medicine: 2, zombies: 1, advanceMs: 120000 } },
-      { text: "Buscar documentos rápidos", effect: { materials: 1, morale: 1, advanceMs: 60000 } },
-      { text: "Desviar el camino sin tocar nada", effect: { threat: -1, advanceMs: 30000 } },
+      { text: "Entrar con mantas y cubos", effect: { materials: +4, water: -1, morale: +1, advanceMs: 180000 } },
+      { text: "Barrer el perímetro por restos útiles", effect: { materials: +2, threat: +1, advanceMs: 120000 } },
+      { text: "Evitar la zona incendiada", effect: { morale: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 211,
-    title: "Cultivo clandestino en azotea",
-    text: `Subiendo a un edificio encontramos una azotea con plantas en macetas.
-Un joven delgado vigila con un rifle y pide trueque por verduras frescas.
-Dice que los vecinos quieren echarlo para quedarse con la producción.
-El lugar tiene agua recolectada y un pequeño gallinero improvisado.
-Negociar, robar o marcharnos define nuestra reputación en la zona.`,
+    title: "Grietas en la moral",
+    text:
+`Discusiones pequeñas crecen como fisuras en concreto cansado.
+Algunos culpan a las últimas decisiones y otros a la mala suerte.
+La radio rota impide escuchar voces que alivien el aislamiento.
+Un descanso podría sanar, pero el reloj no se detiene.
+Las miradas esquivas hieren más que el hambre.`,
     choices: [
-      { text: "Trueque justo por verduras", effect: { food: 4, water: -2, morale: 1, advanceMs: 90000 } },
-      { text: "Amenazar y tomar todo", effect: { food: 6, morale: -4, karma: -5, zombies: 1, advanceMs: 60000 } },
-      { text: "Desearle suerte y partir", effect: { karma: 2, advanceMs: 30000 } },
+      { text: "Asamblea con turno de palabra", effect: { morale: +2, advanceMs: 120000 } },
+      { text: "Ejercicio y tareas compartidas", effect: { morale: +1, materials: -1, advanceMs: 90000 } },
+      { text: "Ignorar tensiones y seguir", effect: { morale: -2, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 212,
-    title: "Museo convertido en guarida",
-    text: `Las puertas de cristal del museo están cubiertas con tablones viejos.
-Dentro se oyen pasos apresurados y murmullos tras las vitrinas oscuras.
-Quizá refugiados ocupen las salas usando las obras como barricadas.
-El sótano podría esconder generadores y depósitos de agua limpia.
-Entrar por la fuerza podría destruir patrimonio y encender hostilidad.`,
+    title: "Niños en el supermercado",
+    text:
+`Desde un pasillo oscuro, pequeñas siluetas susurran y corren.
+Alguien dejó dibujos de casas y perros pegados a una heladera.
+El lugar conserva latas pero el suelo está cubierto de vidrios.
+Los niños podría ser cebo o realmente estar solos.
+Una elección mide humanidad y riesgo por igual.`,
     choices: [
-      { text: "Entrar negociando", effect: { water: 2, morale: 2, advanceMs: 90000 } },
-      { text: "Buscar una entrada trasera", effect: { materials: -2, threat: 1, advanceMs: 120000 } },
-      { text: "Evitar el museo", effect: { morale: -1, advanceMs: 60000 } },
+      { text: "Buscar y escoltar a los niños", effect: { karma: +2, morale: +2, food: +2, advanceMs: 180000, zombies: 2 } },
+      { text: "Dejar comida y un mensaje", effect: { food: -1, karma: +1, advanceMs: 90000 } },
+      { text: "Retirada silenciosa", effect: { morale: -1, advanceMs: 60000 } },
     ],
   },
+
   {
     id: 213,
-    title: "Rituales en la iglesia abandonada",
-    text: `La vieja iglesia tiene velas encendidas y símbolos pintados con sangre.
-Un grupo de fieles susurra plegarias alrededor del altar principal.
-Al vernos, el líder pide comida a cambio de bendiciones y protección.
-Algunos miembros parecen enfermos y se balancean al ritmo de la oración.
-Aceptar el trato puede unirnos o atraer a fanáticos peligrosos.`,
+    title: "Taller abandonado",
+    text:
+`Un taller mecánico tiene media persiana abierta y olor a aceite.
+Sobre la mesa hay piezas numeradas y un manual engrasado.
+Un ruido metálico hace eco desde el foso de inspección.
+Con suerte podríamos armar defensas improvisadas.
+Si algo vive ahí abajo, no le gustará la compañía.`,
     choices: [
-      { text: "Compartir comida y quedarse", effect: { food: -3, morale: 2, karma: 2, advanceMs: 150000 } },
-      { text: "Registrarlo todo en secreto", effect: { medicine: 1, materials: 1, morale: -2, advanceMs: 90000 } },
-      { text: "Irse antes de llamar la atención", effect: { threat: -1, advanceMs: 60000 } },
+      { text: "Registrar a fondo con linternas", effect: { materials: +3, zombies: 2, advanceMs: 150000 } },
+      { text: "Tomar solo lo visible y salir", effect: { materials: +1, advanceMs: 60000 } },
+      { text: "Cerrar y marcar para mañana", effect: { advanceMs: 30000 } },
     ],
   },
+
   {
     id: 214,
-    title: "Silo de granos con guardias",
-    text: `Un silo intacto domina el horizonte con su estructura metálica.
-Dos guardias con escopetas vigilan la entrada y exigen contraseñas.
-Rumores dicen que almacenan grano suficiente para un mes de viaje.
-Las escaleras laterales permiten un acceso arriesgado por la parte superior.
-Resolver esto determina si tendremos pan o enemigos mañana.`,
+    title: "Camión varado",
+    text:
+`Un camión frigorífico bloquea media avenida y gotea líquido.
+La cabina está cerrada y la caja golpea con el viento.
+Dentro podrían quedar cajones de alimento frío en buen estado.
+Abrir la caja puede atraer a media cuadra.
+La tentación del botín compite con el miedo al estruendo.`,
     choices: [
-      { text: "Pagar con combustible", effect: { fuel: -3, food: 5, morale: 1, advanceMs: 90000 } },
-      { text: "Escalar durante la noche", effect: { food: 4, threat: 2, zombies: 1, advanceMs: 150000 } },
-      { text: "Abandonar el silo", effect: { morale: -1, advanceMs: 60000 } },
+      { text: "Abrir la caja y cargar lo posible", effect: { food: +4, threat: +2, advanceMs: 150000 } },
+      { text: "Desengancharlo para liberar paso", effect: { materials: +1, fuel: -1, advanceMs: 120000 } },
+      { text: "Evitarlo por completo", effect: { morale: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 215,
-    title: "Mensaje en la radio pirata",
-    text: `Un transmisor improvisado emite una voz pidiendo auxilio en canal abierto.
-La señal proviene de un barrio plagado de edificios derrumbados.
-Podría ser una trampa para saqueadores o una persona desesperada.
-Nuestro equipo de radio necesita energía extra para triangular la fuente.
-Acudir o no podría marcar la diferencia en nuestra humanidad.`,
+    title: "Radio de onda corta",
+    text:
+`La radio lanza un zumbido y luego voces entrecortadas.
+Alguien coordina auxilios a varias cuadras de aquí.
+La señal sube y baja como un pez bajo el agua.
+Requiere batería que casi no nos queda.
+Una respuesta a tiempo podría ganar aliados.`,
     choices: [
-      { text: "Seguir la señal de inmediato", effect: { fuel: -2, threat: 2, morale: 1, advanceMs: 120000 } },
-      { text: "Enviar una respuesta breve", effect: { fuel: -1, karma: 1, advanceMs: 60000 } },
-      { text: "Ignorar la transmisión", effect: { morale: -2, advanceMs: 30000 } },
+      { text: "Responder y arriesgar batería", effect: { fuel: -1, morale: +2, karma: +1, advanceMs: 90000 } },
+      { text: "Escuchar sin hablar", effect: { advanceMs: 60000, threat: -1 } },
+      { text: "Apagar para ahorrar energía", effect: { morale: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 216,
-    title: "Cadáver atado con nota",
-    text: `En medio de la calle hay un cadáver atado con cuerdas y un cartel.
-La nota advierte que cualquiera que robe el barrio será cazado.
-Las casas cercanas tienen puertas reforzadas con láminas metálicas.
-Tal vez sea una táctica de miedo de los residentes aún vivos.
-Decidir si registrar o respetar el aviso afecta a la reputación.`,
+    title: "Discusión sobre liderazgo",
+    text:
+`Dos voces fuertes chocan en el centro del patio.
+Una pide rotación del liderazgo, otra disciplina estricta.
+Las tareas se frenan y los chicos miran con nerviosismo.
+Decidir ahora ahorrará roces o los hará crecer.
+La autoridad pesa más cuando la noche se acerca.`,
     choices: [
-      { text: "Registrar una casa de todos modos", effect: { materials: 3, morale: -3, karma: -2, advanceMs: 90000 } },
-      { text: "Dejar una ofrenda de respeto", effect: { food: -1, morale: 2, karma: 3, advanceMs: 60000 } },
-      { text: "Retirarse sin tocar nada", effect: { threat: -1, advanceMs: 30000 } },
+      { text: "Votar un liderazgo rotativo", effect: { morale: +2, karma: +1, advanceMs: 120000 } },
+      { text: "Ratificar mando actual por hoy", effect: { morale: +0, threat: -1, advanceMs: 60000 } },
+      { text: "Ignorar y seguir con tareas", effect: { morale: -2, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 217,
-    title: "Tienda de mascotas saqueada",
-    text: `Gaviotas y ratas pelean por restos frente a una tienda destrozada.
-Dentro aún hay sacos de alimento y jaulas con agua turbia.
-Un cachorro asustado gime desde un rincón oscuro entre los vidrios.
-Algunos piensan que llevarlo podría animar al campamento.
-Otros creen que solo será una boca más que alimentar.`,
+    title: "Trampa con latas",
+    text:
+`Un callejón tiene un sistema rudimentario de latas y cuerdas.
+Alguien avisa que podrían delatar nuestra posición al mínimo toque.
+Colarse sin sonar exigiría tiempo y pulso firme.
+Cortar las cuerdas puede liberar otro mecanismo oculto.
+La calle principal ofrece un desvío más largo.`,
     choices: [
-      { text: "Rescatar al cachorro", effect: { food: -1, morale: 3, karma: 2, advanceMs: 90000 } },
-      { text: "Tomar pienso para nosotros", effect: { food: 2, water: 1, advanceMs: 60000 } },
-      { text: "Cerrar la puerta y seguir", effect: { morale: -1, advanceMs: 30000 } },
+      { text: "Desarmar con cuidado", effect: { advanceMs: 150000, threat: -1, materials: +1 } },
+      { text: "Forzar el paso y correr", effect: { advanceMs: 60000, threat: +2, zombies: 2 } },
+      { text: "Tomar el desvío largo", effect: { fuel: -1, advanceMs: 180000 } },
     ],
   },
+
   {
     id: 218,
-    title: "Carretera con barricada civil",
-    text: `Una barricada con coches y muebles impide el paso en la carretera.
-Un cartel pintado dice que la entrada está restringida a conocidos.
-Oímos voces detrás de la defensa discutiendo sobre abrir fuego.
-El desvío más cercano nos retrasaría varias horas de viaje.
-Romper la barricada podría enfrentarnos a civiles asustados.`,
+    title: "Almacén de granos",
+    text:
+`Sacos de granos apilados se ven desde una puerta entornada.
+El olor es fuerte, pero parecen secos y aprovechables.
+Ratas corretean y se meten por agujeros en la madera.
+Cargar sacos exige fuerza y tiempo constante.
+Con reserva de alimento, el ánimo sube aunque cueste sudor.`,
     choices: [
-      { text: "Intentar negociar el paso", effect: { morale: 1, threat: 1, advanceMs: 90000 } },
-      { text: "Forzar la barricada", effect: { materials: -2, ammo: -3, morale: -2, advanceMs: 60000 } },
-      { text: "Tomar el desvío largo", effect: { fuel: -3, advanceMs: 180000 } },
+      { text: "Cargar sacos entre todos", effect: { food: +5, advanceMs: 240000, morale: +1 } },
+      { text: "Tomar muestras y volver luego", effect: { food: +2, advanceMs: 90000 } },
+      { text: "Sellar y poner trampas", effect: { materials: -1, food: +1, advanceMs: 120000 } },
     ],
   },
+
   {
     id: 219,
-    title: "Viejo cine con proyector activo",
-    text: `Las luces de un proyector parpadean dentro de un cine en ruinas.
-Películas sin sonido se proyectan sobre una pantalla rasgada y sucia.
-Podría haber gente usando la luz para atraer o distraer a alguien.
-El olor a palomitas rancias aún flota entre las butacas rotas.
-Revisar las cabinas podría darnos piezas electrónicas útiles.`,
+    title: "Cortocircuito nocturno",
+    text:
+`Un brillo azul y un chasquido despiertan a varios.
+El generador improvisado chisporrotea con olor a plástico.
+Mantener luz disuade a curiosos, pero podría atraer a otros.
+Reparar requiere piezas y manos firmes.
+Dormir sin luz apaga más que una bombilla.`,
     choices: [
-      { text: "Buscar piezas del proyector", effect: { materials: 2, fuel: 1, advanceMs: 90000 } },
-      { text: "Ver la película unos minutos", effect: { morale: 2, threat: 1, advanceMs: 120000 } },
-      { text: "Apagar todo y salir", effect: { threat: -2, advanceMs: 60000 } },
+      { text: "Apagar, reparar y reencender", effect: { materials: -2, morale: +1, advanceMs: 120000 } },
+      { text: "Dejar apagado hasta mañana", effect: { morale: -1, threat: -1, advanceMs: 60000 } },
+      { text: "Subir potencia y rezar", effect: { threat: +2, morale: +1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 220,
-    title: "Escombros con voces atrapadas",
-    text: `Entre los escombros de un edificio derrumbado se escuchan gemidos.
-Tal vez haya alguien vivo bajo las placas de hormigón y hierro.
-Mover piedras requiere tiempo y herramientas que apenas tenemos.
-Ignorar los sonidos podría condenar a una persona a morir lentamente.
-El grupo debate si arriesgarse o priorizar su propia seguridad.`,
+    title: "Puente inestable",
+    text:
+`El único paso sobre el canal parece un esqueleto de hierro.
+Plancharlo hoy abre rutas a despensas del otro lado.
+Cruzarlo tal cual suena a temeridad con botas mojadas.
+Dar la vuelta implica horas y consumo de combustible.
+La elección hoy dibuja el mapa de mañana.`,
     choices: [
-      { text: "Excavar y rescatar", effect: { materials: -2, morale: 3, karma: 4, advanceMs: 180000 } },
-      { text: "Dejar agua y marcharse", effect: { water: -1, morale: 1, advanceMs: 60000 } },
-      { text: "Seguir sin mirar atrás", effect: { morale: -2, advanceMs: 30000 } },
+      { text: "Reforzar y cruzar", effect: { materials: -3, threat: -1, advanceMs: 180000 } },
+      { text: "Cruzarlo rápido tal cual", effect: { advanceMs: 60000, morale: -1, zombies: 2 } },
+      { text: "Rodeo largo por carretera", effect: { fuel: -1, advanceMs: 240000 } },
     ],
   },
+
   {
     id: 221,
-    title: "Apartamento con música antigua",
-    text: `Un viejo tocadiscos suena desde un apartamento del segundo piso.
-La puerta principal está entreabierta y huele a polvo y moho.
-Sobre la mesa hay notas que mencionan un búnker cercano.
-Los cristales rotos indican que alguien salió con prisa hace poco.
-Dentro podría haber mapas y latas o una trampa armada.`,
+    title: "Desalojo de nido",
+    text:
+`Un sótano guarda colchones viejos y latas polvorientas.
+Los gemidos desde el fondo indican que no estamos solos.
+Desalojar hoy libera un punto de descanso para futuras noches.
+El ruido podría llamar a más invitados indeseables.
+La valentía también se entrena con práctica.`,
     choices: [
-      { text: "Registrar todas las habitaciones", effect: { food: 2, water: 1, zombies: 1, advanceMs: 90000 } },
-      { text: "Tomar solo el mapa y salir", effect: { materials: 1, morale: 1, advanceMs: 60000 } },
-      { text: "Apagar el tocadiscos y retirarse", effect: { threat: -1, advanceMs: 30000 } },
+      { text: "Limpiar el sótano a golpes", effect: { zombies: 3, food: +1, materials: +1, advanceMs: 150000 } },
+      { text: "Sellar la entrada y marchar", effect: { materials: -1, threat: -1, advanceMs: 60000 } },
+      { text: "Colocar un cebo y alejar", effect: { ammo: -1, threat: -2, advanceMs: 90000 } },
     ],
   },
+
   {
     id: 222,
-    title: "Autobús escolar volcado",
-    text: `Un autobús escolar yace de costado en medio de la carretera.
-En su interior aún cuelgan mochilas pequeñas y libros de texto.
-La guantera está cerrada con llave y huele a combustible derramado.
-Las ruedas todavía podrían servir como repuestos para nuestro vehículo.
-El silencio alrededor es inquietante y tenso.`,
+    title: "Cosecha en azoteas",
+    text:
+`Macetas con tierra húmeda prometen tomates verdes y hierbas.
+Hay cuerdas de tender y un tanque partido al borde.
+Recolectar ahora da poco, pero abre rutina saludable.
+Caerse sería absurdo y fatal a la vez.
+El cielo gris amenaza lluvia que arruina las hojas.`,
     choices: [
-      { text: "Buscar útiles entre las mochilas", effect: { food: 1, water: 1, morale: -1, advanceMs: 90000 } },
-      { text: "Quitar una rueda de repuesto", effect: { materials: 3, advanceMs: 120000 } },
-      { text: "Registrar la guantera y salir", effect: { fuel: 2, zombies: 1, advanceMs: 60000 } },
+      { text: "Cosechar y replantar", effect: { food: +2, water: -1, advanceMs: 150000 } },
+      { text: "Instalar riego casero", effect: { materials: -2, water: -1, morale: +1, advanceMs: 180000 } },
+      { text: "Bajar y dejarlo crecer", effect: { morale: +0, advanceMs: 60000 } },
     ],
   },
+
   {
     id: 223,
-    title: "Ferretería con alarma conectada",
-    text: `La ferretería del barrio aún tiene puertas metálicas intactas.
-Un pequeño generador mantiene una alarma parpadeante sobre la entrada.
-Dentro podrían haber clavos, martillos y herramientas para el campamento.
-Desactivar la alarma requiere habilidad y tiempo concentrado.
-Forzar la entrada atraerá todo tipo de atenciones indeseadas.`,
+    title: "Perros hambrientos",
+    text:
+`Tres perros deambulan y gruñen con costillas marcadas.
+Beben charcos y huelen bolsas buscando cualquier resto.
+Podrían alertar de intrusos o convertirse en amenaza.
+Domesticar lleva tiempo, disparar es rápido y crudo.
+Nadie quiere otra noche de ladridos a la luna.`,
     choices: [
-      { text: "Desactivar la alarma cuidadosamente", effect: { materials: 4, advanceMs: 150000 } },
-      { text: "Romper la puerta de golpe", effect: { materials: 3, threat: 3, zombies: 1, advanceMs: 60000 } },
-      { text: "No arriesgarse y seguir", effect: { advanceMs: 30000, morale: -1 } },
+      { text: "Alimentar y ganar confianza", effect: { food: -2, morale: +1, karma: +1, advanceMs: 120000 } },
+      { text: "Ahuyentarlos con ruido", effect: { ammo: -1, threat: -1, advanceMs: 60000 } },
+      { text: "Ignorarlos y seguir", effect: { threat: +1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 224,
-    title: "Vecinos discutiendo por comida",
-    text: `Dos grupos de vecinos gritan desde balcones opuestos de un edificio.
-Se acusan mutuamente de robar una bolsa de arroz escondida.
-Uno de ellos ofrece parte del botín si mediamos en la disputa.
-La tensión puede desencadenar disparos si no se calma pronto.
-Nuestro grupo podría ganar aliados o quedar atrapado en la riña.`,
+    title: "Relato de un anciano",
+    text:
+`Un anciano narra entre dientes un brote peor en el oeste.
+Dice conocer un túnel que bordea puestos de saqueadores.
+Su voz tiembla, pero los ojos sostienen un mapa mental.
+Escucharlo quita tiempo de búsqueda inmediata.
+Creer o no creer es la consigna diaria.`,
     choices: [
-      { text: "Medir con justicia", effect: { food: 2, morale: 2, karma: 3, advanceMs: 120000 } },
-      { text: "Apoyar a un lado", effect: { food: 3, morale: -2, threat: 1, advanceMs: 90000 } },
-      { text: "Ignorar el conflicto", effect: { morale: -1, advanceMs: 60000 } },
+      { text: "Seguir su ruta sugerida", effect: { threat: -1, fuel: -1, advanceMs: 150000 } },
+      { text: "Agradecer y seguir plan propio", effect: { morale: +0, advanceMs: 60000 } },
+      { text: "Desconfiar y reforzar guardia", effect: { threat: -1, materials: -1, advanceMs: 90000 } },
     ],
   },
+
   {
     id: 225,
-    title: "Carreta rota en el camino",
-    text: `Una carreta de madera bloquea el sendero lleno de barro.
-Sus ruedas están dañadas pero hay sacos de grano dentro.
-Los caballos se soltaron y dejaron huellas hacia el bosque oscuro.
-Mover la carreta requiere fuerza y coordinación entre todos.
-Tomar los sacos puede ralentizar la marcha, pero la comida escasea.`,
+    title: "Bodega sellada",
+    text:
+`Una puerta metálica recién soldada oculta un sótano intacto.
+El olor a vino viejo se mezcla con tierra fría.
+Se escuchan ecos lejanos como de tuberías.
+Abrir consume herramientas y puede romper el silencio.
+Lo que guarda podría cambiar el menú de una semana.`,
     choices: [
-      { text: "Reparar y llevar la carreta", effect: { materials: -2, food: 4, advanceMs: 180000 } },
-      { text: "Cargar los sacos al hombro", effect: { food: 3, morale: -1, advanceMs: 150000 } },
-      { text: "Liberar el camino y seguir", effect: { morale: 1, advanceMs: 90000 } },
+      { text: "Cortar la soldadura y abrir", effect: { materials: -2, food: +3, water: +1, advanceMs: 180000, threat: +1 } },
+      { text: "Marcar y volver con más manos", effect: { advanceMs: 90000 } },
+      { text: "Dejarlo: suena a trampa", effect: { morale: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 226,
-    title: "Biblioteca aún ordenada",
-    text: `Una biblioteca vieja mantiene sus estantes en perfecto orden.
-Los libros cuentan historias de supervivencia y manuales de primeros auxilios.
-En la recepción hay una caja fuerte con un símbolo de cruz roja.
-Una escalera chirriante conduce a un altillo oscuro y polvoriento.
-El silencio invita a quedarse, pero el tiempo apremia.`,
+    title: "Atajo por cloacas",
+    text:
+`La tapa cede y un aire agrio sube como un golpe.
+Atravesar túneles ahorra combustible y evita patrullas.
+La humedad cala huesos y apaga linternas baratas.
+Un mapa a tiza marca cruces y entradas.
+A veces lo más corto no es lo más amable.`,
     choices: [
-      { text: "Leer manuales útiles", effect: { morale: 2, knowledge: true, advanceMs: 120000 } },
-      { text: "Forzar la caja de la recepción", effect: { medicine: 2, materials: 1, advanceMs: 90000 } },
-      { text: "Tomar mapas y partir", effect: { fuel: 1, advanceMs: 60000 } },
+      { text: "Bajar y avanzar por el túnel", effect: { fuel: +0, water: -1, morale: -1, advanceMs: 180000, threat: -1 } },
+      { text: "Sellar y tomar superficie", effect: { fuel: -1, advanceMs: 120000 } },
+      { text: "Explorar un tramo y volver", effect: { advanceMs: 90000, materials: +1 } },
     ],
   },
+
   {
     id: 227,
-    title: "Mercado nocturno clandestino",
-    text: `En un callejón oscuro se organiza un mercado solo por la noche.
-Vendedores encapuchados ofrecen piezas robadas y medicamentos raros.
-Se debe pagar con recursos o favores peligrosos para los nuestros.
-La policía ya no existe, pero la violencia sigue latente en cada trato.
-Comprar o robar aquí puede definir nuestras relaciones futuras.`,
+    title: "Rumor de convoy",
+    text:
+`Se difunde que un convoy cruzará la avenida principal.
+Algunos piden asomarse y pedir ayuda en persona.
+Otros temen que sean carroñeros armados con uniforme robado.
+La ansiedad compite con el pragmatismo de seguir vivos.
+Una decisión ahora evita arrepentimientos más tarde.`,
     choices: [
-      { text: "Comprar medicamentos caros", effect: { medicine: 3, fuel: -2, advanceMs: 150000 } },
-      { text: "Robar entre las sombras", effect: { ammo: 4, morale: -3, karma: -4, advanceMs: 90000 } },
-      { text: "Vigilar y marcharse", effect: { threat: -1, advanceMs: 60000 } },
+      { text: "Montar señal y esperar", effect: { materials: -1, morale: +1, advanceMs: 150000 } },
+      { text: "Observar desde distancia", effect: { advanceMs: 120000, threat: -1 } },
+      { text: "Ignorar y continuar búsqueda", effect: { advanceMs: 60000 } },
     ],
   },
+
   {
     id: 228,
-    title: "Señales en el techo del banco",
-    text: `En el techo de un banco aparecen flechas pintadas con tiza.
-Señalan hacia un hueco de ventilación parcialmente abierto.
-El interior parece oscuro pero protegido de las calles infectadas.
-Puede ser un refugio temporal o una trampa cerrada sin salida.
-Seguir las señales requiere confianza en desconocidos.`,
+    title: "Discusión por raciones",
+    text:
+`El reparto de latas saca lo peor y lo mejor de cada uno.
+Una mano toma de más, otra se queda corta por vergüenza.
+Intervenir desgasta, mirar duele.
+La mesa de madera cruje bajo golpes y culpas.
+La convivencia es un arte en la escasez.`,
     choices: [
-      { text: "Entrar por la ventilación", effect: { materials: 1, food: 2, zombies: 1, advanceMs: 90000 } },
-      { text: "Dejar nuestras propias señales", effect: { morale: 1, karma: 2, advanceMs: 60000 } },
-      { text: "Ignorar las flechas", effect: { advanceMs: 30000, threat: -1 } },
+      { text: "Recalcular y repartir equitativo", effect: { morale: +2, food: -1, advanceMs: 120000 } },
+      { text: "Sanción y trabajo extra al abusivo", effect: { morale: -1, karma: +1, advanceMs: 90000 } },
+      { text: "Mirar a otro lado", effect: { morale: -2, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 229,
-    title: "Casa con jardín bien cuidado",
-    text: `En medio del barrio arrasado hay una casa con jardín intacto.
-Las flores están regadas y la puerta principal se ve recién pintada.
-No se observan marcas de lucha ni signos de abandono.
-Quizá sus dueños estén dentro o hayan salido hace poco de patrulla.
-Entrar sin permiso podría iniciar un conflicto innecesario.`,
+    title: "Señales en la autopista",
+    text:
+`Pintadas recientes advierten de trampas en la salida 7B.
+El olor a caucho quemado persiste en el aire.
+La autopista ofrece velocidad pero pocas escapatorias.
+Una vía de servicio serpentea entre talleres.
+La decisión escribe la crónica de esta jornada.`,
     choices: [
-      { text: "Tocar la puerta y hablar", effect: { morale: 2, karma: 2, advanceMs: 90000 } },
-      { text: "Forzar la entrada discretamente", effect: { food: 2, water: 2, morale: -3, advanceMs: 60000 } },
-      { text: "Marcarla como zona segura y seguir", effect: { advanceMs: 30000, threat: -1 } },
+      { text: "Arriesgar la autopista directa", effect: { fuel: -1, advanceMs: 90000, zombies: 2 } },
+      { text: "Usar la vía de servicio", effect: { fuel: -1, advanceMs: 150000, threat: -1 } },
+      { text: "Dar media vuelta", effect: { morale: -1, advanceMs: 60000 } },
     ],
   },
+
   {
     id: 230,
-    title: "Estación de metro inundada",
-    text: `Las escaleras del metro conducen a un túnel parcialmente inundado.
-Se escucha un eco metálico de gotas que caen desde el techo roto.
-Un letrero indica que al final existe un refugio preparado años atrás.
-La humedad puede estropear municiones y herramientas sensibles.
-Pasar por allí ahorra camino pero expone a infecciones y caídas.`,
+    title: "Caja con símbolos",
+    text:
+`Una caja metálica luce símbolos pintados a mano.
+No hay cerradura, solo un pasador oxidado y cinta.
+Pesa más de lo que aparenta cuando la levantan.
+Abrir podría ser ruido y sorpresa a la vez.
+La curiosidad y el miedo juegan a cara o cruz.`,
     choices: [
-      { text: "Nadar hasta el refugio", effect: { threat: 2, medicine: -1, morale: -1, advanceMs: 150000 } },
-      { text: "Construir una pasarela improvisada", effect: { materials: -3, advanceMs: 210000 } },
-      { text: "Buscar otra entrada", effect: { fuel: -1, advanceMs: 120000 } },
+      { text: "Abrirla aquí mismo", effect: { ammo: +2, medicine: +1, threat: +1, advanceMs: 60000 } },
+      { text: "Llevarla al campamento", effect: { materials: -1, advanceMs: 120000 } },
+      { text: "Dejarla como está", effect: { advanceMs: 30000, morale: -1 } },
     ],
   },
+
   {
     id: 231,
-    title: "Furgoneta con mensaje de auxilio",
-    text: `Una furgoneta pintada con la palabra "SOCORRO" yace en una zanja.
-Del interior surge un olor fuerte a combustible y comida descompuesta.
-Hay marcas de uñas en las ventanas desde dentro hacia afuera.
-Quizá alguien quedó atrapado antes de convertirse en amenaza.
-Ignorarla podría dejar atrás herramientas o supervivientes.`,
+    title: "Humo en el horizonte",
+    text:
+`Una columna gris marca una zona con actividad reciente.
+Podrían ser hogueras de otros grupos o incendios de neumáticos.
+Acercarse abre puertas y disparos por igual.
+Alejarse garantiza vivir con dudas.
+A veces lo desconocido pesa más que el hambre.`,
     choices: [
-      { text: "Revisar el interior cuidadosamente", effect: { ammo: 2, food: 1, zombies: 1, advanceMs: 90000 } },
-      { text: "Sacar gasolina y marchar", effect: { fuel: 3, advanceMs: 60000 } },
-      { text: "Remolcarla para piezas", effect: { materials: 3, fuel: -1, advanceMs: 150000 } },
+      { text: "Acercarse en sigilo", effect: { threat: +1, advanceMs: 150000 } },
+      { text: "Rodear marcando puntos de escape", effect: { fuel: -1, materials: -1, advanceMs: 180000, threat: -1 } },
+      { text: "Retirada planificada", effect: { advanceMs: 60000, morale: -1 } },
     ],
   },
+
   {
     id: 232,
-    title: "Río con puente derrumbado",
-    text: `El puente principal sobre el río se derrumbó dejando escombros.
-Solo quedan restos metálicos retorcidos sobre el agua agitada.
-Un cartel señala un vado más seguro a varios kilómetros al norte.
-Cruzar a nado con mochilas es casi un suicidio en estas aguas.
-Decidir qué ruta tomar puede cambiar nuestra llegada al refugio.`,
+    title: "Hallazgo de pozo químico",
+    text:
+`Un charco iridiscente refleja cielos enfermos.
+Huele a solvente y quemadura de garganta.
+Podría contaminar el terreno si se desborda.
+Sellarlo hoy evita males futuros y ganará respeto.
+Pasar de largo es más fácil y más corto.`,
     choices: [
-      { text: "Intentar cruzar por los restos", effect: { threat: 2, materials: -1, advanceMs: 120000 } },
-      { text: "Buscar el vado al norte", effect: { fuel: -2, advanceMs: 180000 } },
-      { text: "Acampar y esperar ayuda", effect: { food: -1, morale: -1, advanceMs: 240000 } },
+      { text: "Contener con sacos y tierra", effect: { materials: -2, morale: +1, karma: +1, advanceMs: 150000 } },
+      { text: "Señalizar y avisar por radio", effect: { fuel: -1, advanceMs: 90000 } },
+      { text: "Ignorar y seguir", effect: { karma: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 233,
-    title: "Helicóptero caído en plaza",
-    text: `Un helicóptero militar yace destrozado en medio de una plaza.
-Los restos aún emiten chispas y un rotor sigue girando lentamente.
-Podría haber botiquines o armas dentro del fuselaje.
-La plaza abierta nos deja expuestos a francotiradores y zombis.
-Un humo denso podría ser visto desde kilómetros de distancia.`,
+    title: "Refugiados en túnel",
+    text:
+`Voces apagadas piden ayuda desde la boca del túnel.
+Dicen huir de un ataque en la estación cercana.
+Están asustados y no confían en cualquiera.
+Guiarlos consume tiempo y recursos, pero salva vidas.
+A veces sumarse resta velocidad y suma humanidad.`,
     choices: [
-      { text: "Buscar cajas médicas", effect: { medicine: 3, threat: 2, advanceMs: 90000 } },
-      { text: "Tomar piezas del motor", effect: { materials: 4, fuel: 1, advanceMs: 120000 } },
-      { text: "Abandonar la plaza", effect: { morale: -1, advanceMs: 60000 } },
+      { text: "Acompañarlos hasta cruce seguro", effect: { water: -1, food: -1, morale: +2, karma: +2, advanceMs: 180000 } },
+      { text: "Dejarles un mapa y agua", effect: { water: -1, karma: +1, advanceMs: 90000 } },
+      { text: "Negarse y cerrar el túnel", effect: { morale: -2, karma: -1, advanceMs: 60000 } },
     ],
   },
+
   {
     id: 234,
-    title: "Mensajero herido en la carretera",
-    text: `Un mensajero con uniforme de reparto yace herido junto al camino.
-Su mochila cerrada tiene un logo de empresa y parece pesada.
-Dice llevar documentos para un refugio cercano que podrían salvar vidas.
-Ayudarlo podría incluir cargarlo hasta el campamento o curarlo aquí.
-Robarle y dejarlo sería rápido pero moralmente cuestionable.`,
+    title: "Armería saqueada",
+    text:
+`La armería del barrio aparece con rejas arrancadas.
+El suelo cruje con casquillos y vitrinas rotas.
+Aún quedan cajas cerradas marcadas con números.
+Rebuscar aquí podría equilibrar enfrentamientos futuros.
+Si nos pillan dentro, el eco llamará a todos.`,
     choices: [
-      { text: "Cargarlo hasta el refugio", effect: { morale: 3, karma: 4, advanceMs: 210000 } },
-      { text: "Curarlo y dejarlo seguir", effect: { medicine: -1, morale: 1, advanceMs: 120000 } },
-      { text: "Tomar la mochila y huir", effect: { food: 2, water: 2, morale: -4, karma: -5, advanceMs: 60000 } },
+      { text: "Forzar cajas y equipar", effect: { ammo: +4, threat: +2, advanceMs: 150000 } },
+      { text: "Tomar solo munición suelta", effect: { ammo: +2, advanceMs: 90000 } },
+      { text: "Salir y no tentar suerte", effect: { morale: -1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 235,
-    title: "Tienda de electrónica intacta",
-    text: `Una tienda de electrónica mantiene sus vitrinas sin romper.
-Los generadores dentro podrían servir para recargar baterías.
-Se ven drones pequeños y radios selladas en sus cajas originales.
-El sistema de seguridad aún tiene sensores de movimiento activos.
-Abrirla sin disparar las alarmas requiere manos expertas.`,
+    title: "Tanque de agua en azotea",
+    text:
+`Un tanque resquebrajado filtra a través de una grieta.
+Con un parche, podría rendir varios días más.
+Subir herramientas pesa en la espalda y en el reloj.
+El barrio mira en silencio cada gota que cae.
+Una decisión técnica con impacto humano inmediato.`,
     choices: [
-      { text: "Desactivar sensores y entrar", effect: { materials: 2, fuel: 1, advanceMs: 150000 } },
-      { text: "Romper el cristal de un golpe", effect: { materials: 3, threat: 2, zombies: 1, advanceMs: 60000 } },
-      { text: "Robar solo lo del mostrador", effect: { ammo: 1, morale: -1, advanceMs: 90000 } },
+      { text: "Parchear con resina y cinta", effect: { materials: -2, water: +3, advanceMs: 150000 } },
+      { text: "Sifonear lo que quede", effect: { water: +2, advanceMs: 90000 } },
+      { text: "Dejarlo, buscar otra fuente", effect: { advanceMs: 60000, threat: +1 } },
     ],
   },
+
   {
     id: 236,
-    title: "Anciano con huerto escondido",
-    text: `Un anciano aparece desde una cabaña señalando un huerto oculto.
-Ofrece zanahorias a cambio de agua limpia para sus plantas.
-Dice que ha visto bandas merodeando la zona durante la noche.
-Su vista se nubla y parece estar cansado de defender el lugar.
-Ayudarlo podría asegurar un aliado o un problema futuro.`,
+    title: "Callejón con ecos",
+    text:
+`Un eco repetido devuelve cada paso con burla metálica.
+La pared muestra marcas de garras viejas y nuevas.
+Un tablero caído deja ver un acceso lateral.
+Entrar podría evitar un control más adelante.
+A veces la salida es por un agujero en la pared.`,
     choices: [
-      { text: "Intercambiar agua por verduras", effect: { water: -2, food: 4, morale: 1, advanceMs: 90000 } },
-      { text: "Proponer vigilar por la noche", effect: { threat: -1, morale: 2, advanceMs: 180000 } },
-      { text: "Rehusar y marcharse", effect: { morale: -1, advanceMs: 60000 } },
+      { text: "Entrar por la abertura", effect: { zombies: 2, materials: +1, advanceMs: 120000 } },
+      { text: "Pasar de largo pero atentos", effect: { threat: -1, advanceMs: 60000 } },
+      { text: "Sellar el acceso con clavos", effect: { materials: -1, advanceMs: 90000 } },
     ],
   },
+
   {
     id: 237,
-    title: "Barrio inundado con botes",
-    text: `Las calles están cubiertas por agua turbia hasta las rodillas.
-En algunas azoteas hay botes pequeños amarrados con cuerdas.
-Podríamos usar un bote para cruzar rápido o saquear casas en alto.
-Pero moverse en el agua atrae a criaturas escondidas bajo la superficie.
-El olor a humedad y gasolina se mezcla con basura flotante.`,
+    title: "Descompostura del vehículo",
+    text:
+`El motor tose y muere a mitad de una calle silenciosa.
+Bajo el capó, una correa gastada pide jubilación.
+Arreglar aquí expone el lomo y las espaldas.
+Empujar hasta un taller consume piernas y paciencia.
+Sin movilidad, el mapa se hace más pequeño.`,
     choices: [
-      { text: "Tomar un bote y cruzar", effect: { fuel: -1, threat: 2, advanceMs: 150000 } },
-      { text: "Saquear una casa elevada", effect: { food: 2, water: 2, zombies: 1, advanceMs: 120000 } },
-      { text: "Bordear el barrio", effect: { fuel: -2, advanceMs: 180000 } },
+      { text: "Arreglar en sitio", effect: { materials: -2, fuel: -1, advanceMs: 150000, threat: +1 } },
+      { text: "Empujar hasta el taller", effect: { morale: -1, advanceMs: 180000 } },
+      { text: "Abandonarlo por hoy", effect: { fuel: -1, morale: -1, advanceMs: 60000 } },
     ],
   },
+
   {
     id: 238,
-    title: "Autopista con señales contradictorias",
-    text: `Dos señales en la autopista apuntan a refugios distintos.
-Una está escrita a mano con pintura fresca, la otra es oficial pero vieja.
-Los autos abandonados alrededor muestran impactos de bala recientes.
-Decidir rápido evita quedar expuestos en el descampado.
-La elección podría llevarnos a ayuda o a una emboscada.`,
+    title: "Señales de caza",
+    text:
+`Un ciervo cruza a lo lejos entre malezas altas.
+Las latas de comida se agotan y el estómago cruje.
+Cazar implica ruido y tiempo de espera.
+Si sale bien, habrá carne; si sale mal, caminaremos más.
+La naturaleza aún ofrece opciones caras de pagar.`,
     choices: [
-      { text: "Seguir la señal oficial", effect: { fuel: -1, morale: 1, advanceMs: 90000 } },
-      { text: "Confiar en la señal pintada", effect: { fuel: -1, threat: 2, advanceMs: 90000 } },
-      { text: "Acampar y analizar mapas", effect: { food: -1, morale: -1, advanceMs: 180000 } },
+      { text: "Cazar con sigilo", effect: { food: +3, ammo: -1, advanceMs: 180000 } },
+      { text: "Tender trampas simples", effect: { materials: -1, food: +1, advanceMs: 150000 } },
+      { text: "Seguir sin cazar", effect: { morale: -1, advanceMs: 60000 } },
     ],
   },
+
   {
     id: 239,
-    title: "Estación de servicio ocupada",
-    text: `Una banda armada vigila una estación de servicio bien defendida.
-Piden una parte de nuestro combustible a cambio de dejarnos pasar.
-El líder promete que no dispararán si colaboramos sin preguntas.
-Nuestros vehículos necesitan llenar el tanque antes de seguir.
-Negociar mal podría terminar en un tiroteo peligroso.`,
+    title: "Vecina paranoica",
+    text:
+`Una mujer agita un cuchillo desde una ventana con cortinas.
+Dice que todos mienten y que el agua está envenenada.
+El miedo contagia más rápido que una fiebre.
+Con calma quizá comparta información útil.
+Con gritos, todo se vuelve ruido y peligro.`,
     choices: [
-      { text: "Pagar lo exigido", effect: { fuel: -4, morale: 1, advanceMs: 90000 } },
-      { text: "Intentar robar de noche", effect: { fuel: 5, threat: 3, karma: -3, advanceMs: 150000 } },
-      { text: "Buscar otra estación", effect: { fuel: -2, advanceMs: 180000 } },
+      { text: "Hablar con paciencia y dejar víveres", effect: { food: -1, water: -1, karma: +1, morale: +1, advanceMs: 120000 } },
+      { text: "Desarmarla y registrar la casa", effect: { materials: +1, threat: +2, advanceMs: 90000 } },
+      { text: "Marcharse sin mirar atrás", effect: { advanceMs: 60000 } },
     ],
   },
+
   {
     id: 240,
-    title: "Refugio subterráneo sellado",
-    text: `En el bosque hay una compuerta metálica con un símbolo de refugio.
-El panel electrónico pide un código que no tenemos.
-Quizá dentro haya comida enlatada y baterías para meses.
-Forzarla podría activar trampas defensivas aún operativas.
-La lluvia empieza a caer y dificulta el trabajo de ganzúa.`,
+    title: "Pasillo inundado",
+    text:
+`El edificio inunda su pasillo con agua turbia y fría.
+Flotan papeles, botellas y un osito con una oreja rota.
+Para cruzar hay que mojar botas y moral.
+Dar la vuelta suma tiempo que duele al reloj.
+A veces el camino correcto está bajo el agua.`,
     choices: [
-      { text: "Intentar abrir con herramientas", effect: { materials: -2, threat: 1, advanceMs: 180000 } },
-      { text: "Buscar pistas en los alrededores", effect: { morale: 1, advanceMs: 90000 } },
-      { text: "Dejarlo para otra ocasión", effect: { advanceMs: 60000 } },
+      { text: "Cruzar a pie y rápido", effect: { water: +0, morale: -1, advanceMs: 60000 } },
+      { text: "Buscar tablones y pasar en seco", effect: { materials: -1, advanceMs: 120000 } },
+      { text: "Rodear por la calle lateral", effect: { fuel: -1, advanceMs: 150000 } },
     ],
   },
+
   {
     id: 241,
-    title: "Tren detenido con vagones vacíos",
-    text: `Un tren de mercancías está detenido en medio de la vía principal.
-Los vagones abiertos muestran cajas de madera parcialmente vacías.
-Los alrededores están silenciosos salvo por el viento que silba.
-Podríamos mover algunas cajas para revisar lo que queda adentro.
-Demorarnos aquí expone a ataques desde la línea de árboles.`,
+    title: "Puerta con rezos",
+    text:
+`Detrás de una puerta, voces rezan en susurros acompasados.
+Golpear podría espantar o abrir esperanzas.
+Tal vez tengan comida, tal vez solo miedo compartido.
+Forzar genera ruido que rebota en el pasillo.
+La fe también pide pan y agua.`,
     choices: [
-      { text: "Examinar vagones uno por uno", effect: { materials: 3, food: 1, advanceMs: 150000 } },
-      { text: "Tomar solo lo visible", effect: { materials: 1, advanceMs: 60000 } },
-      { text: "Seguir las vías a pie", effect: { fuel: -1, morale: -1, advanceMs: 120000 } },
+      { text: "Pedir paso y ofrecer intercambio", effect: { food: -1, water: -1, morale: +1, karma: +1, advanceMs: 120000 } },
+      { text: "Forzar la puerta con palanca", effect: { materials: -1, threat: +2, zombies: 2, advanceMs: 90000 } },
+      { text: "Dejarles una nota y seguir", effect: { karma: +1, advanceMs: 60000 } },
     ],
   },
+
   {
     id: 242,
-    title: "Montón de cartas sin enviar",
-    text: `En una oficina postal derruida hay sacos llenos de cartas sin enviar.
-Muchas están selladas con promesas y despedidas escritas a mano.
-El mapa del barrio muestra algunas direcciones aún accesibles.
-Entregar cartas podría levantar la moral de desconocidos y propia.
-Quemarlas serviría como señal de humo para otros supervivientes.`,
+    title: "Alarma de auto",
+    text:
+`Un auto comienza a aullar con luces intermitentes.
+La calle despierta y con ella los que rondan.
+Apagarla requiere abrir y desconectar cables.
+Dejarla suelta llama problemas por minutos valiosos.
+Cada segundo suena como una sirena de guerra.`,
     choices: [
-      { text: "Repartir algunas cartas", effect: { morale: 3, karma: 4, advanceMs: 180000 } },
-      { text: "Usarlas para encender una señal", effect: { threat: -1, advanceMs: 90000 } },
-      { text: "Tomar sellos y marchar", effect: { materials: 1, advanceMs: 60000 } },
+      { text: "Abrir y desconectar", effect: { materials: -1, threat: -2, advanceMs: 60000 } },
+      { text: "Empujarla al río", effect: { threat: -1, fuel: -1, advanceMs: 120000 } },
+      { text: "Huir del ruido", effect: { threat: +1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 243,
-    title: "Aparición en el espejo de la tienda",
-    text: `Un espejo en una tienda rota refleja una figura que no vemos al girarnos.
-Algunos creen que es superstición, otros temen un francotirador escondido.
-Debajo del mostrador hay un cajón con llave que podría contener algo útil.
-El reflejo podría ser un montaje para distraer a los curiosos.
-Decidir rápido evita que la paranoia consuma al grupo.`,
+    title: "Guardia dormido",
+    text:
+`El turno de guardia termina con un ronquido confesado.
+Las ojeras pesan más que el casco en la frente.
+Castigar endurece, comprender construye.
+La noche que viene pondrá a prueba la decisión.
+El descanso también es un recurso finito.`,
     choices: [
-      { text: "Investigar el reflejo", effect: { threat: 1, advanceMs: 60000 } },
-      { text: "Forzar el cajón rápidamente", effect: { ammo: 2, morale: -1, advanceMs: 90000 } },
-      { text: "Romper el espejo y retirarse", effect: { materials: 1, advanceMs: 30000 } },
+      { text: "Sanción leve y café extra", effect: { morale: -1, water: -1, advanceMs: 60000 } },
+      { text: "Rotar turnos y charla honesta", effect: { morale: +1, advanceMs: 120000 } },
+      { text: "Ignorar y seguir", effect: { threat: +1, advanceMs: 30000 } },
     ],
   },
+
   {
     id: 244,
-    title: "Hospital con generador activo",
-    text: `Un hospital pequeño mantiene luces gracias a un generador que zumba.
-Las puertas de urgencias están cerradas con muebles desde dentro.
-Se escuchan gritos débiles y golpes metálicos en los pasillos.
-El generador podría abastecer al campamento por una semana.
-Entrar requiere desmantelar barricadas y arriesgar contagio.`,
+    title: "Cadenas en el portón",
+    text:
+`El portón principal cruje con cadenas añadidas a la noche.
+Sin la llave, cortar toma tiempo y metal.
+Un acceso trasero existe, pero pasa junto a un basural.
+Quedarse encerrados aprieta el pecho y la agenda.
+La salida de hoy decide la entrada de mañana.`,
     choices: [
-      { text: "Entrar a rescatar pacientes", effect: { medicine: 3, zombies: 2, karma: 3, advanceMs: 150000 } },
-      { text: "Robar el generador", effect: { fuel: 4, threat: 2, morale: -2, advanceMs: 120000 } },
-      { text: "Dejar el lugar tranquilo", effect: { advanceMs: 60000 } },
+      { text: "Cortar cadenas con sierras", effect: { materials: -2, advanceMs: 150000, threat: +1 } },
+      { text: "Usar el acceso trasero", effect: { advanceMs: 120000, zombies: 2 } },
+      { text: "Esperar a primera luz", effect: { morale: +1, advanceMs: 180000, threat: -1 } },
     ],
   },
+
   {
     id: 245,
-    title: "Ventisca repentina en carretera",
-    text: `Una ventisca fría azota la carretera levantando nieve y polvo.
-La visibilidad se reduce a pocos metros y el viento corta la piel.
-Encontrar refugio rápido es vital para evitar hipotermia.
-Seguir conduciendo puede hacer que el vehículo derrape y se estrelle.
-Perder tiempo buscando abrigo afectará el progreso del día.`,
+    title: "La promesa del sur",
+    text:
+`Un mensajero insiste en que al sur hay un corredor seguro.
+El mapa marca un tramo abierto pero vigilado.
+Partir ahora gasta combustible y coraje en cuotas grandes.
+Quedarse implica reforzar para otra noche más.
+La esperanza no alimenta, pero camina rápido.`,
     choices: [
-      { text: "Refugiarse en una casa cercana", effect: { morale: 1, threat: -1, advanceMs: 120000 } },
-      { text: "Seguir conduciendo lentamente", effect: { fuel: -2, advanceMs: 90000 } },
-      { text: "Montar un campamento improvisado", effect: { materials: -2, food: -1, advanceMs: 150000 } },
+      { text: "Iniciar marcha al sur", effect: { fuel: -2, morale: +2, threat: -1, advanceMs: 240000 } },
+      { text: "Preparar salida para mañana", effect: { materials: -1, morale: +1, advanceMs: 120000 } },
+      { text: "Descartar el plan", effect: { morale: -2, karma: -1, advanceMs: 60000 } },
     ],
   },
 ];
