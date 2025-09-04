@@ -55,6 +55,23 @@ import {
   cureCondition,
 } from "./systems/status";
 
+
+// === Botiquín helpers ===
+type MedkitItem = { name: string; medicines: number; kind?: string };
+function isMedkit(it:any){ 
+  const n = typeof it === 'string' ? it : it?.name ?? it?.title ?? '';
+  return String(n).toLowerCase().includes('botiquín') || String(n).toLowerCase().includes('botiquin');
+}
+function medkitCount(it:any):number{
+  if(typeof it==='object' && typeof it?.medicines==='number') return it.medicines;
+  // default capacity if plain string
+  return 4;
+}
+function setMedkitCount(it:any, count:number):any{
+  if(typeof it==='object') return { ...it, medicines: count };
+  return { name: String(it), medicines: count, kind: 'medico' };
+}
+
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
 type GameState = "menu" | "playing" | "paused" | "victory" | "gameover";
@@ -373,7 +390,7 @@ export default function App(){
     const ap = (playersRef.current ?? []).find(p => p.id === apId);
     if (!ap) { next(); return; }
 
-    const end = applyEndOfTurnConditions(ap, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
+    const end = applyEndOfTurnConditions(ap, (msg)=>{ pushBattle?.(msg); onLog?.(msg); });
     if (end.hpDelta || end.newConditions) {
       updatePlayer(ap.id, {
         hp: Math.max(0, ap.hp + (end.hpDelta || 0)),
@@ -1091,7 +1108,7 @@ function finishEnemyPhase() {
 
   if (firstId) {
     const pl = alive.find(p => p.id === firstId)!;
-    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
+    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); onLog?.(msg); });
     if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
     if (start.hpDelta) {
       const hp = clamp(pl.hp + start.hpDelta, 0, pl.hpMax);
@@ -1353,7 +1370,7 @@ function advanceTurn() {
   setActivePlayerId(prev => prev === nextId ? prev : nextId);
   const pl = aliveNow.find(p => p.id === nextId);
   if (pl) {
-    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
+    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); onLog?.(msg); });
     if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
     if (start.hpDelta) {
       const hp = clamp(pl.hp + start.hpDelta, 0, pl.hpMax);
@@ -1414,7 +1431,7 @@ function advanceTurn() {
       woke.forEach(n => {
         const line = `💤 ${n} se sacude y recupera el sentido.`;
         pushBattle?.(line);
-        pushLog?.(line);
+        onLog?.(line);
       });
     }
   }
@@ -1702,6 +1719,7 @@ function advanceTurn() {
   }
 
   function giveItemToPlayer(playerId:string, item:string){
+    onLog?.(`📦 Traslado: se entregó "${item}" al inventario del jugador ${players.find(p=>p.id===playerId)?.name ?? playerId}.`);
     if(!stash.includes(item)) return;
     const p = players.find(pp=>pp.id===playerId);
     if(!p) return;
@@ -1721,6 +1739,7 @@ function advanceTurn() {
       return {...p, inventory: inv};
     }));
     setStash(s=> [...s, item]);
+    onLog?.(`📦 Traslado: ${players.find(p=>p.id===playerId)?.name ?? playerId} devolvió "${item}" al alijo.`);
   }
 
   function removePlayer(id:string){
@@ -2310,7 +2329,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
       <div className="card bg-neutral-900 border-neutral-800 p-6">
         <h3 className="text-xl font-bold mb-3">Detalles</h3>
         {selected ? (
-          <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} />
+          <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} onLog={pushLog} />
         ) : (
           <p className="text-neutral-500">Selecciona un personaje.</p>
         )}
@@ -2319,7 +2338,10 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
   );
 }
 
-function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Player>)=>void}){
+function Details({player, onUpdate, addMedicine, onLog}:{player:Player; onUpdate:(patch:Partial<Player>)=>void; addMedicine:(n:number)=>void; onLog:(s:string)=>void}){
+  const [medkitOpen, setMedkitOpen] = useState(false);
+  const [medkitTake, setMedkitTake] = useState(1);
+
   const selWeapon = getSelectedWeapon(player);
   const isFirearm = isRangedWeapon(selWeapon);
   const loaded = isFirearm ? getLoadedAmmo(player, selWeapon.id) : 0;
@@ -2349,6 +2371,89 @@ function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Play
           Cajas de munición en mochila: {totalAmmoInInventory(player.inventory)}
         </div>
       </div>
+
+      {/* Botón de Botiquín (verde breath neon) */}
+      {player.inventory.some(isMedkit) && (
+        <>
+          <button
+            className="mt-2 px-3 py-2 rounded-xl font-bold text-black bg-green-400 animate-pulse shadow-[0_0_20px_rgba(34,197,94,0.6)] hover:shadow-[0_0_30px_rgba(34,197,94,0.9)]"
+            onClick={()=> setMedkitOpen(true)}
+            title="Abrir botiquín"
+          >
+            🩹 Botiquín (detalle)
+          </button>
+          {medkitOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={()=>setMedkitOpen(false)} />
+              <div className="relative z-10 w-full max-w-md mx-4 rounded-2xl p-6 bg-zinc-900/95 border border-green-500/40 shadow-[0_0_25px_rgba(34,197,94,0.5)]">
+                <h4 className="text-lg font-bold text-green-400">Botiquín — Detalle</h4>
+                <p className="text-sm text-neutral-300 mt-1">Toca + o – para elegir cuántas medicinas extraer.</p>
+                <div className="mt-3 p-3 rounded-xl bg-neutral-800">
+                  {(() => {
+                    // tomar el primer botiquín
+                    const idx = player.inventory.findIndex(isMedkit);
+                    const it = player.inventory[idx];
+                    const total = medkitCount(it);
+                    return (
+                      <div className="space-y-2">
+                        <div className="text-sm">Tiene <b>{total}</b> medicinas dentro.</div>
+                        <div className="flex items-center gap-3">
+                          <button className="px-3 py-2 rounded-lg border border-white/10" onClick={()=> setMedkitTake(n=> Math.max(1, n-1))}>−</button>
+                          <div className="min-w-[3rem] text-center text-lg">{medkitTake}</div>
+                          <button className="px-3 py-2 rounded-lg border border-white/10" onClick={()=> setMedkitTake(n=> Math.min(total, n+1))}>+</button>
+                        </div>
+                        <button
+                          className="mt-2 w-full px-3 py-2 rounded-xl font-bold bg-green-500/90 hover:bg-green-500 text-black"
+                          onClick={()=>{
+                            const variants = [
+                              "Usaste el botiquín y recuperaste +{N} medicina.",
+                              "Botiquín abierto: extraes {N} dosis curativas.",
+                              "Desabrochaste el botiquín: obtienes {N} medicinas.",
+                              "Con calma, sacas {N} medicamentos del botiquín.",
+                              "El botiquín rinde: {N} unidades a la reserva.",
+                              "Retiras {N} medicinas para el campamento.",
+                              "Abres el botiquín y añades {N} al stock médico.",
+                              "Extraes {N} del botiquín. La esperanza crece.",
+                              "Del botiquín tomas {N} dosis. Registro actualizado.",
+                              "El cierre se abre: {N} medicinas extraídas.",
+                              "Revisas vendajes y tomas {N} medicinas.",
+                              "Organizas el botiquín y agregas {N} a la reserva.",
+                              "Sacas {N} pastillas y frascos del botiquín.",
+                              "El equipo médico gana {N} gracias al botiquín.",
+                              "Del kit sanitario extraes {N} medicinas útiles."
+                            ];
+                            const idxMk = player.inventory.findIndex(isMedkit);
+                            if(idxMk<0) return;
+                            const item = player.inventory[idxMk];
+                            const total = medkitCount(item);
+                            const take = Math.min(medkitTake, total);
+                            // actualizar inventario del jugador
+                            const left = total - take;
+                            const newItem = left>0 ? setMedkitCount(item, left) : null;
+                            onUpdate({
+                              inventory: player.inventory.map((x,i)=> i===idxMk ? (newItem ?? undefined) : x).filter(Boolean) as any[]
+                            });
+                            // actualizar recursos del campamento
+                            addMedicine(take);
+                            // logs: abrir y uso
+                            onLog?.("🟢 Abriste el botiquín.");
+                            const msg = variants[Math.floor(Math.random()*variants.length)].replace("{N}", String(take));
+                            onLog?.(`🩹 ${msg}`);
+                            // cerrar modal
+                            setMedkitOpen(false);
+                          }}
+                        >
+                          Sacar medicina
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
       {isFirearm && hasBoxes && (
         <button
           className="btn btn-sm mt-2"

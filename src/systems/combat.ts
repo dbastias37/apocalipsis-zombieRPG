@@ -8,9 +8,9 @@ export type CombatActor = {
   isDefending?: boolean;
 };
 
-export const ENEMY_CRIT_RATE_ON_PLAYER_PASSIVE = 0.5;
+export const ENEMY_CRIT_RATE_ON_PLAYER_PASSIVE = 0.15; // reducido para balance
 export const CRIT_MULTIPLIER = 1.5;
-export const DEFEND_REDUCTION = 0.35;
+export const DEFEND_REDUCTION = 0.5; // defender reduce más daño
 
 export function isAlive(a: CombatActor) {
   return a.hp > 0;
@@ -33,6 +33,7 @@ export function dealDamage(target: CombatActor, base: number, crit = false, defe
 
 export function enemyImmediateStrike(enemy: CombatActor, player: CombatActor, baseDamage: number) {
   const crit = Math.random() < ENEMY_CRIT_RATE_ON_PLAYER_PASSIVE;
-  const dmg = dealDamage(player, baseDamage, crit, !!player.isDefending);
+  const tunedBase = Math.max(1, Math.round(baseDamage * 0.85));
+  const dmg = dealDamage(player, tunedBase, crit, !!player.isDefending);
   return { crit, dmg };
 }
