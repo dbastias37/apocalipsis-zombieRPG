@@ -5,6 +5,7 @@ import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
 import EndTurnOverlay, { EndTurnData } from "./components/EndTurnOverlay";
+import { Conditions } from "./systems/status";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -23,6 +24,9 @@ type Player = {
   ammo: number;
   inventory: string[];
   attrs: Attributes;
+  conditions?: Conditions;
+  equippedWeaponId?: string;
+  backpackCapacity?: number;
 };
 
 type Enemy = { id: string; name: string; hp: number; hpMax: number; def: number; atk: number; special?: string; };
@@ -288,7 +292,9 @@ export default function App(){
       status: "ok",
       ammo: 20,
       inventory: ["Navaja"],
-      attrs
+      attrs,
+      equippedWeaponId: 'fists',
+      backpackCapacity: 8,
     };
   }
 
@@ -507,6 +513,21 @@ export default function App(){
       if(newHp<=0){
         pushLog(`✅ ${enemy.name} cae hecho trizas.`);
         setThreat(t=>Math.max(0,t-2));
+
+        // Botín por muerte de enemigo → para el actor que mató
+        const tier = tierByEnemy(enemy);
+        if (Math.random() < 0.6) { // 60% de soltar arma
+          const drop = randomWeaponNameByTier(tier as any);
+          const res = tryAddToBackpack(actor.id, drop);
+          pushLog(`🧷 ${enemy.name} suelta ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+        }
+
+        // Bonus raro: ampliación mochila (5%)
+        if (Math.random() < 0.05) {
+          const name = "Ampliación de Mochila (+4)";
+          const res = tryAddToBackpack(actor.id, name);
+          pushLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+        }
       }
       if(hasGun){
         updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
@@ -769,14 +790,41 @@ export default function App(){
 
     discoverRandomNote(0.25);
 
-    if(r.item){
-      const vivos = players.filter(p=>p.status!=="dead");
-      if(vivos.length>0){
-        const pick = vivos[Math.floor(Math.random()*vivos.length)];
-        const idx = players.findIndex(p=>p.id===pick.id);
-        updatePlayer(pick.id, { inventory: [...players[idx].inventory, r.item] });
+    if (r.item) {
+      const holderId = activePlayer?.id;
+      if (holderId) {
+        const res = tryAddToBackpack(holderId, r.item);
+        pushLog(`🔎 Encuentras ${r.item}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+      } else {
+        setStash(s=>[...s, r.item]);
+        pushLog(`🔎 Encuentras ${r.item}. Guardado en el alijo.`);
       }
     }
+
+    (function maybeFindWeaponOnExploration(playerId?: string){
+      // 25% chance arma mid-tier
+      if (Math.random() < 0.25) {
+        const drop = randomWeaponNameByTier('mid');
+        if (playerId) {
+          const res = tryAddToBackpack(playerId, drop);
+          pushLog(`🧰 En la exploración hallas ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+        } else {
+          setStash(s=>[...s, drop]);
+          pushLog(`🧰 En la exploración hallas ${drop}. Guardado en el alijo.`);
+        }
+      }
+      // 3% chance de ampliación de mochila (si la usas)
+      const BP_UP = "Ampliación de Mochila (+4)";
+      if (Math.random() < 0.03) {
+        if (playerId) {
+          const res = tryAddToBackpack(playerId, BP_UP);
+          pushLog(`🎁 Encuentras ${BP_UP}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+        } else {
+          setStash(s=>[...s, BP_UP]);
+          pushLog(`🎁 Encuentras ${BP_UP}. Guardado en el alijo.`);
+        }
+      }
+    })(activePlayer?.id);
 
     pushLog(`${ev.text} — Recompensa obtenida.`);
     setExplorationActive(false);
@@ -819,8 +867,47 @@ export default function App(){
 
   // ——— Inventario ———
   const [stash, setStash] = useState<string[]>(["Pistola","Botiquín","Linterna","Cuerda","Chatarra"]);
+
+  // Capacidad de mochila
+  function backpackUsed(p: Player){ return p.inventory.length; }
+  function backpackCap(p: Player){ return p.backpackCapacity ?? 8; }
+
+  // Añadir item intentando mochila y si no cabe, al alijo (stash)
+  function tryAddToBackpack(playerId: string, itemName: string): {added:boolean, to:'backpack'|'stash'} {
+    const p = players.find(pp=>pp.id===playerId);
+    if(!p){ setStash(s=>[...s, itemName]); return {added:true, to:'stash'}; }
+    if (backpackUsed(p) < backpackCap(p)) {
+      updatePlayer(playerId, { inventory: [...p.inventory, itemName] });
+      return { added:true, to:'backpack' };
+    } else {
+      setStash(s=>[...s, itemName]);
+      return { added:true, to:'stash' };
+    }
+  }
+
+  // Loot por tier
+  const LOW_TIER = ['Navaja','Cuchillo','Bate de madera','Garrote','Botella rota','Destornillador grande','Hondita'];
+  const MID_TIER = ['Tubo de metal','Bate con clavos','Machete','Pala','Llave inglesa','Barra palanca','Sierra manual','Pistola','Ballesta'];
+  const HIGH_TIER = ['Hacha','Maza casera','Katana','Cañería pesada','Hacha de bombero','Rifle','Escopeta','Subfusil (SMG)'];
+
+  function randomFrom(arr:string[]){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function tierByEnemy(enemy:{hpMax:number; atk:number; def:number}){
+    const score = (enemy.hpMax||0) + (enemy.atk||0)*3 + (enemy.def||0)*2;
+    if (score >= 40) return 'high';
+    if (score >= 22) return 'mid';
+    return 'low';
+  }
+  function randomWeaponNameByTier(tier:'low'|'mid'|'high'){
+    if (tier==='high') return randomFrom(HIGH_TIER);
+    if (tier==='mid')  return randomFrom(MID_TIER);
+    return randomFrom(LOW_TIER);
+  }
+
   function giveItemToPlayer(playerId:string, item:string){
     if(!stash.includes(item)) return;
+    const p = players.find(pp=>pp.id===playerId);
+    if(!p) return;
+    if (backpackUsed(p) >= backpackCap(p)) { pushLog(`La mochila de ${p.name} está llena.`); return; }
     setStash(s=>{
       const idx = s.indexOf(item);
       const copy = [...s]; copy.splice(idx,1); return copy;
@@ -1184,6 +1271,10 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
               <div className="mt-2">
                 <Bar label="PV" current={p.hp} max={p.hpMax} color="green" />
                 <Bar label="Energía" current={p.energy} max={p.energyMax} color="blue" />
+              </div>
+
+              <div className="text-xs text-neutral-400 mt-1">
+                Mochila: {p.inventory.length}/{p.backpackCapacity ?? 8}
               </div>
 
               <div className="mt-2 flex gap-2">
