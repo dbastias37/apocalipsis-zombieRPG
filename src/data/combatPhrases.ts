@@ -270,3 +270,44 @@ export const FLEE_LINES = [
   "Con una voltereta, ${P} cae fuera del alcance.",
   "${P} desaparece detrás de un camión volcado.",
 ];
+
+// === Contraataques de enemigos (20 variantes) ===
+export type CounterVars = { A: string; P: string; D?: number; EFF?: string }; // A=Attacker(enemigo), P=Player
+export function renderCounter(tpl: string, v: CounterVars){
+  return tpl
+    .replaceAll("${A}", v.A)
+    .replaceAll("${P}", v.P)
+    .replaceAll("${D}", v.D != null ? String(v.D) : "")
+    .replaceAll("${EFF}", v.EFF ?? "");
+}
+
+export const ENEMY_COUNTER_20: string[] = [
+  "${A} contraataca por instinto y ha ${EFF} a ${P} (−${D} PV).",
+  "Aprovechando el fallo, ${A} se abalanza y ${EFF} a ${P} (−${D}).",
+  "${A} responde al hueco y ${EFF} a ${P} (−${D}).",
+  "Un golpe rápido de ${A} ${EFF} a ${P} (−${D}).",
+  "${A} gira la guardia y ${EFF} a ${P} (−${D}).",
+  "Movimiento seco: ${A} ${EFF} a ${P} (−${D}).",
+  "Contra embestida: ${A} ${EFF} a ${P} (−${D}).",
+  "Lectura perfecta de ${A}: ${EFF} a ${P} (−${D}).",
+  "Cuando ${P} falla, ${A} castiga y ${EFF} (−${D}).",
+  "Reflejos fríos: ${A} ${EFF} a ${P} (−${D}).",
+  "${A} encuentra un ángulo y ${EFF} a ${P} (−${D}).",
+  "Finta brutal de ${A} ${EFF} a ${P} (−${D}).",
+  "Golpe al descuido: ${A} ${EFF} a ${P} (−${D}).",
+  "Paso lateral de ${A} y ${EFF} a ${P} (−${D}).",
+  "${A} no perdona: ${EFF} a ${P} (−${D}).",
+  "Zarpazo de ${A}: ${EFF} a ${P} (−${D}).",
+  "Reacción inmediata: ${A} ${EFF} a ${P} (−${D}).",
+  "Bloqueo y respuesta: ${A} ${EFF} a ${P} (−${D}).",
+  "Contraataque limpio: ${A} ${EFF} a ${P} (−${D}).",
+  "Oportunidad cobrada: ${A} ${EFF} a ${P} (−${D}).",
+];
+
+// Efectos legibles
+export function counterEffectText(kind: "bleeding"|"stunned"|"infected"|"hit"){
+  if (kind === "bleeding") return "dejado sangrando";
+  if (kind === "stunned")  return "aturdido";
+  if (kind === "infected") return "infectado";
+  return "golpeado";
+}
