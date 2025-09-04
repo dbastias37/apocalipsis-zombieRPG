@@ -10,6 +10,7 @@ import { weaponFlavorFrom, hitPhraseByFlavor, MISS_MELEE, MISS_RANGED, TAIL_BLEE
 import { findWeaponById, WEAPONS } from "./data/weapons";
 import WeaponPicker from "./components/WeaponPicker";
 import CombatEndSummary from "./components/overlays/CombatEndSummary";
+import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import {
   Conditions,
@@ -17,7 +18,6 @@ import {
   addCondition,
   removeCondition,
   applyStartOfTurnConditions,
-  cureCondition,
 } from "./systems/status";
 
 // === Tipos ===
@@ -82,6 +82,9 @@ type TimedEvent = {
 // === Utilidades ===
 const DAY_LENGTH_MIN = 35;
 const DAY_LENGTH_MS = DAY_LENGTH_MIN * 60 * 1000;
+
+// Activa el modo de contraataque (sin fase de turnos de enemigos)
+const USE_COUNTERATTACK_MODE = true;
 
 function uid() { return Math.random().toString(36).slice(2,10); }
 function clamp(n:number,min:number,max:number){return Math.max(min,Math.min(max,n));}
@@ -215,6 +218,7 @@ export default function App(){
   // overlay de fin de combate
   const [showCombatEnd, setShowCombatEnd] = useState(false);
   const [combatEndLines, setCombatEndLines] = useState<string[]>([]);
+  const [infectionDead, setInfectionDead] = useState<{id:string,name:string}|null>(null);
 
   // Turnos
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
@@ -326,6 +330,23 @@ export default function App(){
       setActivePlayerId(alive[0]?.id ?? null);
     }
   }, [players, isEnemyPhase]);
+
+  useEffect(()=>{
+    const t = setInterval(()=>{
+      const now = Date.now();
+      const ps = playersRef.current ?? [];
+      for (const p of ps){
+        const inf = p.conditions?.infected;
+        if (inf?.expiresAtMs && now >= inf.expiresAtMs && p.hp > 0){
+          updatePlayer(p.id, { hp: 0, conditions: removeCondition(p.conditions,'infected') });
+          setMorale(m => Math.max(0, Math.round(m * 0.70)));
+          setInfectionDead({ id: p.id, name: p.name });
+          break;
+        }
+      }
+    }, 1000);
+    return ()=>clearInterval(t);
+  }, []);
 
   // Reloj del día
   useEffect(()=>{
@@ -620,6 +641,43 @@ export default function App(){
     const spawned = Array.from({length: count}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
     setEnemies(spawned);
   }
+
+  function randInt(min:number, max:number){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+  type CounterEffect = 'hit'|'bleeding'|'stunned'|'infected';
+
+  function pickCounterEffect(): CounterEffect {
+    const r = Math.random();
+    if (r < 0.35) return 'bleeding';
+    if (r < 0.55) return 'stunned';
+    if (r < 0.70) return 'infected';
+    return 'hit';
+  }
+
+  function applyCounterEffectToPlayer(playerId:string, eff:CounterEffect){
+    const p = playersRef.current?.find(x=>x.id===playerId);
+    if (!p) return;
+    let newCond = { ...(p.conditions ?? {}) };
+    if (eff === 'bleeding'){
+      newCond = addCondition(newCond, { id:'bleeding', persistent:true });
+    } else if (eff === 'stunned'){
+      newCond = addCondition(newCond, { id:'stunned', turnsLeft:1 });
+    } else if (eff === 'infected'){
+      newCond = addCondition(newCond, { id:'infected', persistent:true, expiresAtMs: Date.now()+120000 });
+    }
+    updatePlayer(playerId, { conditions: newCond });
+  }
+
+  function applyDamageToPlayer(playerId:string, dmg:number, enemy:Enemy){
+    const p = playersRef.current?.find(x=>x.id===playerId);
+    if(!p) return;
+    const hp = Math.max(0, p.hp - dmg);
+    updatePlayer(playerId, { hp });
+    if (hp <= 0) {
+      updatePlayer(playerId, { status: "dead" });
+      pushLog(`💀 ${p.name} cae para no levantarse jamás.`);
+    }
+  }
   function performAttack(enemyId: string){
     if (controlsLocked || isEnemyPhase) return;
     if (!startPlayerActionOrBlock()) return;
@@ -663,17 +721,34 @@ export default function App(){
 
     if(!hit){
       const missPool = isRanged ? MISS_RANGED : MISS_MELEE;
-      const line = render(pick(missPool), { P: actor.name, E: enemy.name, W: w.name });
-      pushBattle(line);
-      pushLog(line);
+      const missLine = render(pick(missPool), { P: actor.name, E: enemy.name, W: w.name });
+      pushBattle(missLine);
+      pushLog(missLine);
       setDayStats(s=>({
         ...s,
         misses: s.misses + 1,
         shotsFired: s.shotsFired + (isRanged ? 1 : 0),
       }));
       endPlayerActionAwaitEnter(() => {
-        timePenalty(45);
-        advanceTurn();
+        if (!USE_COUNTERATTACK_MODE) { timePenalty(45); advanceTurn(); return; }
+
+        const eff = pickCounterEffect();
+        const dmg = randInt(1,10);
+        const effVerb =
+          eff==='bleeding' ? "dejado sangrando" :
+          eff==='stunned'  ? "aturdido" :
+          eff==='infected' ? "infectado" : "golpeado";
+
+        applyDamageToPlayer(actor.id, dmg, enemy);
+
+        if (eff!=='hit') applyCounterEffectToPlayer(actor.id, eff);
+
+        pushBattle(`${enemy.name} contraatacó y ha ${effVerb} a ${actor.name} (−${dmg} PV).`);
+
+        postActionContinueRef.current = () => {
+          timePenalty(45);
+          advanceTurn();
+        };
       });
       return;
     }
@@ -828,9 +903,20 @@ function finishEnemyPhase() {
     const pl = alive.find(p => p.id === firstId)!;
     const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
     if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
+    if (start.hpDelta) {
+      const hp = clamp(pl.hp + start.hpDelta, 0, pl.hpMax);
+      updatePlayer(pl.id, { hp, ...(hp<=0 ? { status:"dead" } : {}) });
+      if (hp <= 0) {
+        pushLog(`💀 ${pl.name} cae para no levantarse jamás.`);
+        setActedThisRound(m => ({ ...(m || {}), [pl.id]: true }));
+        requestAnimationFrame(() => advanceTurn());
+        return;
+      }
+    }
     if (start.skipAction) {
       setActedThisRound(m => ({ ...(m || {}), [pl.id]: true }));
       requestAnimationFrame(() => advanceTurn());
+      return;
     }
     pushBattle?.(`— Turno de ${pl.name} —`);
   }
@@ -851,31 +937,44 @@ function finishEnemyPhase() {
     });
   }
 
-  function cureOneStatusIfAny(p: Player){
-    const order: (keyof Conditions)[] = ['bleeding','stunned','infected'];
-    let c = p.conditions ?? {};
-    for (const id of order){
-      if (hasCondition(c, id)){
-        c = cureCondition(c, id);
-        logMsg(`💊 ${p.name} se trata y elimina estado: ${id==='bleeding'?'sangrado':id==='stunned'?'aturdido':'infección'}.`);
-        updatePlayer(p.id, { conditions: c });
-        break;
-      }
-    }
-  }
-
   function healSelf(){
     if (controlsLocked || isEnemyPhase) return;
     if (!activePlayer) return;
     const actor = activePlayer;
-    if(resources.medicine<=0) { pushLog("Sin medicina suficiente."); return; }
     if (!startPlayerActionOrBlock()) return;
+    const p = actor;
+    const isInf = hasCondition(p.conditions,'infected');
+    const isBle = hasCondition(p.conditions,'bleeding');
+
+    if (isInf) {
+      if ((resources.medicine ?? 0) <= 0) {
+        pushBattle(`${p.name} necesita medicina para curar la infección.`);
+        endPlayerActionAwaitEnter(()=>{});
+        return;
+      }
+      setResources(r => ({ ...r, medicine: Math.max(0, (r.medicine ?? 0) - 1) }));
+      updatePlayer(p.id, { conditions: removeCondition(p.conditions,'infected') });
+      pushBattle(`${p.name} usa medicina y supera la infección.`);
+      endPlayerActionAwaitEnter(()=>{ timePenalty(30); advanceTurn(); });
+      return;
+    }
+
+    if (isBle) {
+      updatePlayer(p.id, { conditions: removeCondition(p.conditions,'bleeding') });
+      pushBattle(`${p.name} detiene la hemorragia y se estabiliza.`);
+      endPlayerActionAwaitEnter(()=>{ timePenalty(20); advanceTurn(); });
+      return;
+    }
+
+    if(resources.medicine<=0) {
+      pushBattle(`Sin medicina suficiente.`);
+      endPlayerActionAwaitEnter(()=>{});
+      return;
+    }
     const healAmt = Math.min(10, actor.hpMax - actor.hp);
     updatePlayer(actor.id, { hp: clamp(actor.hp+10, 0, actor.hpMax) });
     setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
-    pushLog(`💊 ${actor.name} se venda rápido (+${healAmt} PV).`);
     pushBattle(render(pick(HEAL_LINES), { P: actor.name, V: healAmt }));
-    cureOneStatusIfAny(actor);
     touchPlayerStats(actor.id);
     setBattleStats(prev => {
       const bp = prev.byPlayer[actor.id] ?? { meleeHits:0, meleeMisses:0, rangedHits:0, rangedMisses:0, heals:0, points:0 };
@@ -1027,18 +1126,27 @@ function advanceTurn() {
   // Calculamos localmente si todos actuaron (usando la marca anterior)
   const aliveNow = (playersRef.current ?? []).filter(p => p.hp > 0);
   const order = (turnOrderRef.current?.length ? turnOrderRef.current : aliveNow.map(p => p.id));
-  const localActed = { ...(actedThisRoundRef.current || {}) };
+  let localActed = { ...(actedThisRoundRef.current || {}) };
   if (currentId) localActed[currentId] = true;
   const everyoneActed = aliveNow.length > 0 && aliveNow.every(p => !!localActed[p.id]);
 
-  // 1) Si todos actuaron -> fase enemigos
+  // 1) Si todos actuaron -> fase enemigos (salvo modo contraataque)
   if (everyoneActed) {
-    setIsEnemyPhase(true);
-    setActivePlayerId(null);
-    pushBattle?.("Prepárate: enemigos al ataque.");
-    pushBattle?.("— Fase de Enemigos —");
-    runEnemyTurnRound();
-    return;
+    if (!USE_COUNTERATTACK_MODE) {
+      setIsEnemyPhase(true);
+      setActivePlayerId(null);
+      pushBattle?.("Prepárate: enemigos al ataque.");
+      pushBattle?.("— Fase de Enemigos —");
+      runEnemyTurnRound();
+      return;
+    } else {
+      setActedThisRound(() => {
+        const flags: Record<string, boolean> = {};
+        aliveNow.forEach(p => { flags[p.id] = false; });
+        return flags;
+      });
+      localActed = {};
+    }
   }
 
   // 2) Buscar siguiente jugador vivo que no haya actuado
@@ -1066,6 +1174,15 @@ function advanceTurn() {
   if (pl) {
     const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
     if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
+    if (start.hpDelta) {
+      const hp = clamp(pl.hp + start.hpDelta, 0, pl.hpMax);
+      updatePlayer(pl.id, { hp, ...(hp<=0 ? { status:"dead" } : {}) });
+      if (hp <= 0) {
+        pushLog(`💀 ${pl.name} cae para no levantarse jamás.`);
+        requestAnimationFrame(() => advanceTurn());
+        return;
+      }
+    }
     if (start.skipAction) {
       setActedThisRound(m => ({ ...(m || {}), [pl.id]: true }));
       requestAnimationFrame(() => advanceTurn());
@@ -1540,6 +1657,12 @@ function advanceTurn() {
           setActivePlayerId(firstId ?? null);
         }}
       />
+
+      <InfectionFatalModal
+        open={!!infectionDead}
+        playerName={infectionDead?.name ?? ""}
+        onClose={() => setInfectionDead(null)}
+      />
       <WelcomeOverlay />
     </div>
   );
@@ -1743,14 +1866,25 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
       <div className="md:col-span-2 card bg-neutral-900 border-neutral-800 p-6">
         <h3 className="text-xl font-bold mb-4">👥 Supervivientes</h3>
         <div className="grid sm:grid-cols-2 gap-3">
-          {players.map(p=>(
+          {players.map(p=>{
+            const isBleeding = hasCondition(p.conditions,'bleeding');
+            const isInfected = hasCondition(p.conditions,'infected');
+            const isStunned = hasCondition(p.conditions,'stunned');
+            const inf = p.conditions?.infected;
+            const left = inf?.expiresAtMs ? Math.max(0, inf.expiresAtMs - Date.now()) : 0;
+            const mm = String(Math.floor(left/60000)).padStart(2,'0');
+            const ss = String(Math.floor((left%60000)/1000)).padStart(2,'0');
+            return (
             <div
               key={p.id}
-              className={clsx(
-                "p-4 rounded-xl border",
+              className={[
+                "rounded-2xl border p-3 transition",
                 p.status==="dead"?"bg-neutral-950 border-neutral-900 opacity-60":"bg-neutral-800/50 border-neutral-700",
-                (!isEnemyPhase && p.id === activePlayerId) && "ring-2 ring-emerald-400 animate-pulse"
-              )}
+                (!isEnemyPhase && p.id === activePlayerId) ? "ring-2 ring-emerald-400 animate-pulse" : "",
+                isStunned ? "saturate-0 grayscale" : "",
+                isBleeding ? "border-red-500/60 bg-red-900/20 neon-red animate-breath-fast" : "",
+                isInfected ? "border-emerald-400/60 bg-emerald-900/20 neon-green" : ""
+              ].join(" ")}
             >
               <div className="flex justify-between items-start gap-2">
                 <input
@@ -1758,23 +1892,21 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
                   value={p.name}
                   onChange={(e)=>onUpdatePlayer(p.id,{ name: e.target.value })}
                 />
-                <span className={clsx("px-2 py-1 rounded text-xs", p.status==="dead"?"bg-red-900":"bg-green-900")}>
-                  {p.status==="dead"?"Caído":"Vivo"}
-                </span>
               </div>
               {p.status!=="dead" && (
-                <div className="flex items-center gap-2 text-xs mt-1">
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-700/20 border border-emerald-600/40">Vivo</span>
-                  {hasCondition(p.conditions,'infected') && (
-                    <span className="px-2 py-0.5 rounded-full bg-yellow-700/20 border border-yellow-600/40">Infectado</span>
-                  )}
-                  {hasCondition(p.conditions,'bleeding') && (
-                    <span className="px-2 py-0.5 rounded-full bg-red-700/20 border border-red-600/40">Sangrando</span>
-                  )}
-                  {hasCondition(p.conditions,'stunned') && (
-                    <span className="px-2 py-0.5 rounded-full bg-blue-700/20 border border-blue-600/40">Aturdido</span>
-                  )}
+                <>
+                <div className="text-xs opacity-80">
+                  <span className="px-2 py-0.5 rounded bg-white/10 mr-1">Vivo</span>
+                  {isBleeding && <span className="px-2 py-0.5 rounded bg-red-600/80">Sangrando</span>}
+                  {isInfected && <span className="px-2 py-0.5 rounded bg-emerald-600/80">Infectado</span>}
+                  {isStunned && <span className="px-2 py-0.5 rounded bg-zinc-500/80">Aturdido</span>}
                 </div>
+                {isInfected && (
+                  <div className="text-xs mt-1 opacity-80">
+                    Tiempo para curarse: {mm}:{ss}
+                  </div>
+                )}
+                </>
               )}
               <p className="text-xs text-neutral-400">{p.profession}</p>
 
@@ -1794,7 +1926,8 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
                 )}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       </div>
 
