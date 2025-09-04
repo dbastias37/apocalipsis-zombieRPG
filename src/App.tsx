@@ -8,7 +8,15 @@ import CombatLogPanel from "./components/CombatLogPanel";
 import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
 import { MELEE_MISS, RANGED_MISS, HEAL_LINES, FLEE_LINES, ENEMY_HIT, ENEMY_MISS, renderTpl, pick } from "./data/combatPhrases";
 import { findWeaponById } from "./data/weapons";
-import { Conditions } from "./systems/status";
+import {
+  Conditions,
+  hasCondition,
+  addCondition,
+  applyStartOfTurnConditions,
+  applyEndOfTurnConditions,
+  cureCondition,
+  type ConditionId,
+} from "./systems/status";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -238,6 +246,17 @@ export default function App(){
     }
   }, [isEnemyPhase, players]);
 
+  useEffect(() => {
+    if (isEnemyPhase) return;
+    if (!activePlayer) return;
+    const p = activePlayer;
+    const start = applyStartOfTurnConditions({ ...p, maxHp: p.hpMax }, logMsg);
+    if (start.newConditions) updatePlayer(p.id, { conditions: start.newConditions });
+    if (start.skipAction) {
+      advanceTurn();
+    }
+  }, [turn, isEnemyPhase]);
+
   // Reloj del día
   useEffect(()=>{
     if(state!=="playing") return;
@@ -293,6 +312,7 @@ export default function App(){
       status: "ok",
       ammo: 20,
       inventory: ["Navaja"],
+      conditions: {},
       attrs,
       equippedWeaponId: 'fists',
       backpackCapacity: 8,
@@ -308,6 +328,11 @@ export default function App(){
 
   function pushLog(entry:string){
     setLog(prev => [entry, ...prev].slice(0,200));
+  }
+
+  function logMsg(s:string){
+    if (typeof pushBattle === "function") pushBattle(s);
+    if (typeof pushLog === "function") pushLog(s);
   }
 
   function formatTime(ms:number){
@@ -547,6 +572,36 @@ export default function App(){
     advanceTurn();
   }
 
+  function maybeInflictStatusFromEnemyHit(enemy: any, target: Player, dmg: number){
+    if (dmg <= 0) return;
+
+    const INFECT_P = 0.28;
+    const BLEED_P  = 0.22;
+    const STUN_P   = 0.15;
+
+    let newC = target.conditions ?? {};
+
+    if (!hasCondition(newC,'infected') && Math.random() < INFECT_P) {
+      newC = addCondition(newC, { id:'infected', persistent:true });
+      logMsg(`🧪 ${target.name} ha sido infectado.`);
+    }
+
+    if (!hasCondition(newC,'bleeding') && Math.random() < BLEED_P) {
+      const turns = 2 + Math.floor(Math.random()*2);
+      newC = addCondition(newC, { id:'bleeding', turnsLeft: turns, intensity: 1 });
+      logMsg(`🩸 ${target.name} empieza a sangrar (${turns} turnos).`);
+    }
+
+    const heavy = dmg >= 6;
+    if (!hasCondition(newC,'stunned') && (heavy ? Math.random() < (STUN_P+0.1) : Math.random() < STUN_P)) {
+      const turns = 1 + Math.floor(Math.random()*2);
+      newC = addCondition(newC, { id:'stunned', turnsLeft: turns });
+      logMsg(`💫 ${target.name} queda aturdido (${turns} turnos).`);
+    }
+
+    updatePlayer(target.id, { conditions: newC });
+  }
+
   function runEnemyTurnRound(idx: number) {
     const enemy = aliveEnemies[idx];
     if (!enemy) {
@@ -563,6 +618,7 @@ export default function App(){
         updatePlayer(target.id, { hp: Math.max(0, target.hp - dmg) });
         pushLog(`💥 ${enemy.name} golpea a ${target.name}: -${dmg} PV.`);
         pushBattle(renderTpl(pick(ENEMY_HIT), { P: target.name, E: enemy.name, V: dmg }));
+        maybeInflictStatusFromEnemyHit(enemy, target, dmg);
         if (target.hp - dmg <= 0) {
           updatePlayer(target.id, { status: "dead" });
           pushLog(`💀 ${target.name} cae para no levantarse jamás.`);
@@ -604,6 +660,19 @@ export default function App(){
     timePenalty(10); advanceTurn();
   }
 
+  function cureOneStatusIfAny(p: Player){
+    const order: ConditionId[] = ['bleeding','stunned','infected'];
+    let c = p.conditions ?? {};
+    for (const id of order){
+      if (hasCondition(c, id)){
+        c = cureCondition(c, id);
+        logMsg(`💊 ${p.name} se trata y elimina estado: ${id==='bleeding'?'sangrado':id==='stunned'?'aturdido':'infección'}.`);
+        updatePlayer(p.id, { conditions: c });
+        break;
+      }
+    }
+  }
+
   function healSelf(){
     if (isEnemyPhase) return;
     if (!activePlayer) return;
@@ -615,6 +684,7 @@ export default function App(){
     setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
     pushLog(`💊 ${actor.name} se venda rápido (+${healAmt} PV).`);
     pushBattle(renderTpl(pick(HEAL_LINES), { P: actor.name, V: healAmt }));
+    cureOneStatusIfAny(actor);
     timePenalty(25); advanceTurn();
   }
 
@@ -641,6 +711,19 @@ export default function App(){
 
   function advanceTurn() {
     if (alivePlayers.length === 0) return;
+    if (activePlayer) {
+      const p = activePlayer;
+      const end = applyEndOfTurnConditions({ ...p, maxHp: p.hpMax }, logMsg);
+      if (end.hpDelta) {
+        const newHp = Math.max(0, p.hp + end.hpDelta);
+        updatePlayer(p.id, { hp: newHp, conditions: end.newConditions });
+        if (newHp <= 0) {
+          updatePlayer(p.id, { status: "dead" });
+        }
+      } else {
+        if (end.newConditions) updatePlayer(p.id, { conditions: end.newConditions });
+      }
+    }
 
     let updated = actedThisRound;
     if (activePlayer) {
@@ -1246,6 +1329,20 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
                   {p.status==="dead"?"Caído":"Vivo"}
                 </span>
               </div>
+              {p.status!=="dead" && (
+                <div className="flex items-center gap-2 text-xs mt-1">
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-700/20 border border-emerald-600/40">Vivo</span>
+                  {hasCondition(p.conditions,'infected') && (
+                    <span className="px-2 py-0.5 rounded-full bg-yellow-700/20 border border-yellow-600/40">Infectado</span>
+                  )}
+                  {hasCondition(p.conditions,'bleeding') && (
+                    <span className="px-2 py-0.5 rounded-full bg-red-700/20 border border-red-600/40">Sangrando</span>
+                  )}
+                  {hasCondition(p.conditions,'stunned') && (
+                    <span className="px-2 py-0.5 rounded-full bg-blue-700/20 border border-blue-600/40">Aturdido</span>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-neutral-400">{p.profession}</p>
 
               <div className="mt-2">
