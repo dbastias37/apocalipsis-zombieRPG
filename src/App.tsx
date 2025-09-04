@@ -33,6 +33,8 @@ import DayEndModal from "./components/overlays/DayEndModal";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
 import { day2ExplorationCards } from "./data/days/day2/explorationCards.day2";
+import { day3DecisionCards } from "./data/days/day3/decisionCards.day3";
+import { day3ExplorationCards } from "./data/days/day3/explorationCards.day3";
 import type { ExplorationCard } from "./data/explorationCards";
 import type { DecisionCard } from "./data/decisionCards";
 import {
@@ -178,11 +180,13 @@ function mapDecisionCards(cards: DecisionCard[]): Card[] {
 }
 
 function getDecisionDeckForDay(d: number) {
+  if (d === 3) return day3DecisionCards;
   if (d === 2) return day2DecisionCards;
   return day1DecisionCards;
 }
 
 function getExplorationDeckForDay(d: number): ExplorationCard[] {
+  if (d === 3) return day3ExplorationCards;
   if (d === 2) return day2ExplorationCards;
   return [];
 }
@@ -619,7 +623,7 @@ export default function App(){
   }
 
   function endOfDay(reason:'deck'|'timer'|'manual'='manual'){
-    if(day===1){
+    if(day===1 || day===2){
       setDayEndLines(makeDaySummaryLines());
       setShowDayEnd(true);
       setControlsLocked(true);
@@ -2019,12 +2023,17 @@ function advanceTurn() {
         open={showDayEnd}
         lines={dayEndLines}
         onNextDay={() => {
+          const upcoming = day + 1;
           setShowDayEnd(false);
           setControlsLocked(false);
           setTimeRunning(true);
           setStats({ decisions:0, explorations:0, battles:0, kills:0 });
           nextDay(true);
-          pushLog("— Comienza el Día 2 —");
+          setDay(upcoming);
+          setClockMs(DAY_LENGTH_MS);
+          setDecisionDeck(shuffle(mapDecisionCards(getDecisionDeckForDay(upcoming))));
+          setExplorationDeck(shuffle(getExplorationDeckForDay(upcoming)));
+          pushLog(`— Comienza el Día ${upcoming} —`);
         }}
       />
       <WelcomeOverlay />
