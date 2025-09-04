@@ -452,15 +452,11 @@ export default function App(){
   // Reloj del día
   useEffect(()=>{
     if(state!=="playing") return;
-    let id: number|undefined;
-    id = window.setInterval(()=>{
+    const id = window.setInterval(()=>{
       if(!timeRunning) return;
-      setClockMs((ms)=>{
+      setClockMs(ms=>{
         const next = ms - 1000;
-        if(next <= 0){
-          endOfDay('timer');
-          return DAY_LENGTH_MS;
-        }
+        if(next <= 0){ endOfDay('timer'); return DAY_LENGTH_MS; }
         return next;
       });
     }, 1000);
@@ -1688,6 +1684,10 @@ function advanceTurn() {
     setClockMs(ms=> Math.max(0, ms - seconds*1000));
   }
 
+  useEffect(()=>{
+    console.debug("[state] state:", state, "timeRunning:", timeRunning, "day:", day);
+  }, [state, timeRunning, day]);
+
   // ——— Inventario ———
   const [stash, setStash] = useState<string[]>(["Pistola","Botiquín","Linterna","Cuerda","Chatarra"]);
 
@@ -1766,7 +1766,15 @@ function advanceTurn() {
           <p className="mt-3 text-neutral-300">Sistema ligero con mazos, tiempo real y supervivencia.</p>
           <div className="mt-10 space-x-3">
             <button className="btn btn-red text-white" onClick={start}>Comenzar</button>
-            <button className="btn btn-ghost" onClick={()=>{setState("playing"); setTimeRunning(false);}}>Entrar en Pausa</button>
+            <button
+              className="btn btn-ghost"
+              onClick={()=>{
+                setTimeRunning(false);
+                setState("paused");
+              }}
+            >
+              Entrar en Pausa
+            </button>
           </div>
           <div className="mt-16 text-neutral-400 text-sm">
             <p>Consejo: las acciones consumen tiempo del día. La noche es peligrosa.</p>
@@ -1908,7 +1916,10 @@ function advanceTurn() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="p-8 rounded-2xl border border-neutral-700 bg-neutral-900 max-w-md w-full space-y-4">
             <h2 className="text-2xl font-bold text-red-400">Pausado</h2>
-            <button className="btn btn-red text-white w-full" onClick={()=>setState("playing")}>Continuar</button>
+            <button className="btn btn-red text-white w-full" onClick={()=>{
+              setState("playing");
+              // reanudar queda en control del botón de play/pausa del HUD, no forzamos timeRunning
+            }}>Continuar</button>
           </div>
         </div>
       )}
