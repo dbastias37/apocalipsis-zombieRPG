@@ -696,37 +696,39 @@ export default function App(){
     });
   }
 
-  function finishEnemyPhase() {
-    // 1) Registrar fin de fase
-    pushBattle?.("El enemigo ha terminado su turno.");
+  
+function finishEnemyPhase() {
+  // Registrar fin de fase
+  pushBattle?.("El enemigo ha terminado su turno.");
 
-    // 2) Resetear banderas de turno de jugadores vivos
-    const alive = alivePlayersList();
-    setActedThisRound(() => {
-      const flags: Record<string, boolean> = {};
-      alive.forEach(p => { flags[p.id] = false; });
-      return flags;
-    });
+  // Resetear banderas de turno de jugadores vivos
+  const alive = (playersRef.current ?? []).filter(p => p.hp > 0);
+  setActedThisRound(() => {
+    const flags: Record<string, boolean> = {};
+    alive.forEach(p => { flags[p.id] = false; });
+    return flags;
+  });
 
-    // 3) Salir de la fase de enemigos
-    setIsEnemyPhase(false);
+  // Salir de la fase de enemigos
+  setIsEnemyPhase(false);
 
-    // 4) Entregar turno al primer jugador vivo según el orden
-    const order = (turnOrderRef.current?.length ? turnOrderRef.current : alive.map(p => p.id));
-    const firstId = order.find(pid => alive.some(p => p.id === pid)) ?? (alive[0]?.id ?? null);
-    setActivePlayerId(firstId ?? null);
+  // Entregar turno al primer jugador vivo según el orden
+  const order = (turnOrderRef.current?.length ? turnOrderRef.current : alive.map(p => p.id));
+  const firstId = order.find(pid => alive.some(p => p.id === pid)) ?? (alive[0]?.id ?? null);
+  setActivePlayerId(firstId ?? null);
 
-    if (firstId) {
-      const pl = alive.find(p => p.id === firstId)!;
-      const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
-      if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
-      if (start.skipAction) {
-        setActedThisRound(m => ({ ...m, [pl.id]: true }));
-        requestAnimationFrame(() => advanceTurn());
-      }
-      pushBattle?.(`— Turno de ${playersRef.current.find(p=>p.id===firstId)?.name} —`);
+  if (firstId) {
+    const pl = alive.find(p => p.id === firstId)!;
+    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
+    if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
+    if (start.skipAction) {
+      setActedThisRound(m => ({ ...(m || {}), [pl.id]: true }));
+      requestAnimationFrame(() => advanceTurn());
     }
+    pushBattle?.(`— Turno de ${pl.name} —`);
   }
+}
+
 
   function defend(){
     if (isEnemyPhase) return;
@@ -827,52 +829,72 @@ export default function App(){
     return alive.length > 0 && alive.every(p => acted[p.id]);
   }
 
-  function advanceTurn() {
-    // Si estamos en fase de enemigos, no reasignar jugadores aquí
-    if (isEnemyPhaseRef.current) return;
+  
+function advanceTurn() {
+  // No reasignar jugadores si estamos en fase de enemigos
+  if (isEnemyPhaseRef.current) return;
 
-    const currentId = activePlayerIdRef.current ?? null;
+  const currentId = activePlayerIdRef.current ?? null;
 
-    // 1) ¿ya actuaron todos los jugadores vivos?
-    if (allPlayersActedThisRound()) {
-      // Cambiar a fase de enemigos
-      setIsEnemyPhase(true);
-      setActivePlayerId(null);
-      pushBattle?.("Prepárate: enemigos al ataque.");
-      pushBattle?.("— Fase de Enemigos —");
-      runEnemyTurnRound(); // al final de runEnemyTurnRound debe llamarse finishEnemyPhase()
-      return;
-    }
-
-    // 2) Buscar siguiente jugador vivo que no haya actuado
-    const nextId = nextUnactedPlayerId(currentId);
-    if (!nextId) {
-      // fallback por si corrió un KO en medio; fuerza fase enemigos
-      setIsEnemyPhase(true);
-      setActivePlayerId(null);
-      pushBattle?.("Prepárate: enemigos al ataque.");
-      pushBattle?.("— Fase de Enemigos —");
-      runEnemyTurnRound();
-      return;
-    }
-
-    // 3) Activar turno del siguiente jugador y aplicar condiciones de inicio
-    setActivePlayerId(prev => prev === nextId ? prev : nextId);
-    const alive = alivePlayersList();
-    const pl = alive.find(p => p.id === nextId);
-    if (pl) {
-      const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
-      if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
-
-      if (start.skipAction) {
-        // No puede actuar por aturdido, cuenta como que actuó
-        setActedThisRound(m => ({ ...m, [pl.id]: true }));
-        // Avanzar inmediatamente al siguiente
-        requestAnimationFrame(() => advanceTurn());
-        return;
-      }
-    }
+  // 0) Asegurar marca de "ya actuó" para el jugador activo si no está marcada
+  if (currentId) {
+    setActedThisRound(prev => {
+      if (prev && prev[currentId]) return prev;
+      return { ...(prev || {}), [currentId]: true };
+    });
   }
+
+  // Calculamos localmente si todos actuaron (usando la marca anterior)
+  const aliveNow = (playersRef.current ?? []).filter(p => p.hp > 0);
+  const order = (turnOrderRef.current?.length ? turnOrderRef.current : aliveNow.map(p => p.id));
+  const localActed = { ...(actedThisRoundRef.current || {}) };
+  if (currentId) localActed[currentId] = true;
+  const everyoneActed = aliveNow.length > 0 && aliveNow.every(p => !!localActed[p.id]);
+
+  // 1) Si todos actuaron -> fase enemigos
+  if (everyoneActed) {
+    setIsEnemyPhase(true);
+    setActivePlayerId(null);
+    pushBattle?.("Prepárate: enemigos al ataque.");
+    pushBattle?.("— Fase de Enemigos —");
+    runEnemyTurnRound();
+    return;
+  }
+
+  // 2) Buscar siguiente jugador vivo que no haya actuado
+  const startIdx = currentId ? Math.max(0, order.indexOf(currentId)) : -1;
+  let nextId: string | null = null;
+  for (let step = 1; step <= order.length; step++) {
+    const idx = (startIdx + step) % order.length;
+    const pid = order[idx];
+    const p = aliveNow.find(ap => ap.id === pid);
+    if (p && !localActed[pid]) { nextId = pid; break; }
+  }
+  if (!nextId) {
+    // fallback defensivo
+    setIsEnemyPhase(true);
+    setActivePlayerId(null);
+    pushBattle?.("Prepárate: enemigos al ataque.");
+    pushBattle?.("— Fase de Enemigos —");
+    runEnemyTurnRound();
+    return;
+  }
+
+  // 3) Activar turno del siguiente jugador y aplicar condiciones de inicio
+  setActivePlayerId(prev => prev === nextId ? prev : nextId);
+  const pl = aliveNow.find(p => p.id === nextId);
+  if (pl) {
+    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
+    if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
+    if (start.skipAction) {
+      setActedThisRound(m => ({ ...(m || {}), [pl.id]: true }));
+      requestAnimationFrame(() => advanceTurn());
+      return;
+    }
+    pushBattle?.(`— Turno de ${pl.name} —`);
+  }
+}
+
 
   function updatePlayer(id:string, patch: Partial<Player>){
     setPlayers(ps=> ps.map(p => p.id===id ? {...p, ...patch} : p));
