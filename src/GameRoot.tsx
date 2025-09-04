@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
-import { decisionCards as decisionData } from "./data/decisionCards";
+import { day1DecisionCards as decisionData } from "./data/days/day1/decisionCards.day1";
 import { combatCards as combatData } from "./data/combatCards";
 import TurnOverlay from "./components/TurnOverlay";
 import CountdownBar from "./components/CountdownBar";
@@ -34,6 +34,7 @@ import StoryHome from "@/screens/StoryHome";
 import PauseBanner from "@/components/PauseBanner";
 import WelcomeOverlay from "@/components/WelcomeOverlay";
 import { useGameState } from "@/state/gameState";
+import DayEndSummary from "./components/overlays/DayEndSummary";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -59,6 +60,34 @@ type Player = {
 type Enemy = { id: string; name: string; hp: number; hpMax: number; def: number; atk: number; special?: string; };
 type Resources = { food: number; water: number; medicine: number; fuel: number; ammo: number; materials: number; };
 type Camp = { defense: number; comfort: number };
+
+type DayStats = {
+  enemiesKilled: number;
+  damageDealt: number;
+  damageTaken: number;
+  healsUsed: number;
+  shotsFired: number;
+  misses: number;
+  escapes: number;
+  decisionsTaken: number;
+  exploresDone: number;
+  itemsFound: number;
+  timeSpentMs: number;
+};
+
+const initialDayStats: DayStats = {
+  enemiesKilled: 0,
+  damageDealt: 0,
+  damageTaken: 0,
+  healsUsed: 0,
+  shotsFired: 0,
+  misses: 0,
+  escapes: 0,
+  decisionsTaken: 0,
+  exploresDone: 0,
+  itemsFound: 0,
+  timeSpentMs: 0,
+};
 
 type Card = {
   id: string;
@@ -211,6 +240,9 @@ export default function GameRoot(){
   const [phase, setPhase] = useState<Phase>("dawn");
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
   const [timeRunning, setTimeRunning] = useState(false);
+  const [dayStats, setDayStats] = useState<DayStats>(initialDayStats);
+  const [showDaySummary, setShowDaySummary] = useState(false);
+  const [dayEndReason, setDayEndReason] = useState<"time_out" | "decks_exhausted" | "turns_exhausted" | "manual">("manual");
 
   const [morale, setMorale] = useState(60);
   const [threat, setThreat] = useState(10);
@@ -239,6 +271,15 @@ export default function GameRoot(){
   // Evento con cuenta regresiva
   const [timedEvent, setTimedEvent] = useState<TimedEvent|null>(null);
 
+  useEffect(() => {
+    const noDecision = decisionDeck.length === 0 && decisionDiscard.length === 0;
+    const noCombat = combatDeck.length === 0 && discardCombat.length === 0;
+    if (noDecision && noCombat && !showDaySummary) {
+      setDayEndReason("decks_exhausted");
+      setShowDaySummary(true);
+    }
+  }, [decisionDeck, decisionDiscard, combatDeck, discardCombat, showDaySummary]);
+
   // Registro de narrativa
   const [log, setLog] = useState<string[]>([]);
 
@@ -266,17 +307,17 @@ export default function GameRoot(){
     let id: number|undefined;
     id = window.setInterval(()=>{
       if(!timeRunning) return;
-      setClockMs((ms)=>{
-        const next = ms - 1000;
-        if(next <= 0){
-          endOfDay('timer');
-          return DAY_LENGTH_MS;
-        }
-        return next;
-      });
+      setClockMs(ms=>Math.max(0, ms - 1000));
     }, 1000);
     return ()=> clearInterval(id);
   }, [state, timeRunning]);
+
+  useEffect(()=>{
+    if(clockMs <= 0 && !showDaySummary){
+      setDayEndReason("time_out");
+      setShowDaySummary(true);
+    }
+  }, [clockMs, showDaySummary]);
 
   // Resolver eventos con countdown
   const nowRef = useRef<number>(Date.now());
@@ -305,11 +346,11 @@ export default function GameRoot(){
 
   useEffect(() => {
     const reason = checkEndConditions();
-    if (reason) {
-      advanceToNextDay((dayState.day + 1) as any);
-      setDay(d => d + 1);
+    if (reason && !showDaySummary) {
+      setDayEndReason(reason);
+      setShowDaySummary(true);
     }
-  }, [dayState.remainingMs]);
+  }, [dayState.remainingMs, dayState.turnCounters, dayState.activeDecks, dayState.usedDecks, showDaySummary]);
 
   function createPlayer(name:string, professionId:string, bio:string = ""): Player{
     const attrs: Attributes = { Fuerza: 12, Destreza: 12, Constitucion: 13, Inteligencia: 11, Carisma: 11 };
@@ -443,7 +484,8 @@ export default function GameRoot(){
 
   function passNight(){
     pushLog("⏭️ Deciden aguantar hasta el amanecer...");
-    endOfDay('manual');
+    setDayEndReason("manual");
+    setShowDaySummary(true);
   }
 
   function endOfDay(reason:'deck'|'timer'|'manual'='manual'){
@@ -507,7 +549,7 @@ export default function GameRoot(){
   }
   function resolveDecisionChoice(choice: NonNullable<Card["choices"]>[number]){
     if(choice.effect){
-      const { morale: dm, threat: dt, spawnEnemies, zombies, ...rest } = choice.effect as any;
+      const { morale: dm, threat: dt, spawnEnemies, zombies, advanceMs, ...rest } = choice.effect as any;
       if(dm) setMorale(m=>clamp(m+dm,0,100));
       if(dt) setThreat(t=>Math.max(0,t+dt));
       const resourceKeys: (keyof Resources)[] = ["food","water","medicine","fuel","ammo","materials"];
@@ -532,8 +574,14 @@ export default function GameRoot(){
       }
       if(rest.karma){ pushLog(`🔮 Karma ${rest.karma>0?"+":""}${rest.karma}`); }
       if(rest.survivors){ pushLog(`👥 Se unen ${rest.survivors} supervivientes.`); }
+      if(typeof advanceMs === "number"){
+        const ms = Math.max(0, advanceMs);
+        setClockMs(v=>Math.max(0, v - ms));
+        setDayStats(s=>({ ...s, timeSpentMs: s.timeSpentMs + ms }));
+      }
     }
     pushLog(`📖 Decisión tomada: ${choice.text}`);
+    setDayStats(s=>({ ...s, decisionsTaken: s.decisionsTaken + 1 }));
     if(currentCard){
       if(currentCard.type==="decision") setDecisionDiscard(d=>[currentCard, ...d]);
       else setDiscardCombat(d=>[currentCard, ...d]);
@@ -572,15 +620,26 @@ export default function GameRoot(){
       const newHp = enemy.hp - dmg;
       setEnemies(es=> es.map(e=> e.id===enemyId ? {...e, hp: newHp} : e).filter(e=> e.hp>0));
       pushLog(`🗡️ ${actor.name} ataca en el ${scene} y asesta ${dmg} de daño a ${enemy.name}.`);
+      setDayStats(s=>({
+        ...s,
+        damageDealt: s.damageDealt + dmg,
+        shotsFired: s.shotsFired + (hasGun ? 1 : 0),
+      }));
       if(newHp<=0){
         pushLog(`✅ ${enemy.name} cae hecho trizas.`);
         setThreat(t=>Math.max(0,t-2));
+        setDayStats(s=>({ ...s, enemiesKilled: s.enemiesKilled + 1 }));
       }
       if(hasGun){
         updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
       }
     }else{
       pushLog(`❌ ${actor.name} falla el golpe; el eco en el ${scene} lo distrae.`);
+      setDayStats(s=>({
+        ...s,
+        misses: s.misses + 1,
+        shotsFired: s.shotsFired + (hasGun ? 1 : 0),
+      }));
     }
     // Enemigos contraatacan brevemente
     setTimeout(enemyTurn, 400);
@@ -597,6 +656,7 @@ export default function GameRoot(){
       const dmg = roll(1,6,2).total;
       updatePlayer(target.id, { hp: Math.max(0, target.hp - dmg) });
       pushLog(`💥 ${enemies[0].name} golpea a ${target.name}: -${dmg} PV.`);
+      setDayStats(s=>({ ...s, damageTaken: s.damageTaken + dmg }));
       if(target.hp - dmg <= 0){
         updatePlayer(target.id, { status: "dead" });
         pushLog(`💀 ${target.name} cae para no levantarse jamás.`);
@@ -621,6 +681,7 @@ export default function GameRoot(){
     updatePlayer(actor.id, { hp: clamp(actor.hp+10, 0, actor.hpMax) });
     setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
     pushLog(`💊 ${actor.name} se venda rápido (+10 PV).`);
+    setDayStats(s=>({ ...s, healsUsed: s.healsUsed + 1 }));
     timePenalty(25); advanceTurn();
   }
 
@@ -637,15 +698,15 @@ export default function GameRoot(){
     } else {
       pushLog("⚠️ El escape falla, te rodean por un momento.");
     }
+    setDayStats(s=>({ ...s, escapes: s.escapes + 1 }));
     timePenalty(30); advanceTurn();
   }
 
   function advanceTurn(){
     const reason = checkEndConditions();
     if (reason) {
-      advanceToNextDay((dayState.day + 1) as any);
-      setDay(d => d + 1);
-      setTurn(0);
+      setDayEndReason(reason);
+      setShowDaySummary(true);
       return;
     }
     endTurn();
@@ -770,6 +831,12 @@ export default function GameRoot(){
       }
     }
 
+    setDayStats(s=>({
+      ...s,
+      exploresDone: s.exploresDone + 1,
+      itemsFound: s.itemsFound + (r.item ? 1 : 0),
+    }));
+
     pushLog(`${ev.text} — Recompensa obtenida.`);
     setExplorationActive(false);
     resolveExploreInstance(cardId);
@@ -807,7 +874,9 @@ export default function GameRoot(){
   }
 
   function timePenalty(seconds:number){
-    setClockMs(ms=> Math.max(0, ms - seconds*1000));
+    const ms = seconds*1000;
+    setClockMs(prev=> Math.max(0, prev - ms));
+    setDayStats(s=>({ ...s, timeSpentMs: s.timeSpentMs + ms }));
   }
 
   // ——— Inventario ———
@@ -1044,6 +1113,21 @@ export default function GameRoot(){
           </>
         )}
       </main>
+
+      {showDaySummary && (
+        <DayEndSummary
+          day={day}
+          stats={dayStats}
+          reason={dayEndReason}
+          onNext={()=>{
+            setShowDaySummary(false);
+            const map = { time_out: 'timer', decks_exhausted: 'deck', turns_exhausted: 'manual', manual: 'manual' } as const;
+            endOfDay(map[dayEndReason]);
+            setDayStats(initialDayStats);
+            pushLog(`📅 Día ${day+1} comienza. El grupo descansa y hace balance de la jornada.`);
+          }}
+        />
+      )}
 
       {state==="paused" && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
