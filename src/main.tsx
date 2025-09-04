@@ -1,3 +1,4 @@
+import "./global/installWorldVar";
 import './global/dayShim'
 
 import React from 'react'
