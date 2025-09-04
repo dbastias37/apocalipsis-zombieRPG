@@ -9,18 +9,7 @@ import {
   isCombat,
 } from "@/lib/deck";
 import type { DeckBundle, ChoiceEffect } from "@/lib/deck";
-
-type LogType =
-  | "info"
-  | "combat"
-  | "danger"
-  | "success"
-  | "story"
-  | "death"
-  | "level"
-  | "resource"
-  | "moral"
-  | "system";
+import { gameLog } from "@/utils/logger";
 
 type Props = {
   storyDeck: DeckBundle;
@@ -29,8 +18,6 @@ type Props = {
   onChoose: (effect: ChoiceEffect, sourceCard: AnyCard) => void;
   /** Avanza el turno cuando el jugador decide “pasar” */
   onPassTurn: () => void;
-  /** (Opcional) Para registrar mensajes en tu bitácora */
-  onLog?: (msg: string, type?: LogType) => void;
 };
 
 export default function DeckUI({
@@ -38,7 +25,6 @@ export default function DeckUI({
   combatDeck,
   onChoose,
   onPassTurn,
-  onLog,
 }: Props) {
   const [current, setCurrent] = useState<AnyCard | null>(null);
   // “tick” para forzar rerender cuando mutamos el estado del mazo
@@ -68,19 +54,15 @@ export default function DeckUI({
     const card = drawOne(deck);
     bump();
     if (!card) {
-      onLog?.(
+      gameLog(
         kind === "story"
           ? "No quedan cartas de decisión. Reintegra o baraja."
-          : "No quedan cartas de combate. Reintegra o baraja.",
-        kind === "story" ? "story" : "combat"
+          : "No quedan cartas de combate. Reintegra o baraja."
       );
       return;
     }
     setCurrent(card);
-    onLog?.(
-      `Robas carta: ${card.title}`,
-      kind === "story" ? "story" : "combat"
-    );
+    gameLog(`Robas carta: ${card.title}`);
   }
 
   function discardCurrent() {
@@ -107,9 +89,8 @@ export default function DeckUI({
     const deck = kind === "story" ? storyDeck : combatDeck;
     shuffleDrawPile(deck);
     bump();
-    onLog?.(
-      kind === "story" ? "Barajas el mazo de decisión." : "Barajas el mazo de combate.",
-      "system"
+    gameLog(
+      kind === "story" ? "Barajas el mazo de decisión." : "Barajas el mazo de combate."
     );
   }
 
@@ -117,11 +98,10 @@ export default function DeckUI({
     const deck = kind === "story" ? storyDeck : combatDeck;
     reintegrateDiscards(deck);
     bump();
-    onLog?.(
+    gameLog(
       kind === "story"
         ? "Reintegras descartes al mazo de decisión."
-        : "Reintegras descartes al mazo de combate.",
-      "system"
+        : "Reintegras descartes al mazo de combate."
     );
   }
 

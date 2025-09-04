@@ -35,6 +35,7 @@ import PauseBanner from "@/components/PauseBanner";
 import WelcomeOverlay from "@/components/WelcomeOverlay";
 import { useGameState } from "@/state/gameState";
 import DayEndSummary from "./components/overlays/DayEndSummary";
+import { gameLog } from "./utils/logger";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -318,7 +319,7 @@ export default function GameRoot(){
       if(timedEvent){
         const elapsed = nowRef.current - timedEvent.startedAt;
         if(elapsed >= timedEvent.durationMs){
-          pushLog(`⏳ El evento "${timedEvent.name}" venció y se resuelve automáticamente.`);
+          gameLog(`⏳ El evento "${timedEvent.name}" venció y se resuelve automáticamente.`);
           timedEvent.onExpire();
           setTimedEvent(null);
         }
@@ -330,7 +331,7 @@ export default function GameRoot(){
   // Reglas de fin de partida por moral
   useEffect(()=>{
     if(morale <= 0 && state==="playing"){
-      pushLog("💀 La moral llegó a 0%. El grupo pierde la voluntad de vivir.");
+      gameLog("💀 La moral llegó a 0%. El grupo pierde la voluntad de vivir.");
       setState("gameover");
     }
   }, [morale, state]);
@@ -391,10 +392,6 @@ export default function GameRoot(){
     initDay(1, initialPlayers.map(p => p.name));
   }
 
-  function pushLog(entry:string){
-    setLog(prev => [entry, ...prev].slice(0,200));
-  }
-
   function formatTime(ms:number){
     let total = Math.max(0, ms/1000|0);
     const h = (total/3600|0).toString().padStart(2,"0");
@@ -420,11 +417,11 @@ export default function GameRoot(){
     if(phase!=="night" && !force){
       const newPhase = nextPhase(phase);
       setPhase(newPhase);
-      pushLog(phaseChangeText(newPhase));
+      gameLog(phaseChangeText(newPhase));
       // efectos por fase
       if(newPhase==="night"){
         setThreat(t=>t+8);
-        pushLog("🌙 La noche incrementa el peligro. (+Amenaza)");
+        gameLog("🌙 La noche incrementa el peligro. (+Amenaza)");
       }else if(newPhase==="dawn"){
         setThreat(t=>Math.max(10, t-4));
         setMorale(m=>clamp(m+2,0,100));
@@ -437,7 +434,7 @@ export default function GameRoot(){
     setDay(newDay);
     setPhase("dawn");
     setClockMs(DAY_LENGTH_MS);
-    pushLog(`📅 Comienza el Día ${newDay}.`);
+    gameLog(`📅 Comienza el Día ${newDay}.`);
 
     // Resolución nocturna
     nightResolution();
@@ -455,11 +452,11 @@ export default function GameRoot(){
     }));
     if(resources.food <= 0){
       setMorale(m=>clamp(m-8,0,100));
-      pushLog("⚠️ Hambre en el campamento mina la moral.");
+      gameLog("⚠️ Hambre en el campamento mina la moral.");
     }
     if(resources.water <= 0){
       setMorale(m=>clamp(m-10,0,100));
-      pushLog("⚠️ Falta de agua provoca disputas y enfermedad.");
+      gameLog("⚠️ Falta de agua provoca disputas y enfermedad.");
     }
   }
 
@@ -474,7 +471,7 @@ export default function GameRoot(){
   }
 
   function passNight(){
-    pushLog("⏭️ Deciden aguantar hasta el amanecer...");
+    gameLog("⏭️ Deciden aguantar hasta el amanecer...");
     setDayEndReason("manual");
     setShowDaySummary(true);
   }
@@ -485,17 +482,17 @@ export default function GameRoot(){
     setTurn(0);
     setDecisionDeck(shuffle([...decisionDeckSeed]));
     setDecisionDiscard([]);
-    if(reason==='deck') pushLog("El mazo se agotó. La jornada termina y el grupo descansa.");
+    if(reason==='deck') gameLog("El mazo se agotó. La jornada termina y el grupo descansa.");
 
     if(phase !== 'night'){
       setThreat(t=>t+10);
-      pushLog("La noche cae. La amenaza aumenta.");
+      gameLog("La noche cae. La amenaza aumenta.");
       setPhase('night');
     }
 
     const upcoming = day + 1;
     nextDay(true);
-    pushLog(`=== DÍA ${upcoming} COMIENZA (${reason === 'deck' ? 'mazo agotado' : reason === 'timer' ? 'fin del tiempo' : 'continuación'}) ===`);
+    gameLog(`=== DÍA ${upcoming} COMIENZA (${reason === 'deck' ? 'mazo agotado' : reason === 'timer' ? 'fin del tiempo' : 'continuación'}) ===`);
     setMorale(m=>clamp(m+3,0,100));
   }
 
@@ -503,7 +500,7 @@ export default function GameRoot(){
   function drawDecision(){
     if(currentCard) return;
     if(decisionDeck.length===0){
-      pushLog("No quedan cartas de decisión. Usa 'Integrar descartes' o 'Barajar restantes'.");
+      gameLog("No quedan cartas de decisión. Usa 'Integrar descartes' o 'Barajar restantes'.");
       return;
     }
     const [card, ...rest] = decisionDeck;
@@ -517,7 +514,7 @@ export default function GameRoot(){
       deck = shuffle(discardCombat);
       setDiscardCombat([]);
     }
-    if(deck.length===0){ pushLog("No quedan cartas de combate."); return; }
+    if(deck.length===0){ gameLog("No quedan cartas de combate."); return; }
     const card = deck[0];
     setCombatDeck(deck.slice(1));
     setCurrentCard(card);
@@ -527,16 +524,16 @@ export default function GameRoot(){
     const count = Math.max(1, Math.floor((card.difficulty||12)/6));
     const spawned = Array.from({length: count}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
     setEnemies(spawned);
-    pushLog(`⚔️ ¡Encuentro! (${spawned.length} enemigos)`);
+    gameLog(`⚔️ ¡Encuentro! (${spawned.length} enemigos)`);
   }
   function shuffleDecisionRemaining(){
     setDecisionDeck(d=>shuffle(d));
-    pushLog("🔀 Barajas las decisiones restantes.");
+    gameLog("🔀 Barajas las decisiones restantes.");
   }
   function mergeDecisionDiscards(){
     setDecisionDeck(d=>shuffle([...d, ...decisionDiscard]));
     setDecisionDiscard([]);
-    pushLog("♻️ Reintegras descartes al mazo de decisiones.");
+    gameLog("♻️ Reintegras descartes al mazo de decisiones.");
   }
   function resolveDecisionChoice(choice: NonNullable<Card["choices"]>[number]){
     if(choice.effect){
@@ -561,17 +558,17 @@ export default function GameRoot(){
         const spawned = Array.from({length: zombies}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
         setEnemies(spawned);
         setCurrentCard({ ...(currentCard as Card), type: "combat" });
-        pushLog(`⚔️ Tu decisión provocó un combate (${spawned.length}).`);
+        gameLog(`⚔️ Tu decisión provocó un combate (${spawned.length}).`);
       }
-      if(rest.karma){ pushLog(`🔮 Karma ${rest.karma>0?"+":""}${rest.karma}`); }
-      if(rest.survivors){ pushLog(`👥 Se unen ${rest.survivors} supervivientes.`); }
+      if(rest.karma){ gameLog(`🔮 Karma ${rest.karma>0?"+":""}${rest.karma}`); }
+      if(rest.survivors){ gameLog(`👥 Se unen ${rest.survivors} supervivientes.`); }
       if(typeof advanceMs === "number"){
         const ms = Math.max(0, advanceMs);
         setClockMs(v=>Math.max(0, v - ms));
         setDayStats(s=>({ ...s, timeSpentMs: s.timeSpentMs + ms }));
       }
     }
-    pushLog(`📖 Decisión tomada: ${choice.text}`);
+    gameLog(`📖 Decisión tomada: ${choice.text}`);
     setDayStats(s=>({ ...s, decisionsTaken: s.decisionsTaken + 1 }));
     if(currentCard){
       if(currentCard.type==="decision") setDecisionDiscard(d=>[currentCard, ...d]);
@@ -610,14 +607,14 @@ export default function GameRoot(){
       const dmg = roll(1,6, hasGun?4:mod(actor.attrs.Fuerza)).total;
       const newHp = enemy.hp - dmg;
       setEnemies(es=> es.map(e=> e.id===enemyId ? {...e, hp: newHp} : e).filter(e=> e.hp>0));
-      pushLog(`🗡️ ${actor.name} ataca en el ${scene} y asesta ${dmg} de daño a ${enemy.name}.`);
+      gameLog(`🗡️ ${actor.name} ataca en el ${scene} y asesta ${dmg} de daño a ${enemy.name}.`);
       setDayStats(s=>({
         ...s,
         damageDealt: s.damageDealt + dmg,
         shotsFired: s.shotsFired + (hasGun ? 1 : 0),
       }));
       if(newHp<=0){
-        pushLog(`✅ ${enemy.name} cae hecho trizas.`);
+        gameLog(`✅ ${enemy.name} cae hecho trizas.`);
         setThreat(t=>Math.max(0,t-2));
         setDayStats(s=>({ ...s, enemiesKilled: s.enemiesKilled + 1 }));
       }
@@ -625,7 +622,7 @@ export default function GameRoot(){
         updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
       }
     }else{
-      pushLog(`❌ ${actor.name} falla el golpe; el eco en el ${scene} lo distrae.`);
+      gameLog(`❌ ${actor.name} falla el golpe; el eco en el ${scene} lo distrae.`);
       setDayStats(s=>({
         ...s,
         misses: s.misses + 1,
@@ -646,15 +643,15 @@ export default function GameRoot(){
     if(atkRoll.total >= target.defense){
       const dmg = roll(1,6,2).total;
       updatePlayer(target.id, { hp: Math.max(0, target.hp - dmg) });
-      pushLog(`💥 ${enemies[0].name} golpea a ${target.name}: -${dmg} PV.`);
+      gameLog(`💥 ${enemies[0].name} golpea a ${target.name}: -${dmg} PV.`);
       setDayStats(s=>({ ...s, damageTaken: s.damageTaken + dmg }));
       if(target.hp - dmg <= 0){
         updatePlayer(target.id, { status: "dead" });
-        pushLog(`💀 ${target.name} cae para no levantarse jamás.`);
+        gameLog(`💀 ${target.name} cae para no levantarse jamás.`);
         setMorale(m=>clamp(m-12,0,100));
       }
     }else{
-      pushLog(`🛡️ ${target.name} esquiva entre sombras.`);
+      gameLog(`🛡️ ${target.name} esquiva entre sombras.`);
     }
   }
 
@@ -662,16 +659,16 @@ export default function GameRoot(){
     const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
     if(!actor) return;
     updatePlayer(actor.id, { defense: actor.defense + 3 });
-    pushLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
+    gameLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
     timePenalty(10); advanceTurn();
   }
 
   function healSelf(){
     const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
-    if(!actor || resources.medicine<=0) { pushLog("Sin medicina suficiente."); return; }
+    if(!actor || resources.medicine<=0) { gameLog("Sin medicina suficiente."); return; }
     updatePlayer(actor.id, { hp: clamp(actor.hp+10, 0, actor.hpMax) });
     setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
-    pushLog(`💊 ${actor.name} se venda rápido (+10 PV).`);
+    gameLog(`💊 ${actor.name} se venda rápido (+10 PV).`);
     setDayStats(s=>({ ...s, healsUsed: s.healsUsed + 1 }));
     timePenalty(25); advanceTurn();
   }
@@ -682,12 +679,12 @@ export default function GameRoot(){
     if(!actor) return;
     const fr = roll(1,20, mod(actor.attrs.Destreza));
     if(fr.total>=15){
-      pushLog("🏃 Huyen por pasillos colapsados. ¡Escape exitoso!");
+      gameLog("🏃 Huyen por pasillos colapsados. ¡Escape exitoso!");
       setEnemies([]);
       setCurrentCard(null);
       setMorale(m=>clamp(m-3,0,100));
     } else {
-      pushLog("⚠️ El escape falla, te rodean por un momento.");
+      gameLog("⚠️ El escape falla, te rodean por un momento.");
     }
     setDayStats(s=>({ ...s, escapes: s.escapes + 1 }));
     timePenalty(30); advanceTurn();
@@ -719,7 +716,7 @@ export default function GameRoot(){
     if (undiscovered.length === 0) return;
     const note = undiscovered[Math.floor(Math.random() * undiscovered.length)];
     setFoundNotes(prev => [...prev, note]);
-    pushLog(`Encuentras una nota: “${note.title}”${note.hintLocation ? ` (pista: ${note.hintLocation})` : ''}`);
+    gameLog(`Encuentras una nota: “${note.title}”${note.hintLocation ? ` (pista: ${note.hintLocation})` : ''}`);
   }
 
   function followNote(noteId: number) {
@@ -732,7 +729,7 @@ export default function GameRoot(){
       spawnEnemies(count);
       setCurrentCard({ id: uid(), type: 'combat', title: 'Sigues la pista', text: 'Un peligro acecha.' });
       setExplorationActive(true);
-      pushLog(`Sigues la pista hacia ${note.hintLocation ?? 'un lugar incierto'}: ¡${count} enemigos!`);
+      gameLog(`Sigues la pista hacia ${note.hintLocation ?? 'un lugar incierto'}: ¡${count} enemigos!`);
     } else if (note.leadType === 'cache') {
       const r = note.rewards || {};
       setResources(prev => ({
@@ -754,28 +751,28 @@ export default function GameRoot(){
         }
       }
       setFoundNotes(prev => prev.map(n => n.id === noteId ? { ...n, resolved: true } : n));
-      pushLog(`Sigues la pista: ${note.hintLocation ?? 'ubicación secreta'} — caché encontrado.`);
+      gameLog(`Sigues la pista: ${note.hintLocation ?? 'ubicación secreta'} — caché encontrado.`);
     } else {
-      pushLog("Esta nota no contiene pista accionable.");
+      gameLog("Esta nota no contiene pista accionable.");
     }
   }
 
   useEffect(() => {
     if (explorationActive && enemies.length === 0 && !currentCard) {
       setExplorationActive(false);
-      pushLog("Evento de exploración resuelto.");
+      gameLog("Evento de exploración resuelto.");
     }
   }, [enemies.length, currentCard, explorationActive]);
 
   // ——— Acciones fuera de combate ———
   function exploreArea(){
     if(explorationActive || dayState.activeExploreInstance){
-      pushLog("Ya hay una exploración/evento activo. Resuélvelo primero.");
+      gameLog("Ya hay una exploración/evento activo. Resuélvelo primero.");
       return;
     }
     const cardId = drawCard("explore");
     if(cardId == null){
-      pushLog("No quedan eventos de exploración.");
+      gameLog("No quedan eventos de exploración.");
       return;
     }
     startExploreInstance(cardId);
@@ -791,7 +788,7 @@ export default function GameRoot(){
       const count = 1 + Math.floor(Math.random()*3);
       spawnEnemies(count);
       setCurrentCard({ id: uid(), type: "combat", title: "Encuentro inesperado", text: "Durante la exploración aparecen enemigos." });
-      pushLog(`Exploración interrumpida: ¡${count} enemigos!`);
+      gameLog(`Exploración interrumpida: ¡${count} enemigos!`);
       setExplorationActive(false);
       resolveExploreInstance(cardId);
       advanceTurn();
@@ -828,7 +825,7 @@ export default function GameRoot(){
       itemsFound: s.itemsFound + (r.item ? 1 : 0),
     }));
 
-    pushLog(`${ev.text} — Recompensa obtenida.`);
+    gameLog(`${ev.text} — Recompensa obtenida.`);
     setExplorationActive(false);
     resolveExploreInstance(cardId);
     advanceTurn();
@@ -846,15 +843,15 @@ export default function GameRoot(){
       onExpire: () => {
         setThreat(t=>t+6);
         setMorale(m=>clamp(m-3,0,100));
-        pushLog("🚨 La sirena atrajo una horda lejana (+Amenaza, -Moral).");
+        gameLog("🚨 La sirena atrajo una horda lejana (+Amenaza, -Moral).");
       },
       onResolvePositive: () => {
         setResources(r=>({...r, materials: r.materials+2, fuel: r.fuel+1}));
-        pushLog("🛠️ Neutralizan la sirena y recuperan piezas (+2 materiales, +1 combustible).");
+        gameLog("🛠️ Neutralizan la sirena y recuperan piezas (+2 materiales, +1 combustible).");
       }
     };
     setTimedEvent(ev);
-    pushLog("⏳ Evento activado: una barra indica el tiempo para resolverlo.");
+    gameLog("⏳ Evento activado: una barra indica el tiempo para resolverlo.");
   }
 
   function resolveTimedEventPositively(){
@@ -896,7 +893,7 @@ export default function GameRoot(){
     if(!p) return;
     if(!confirm(`Eliminar a ${p.name} de forma permanente?`)) return;
     setPlayers(ps => ps.filter(x=>x.id!==id));
-    pushLog(`🩸 ${p.name} abandona la historia para siempre.`);
+    gameLog(`🩸 ${p.name} abandona la historia para siempre.`);
     setMorale(m=>clamp(m-6,0,100));
   }
 
@@ -1094,7 +1091,6 @@ export default function GameRoot(){
               camp={camp}
               setResources={setResources}
               setCamp={setCamp}
-              pushLog={pushLog}
             />
 
             <CampPanel resources={resources} setResources={setResources} />
@@ -1114,7 +1110,7 @@ export default function GameRoot(){
             const map = { time_out: 'timer', decks_exhausted: 'deck', turns_exhausted: 'manual', manual: 'manual' } as const;
             endOfDay(map[dayEndReason]);
             setDayStats(initialDayStats);
-            pushLog(`📅 Día ${day+1} comienza. El grupo descansa y hace balance de la jornada.`);
+            gameLog(`📅 Día ${day+1} comienza. El grupo descansa y hace balance de la jornada.`);
           }}
         />
       )}
@@ -1463,7 +1459,7 @@ function InventoryPanel({stash, players, giveItem, takeItem, foundNotes, followN
   );
 }
 
-function CampRepair({resources, camp, setResources, setCamp, pushLog}:{resources:Resources; camp:Camp; setResources:React.Dispatch<React.SetStateAction<Resources>>; setCamp:React.Dispatch<React.SetStateAction<Camp>>; pushLog:(s:string)=>void}){
+function CampRepair({resources, camp, setResources, setCamp}:{resources:Resources; camp:Camp; setResources:React.Dispatch<React.SetStateAction<Resources>>; setCamp:React.Dispatch<React.SetStateAction<Camp>>;}){
   const canRepairDefense = resources.materials >= 3 && camp.defense < 20;
   const canRepairComfort = resources.materials >= 2 && camp.comfort < 20;
 
@@ -1471,14 +1467,14 @@ function CampRepair({resources, camp, setResources, setCamp, pushLog}:{resources
     if(!canRepairDefense) return;
     setResources(prev => ({ ...prev, materials: prev.materials - 3 }));
     setCamp(prev => ({ ...prev, defense: Math.min(20, prev.defense + 2) }));
-    pushLog("Reparación: +2 Defensa (coste 3 materiales)");
+    gameLog("Reparación: +2 Defensa (coste 3 materiales)");
   };
 
   const repairComfort = () => {
     if(!canRepairComfort) return;
     setResources(prev => ({ ...prev, materials: prev.materials - 2 }));
     setCamp(prev => ({ ...prev, comfort: Math.min(20, prev.comfort + 2) }));
-    pushLog("Reparación: +2 Comodidad (coste 2 materiales)");
+    gameLog("Reparación: +2 Comodidad (coste 2 materiales)");
   };
 
   return (
