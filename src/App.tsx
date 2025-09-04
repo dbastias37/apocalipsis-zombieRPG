@@ -194,9 +194,14 @@ export default function App(){
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
   const [enemyIdx, setEnemyIdx] = useState<number>(0);
   const [actedThisRound, setActedThisRound] = useState<Record<string, boolean>>({});
+  // Bloqueo de inputs de combate (por typewriter o "presiona Enter" pendiente)
+  const [controlsLocked, setControlsLocked] = useState(false);
+
+  // Cuando una acción del jugador requiere terminar con Enter, guardamos el "qué hacer después"
+  const postActionContinueRef = useRef<null | (() => void)>(null);
 
   // ---- Refs para leer estado “fresco” dentro de callbacks/efectos ----
-  const actedThisRoundRef = useRef<Record<string, boolean>>({});
+  const actedThisRoundRef = useRef<Record<string, boolean>>(actedThisRound);
   useEffect(()=>{ actedThisRoundRef.current = actedThisRound; }, [actedThisRound]);
 
   const playersRef = useRef(players);
@@ -219,6 +224,32 @@ export default function App(){
       .replace(/\s{2,}/g, " ")
       .trim();
     tw.push({ text: clean, onDone });
+  }
+
+  function playerCanActNow(): boolean {
+    // No puede actuar en fase de enemigos, ni si hay lock activo, ni si ya actuó
+    const pid = activePlayerIdRef.current;
+    if (!pid || isEnemyPhaseRef.current) return false;
+    if (controlsLocked) return false;
+    if (actedThisRoundRef.current?.[pid]) return false;
+    return true;
+  }
+
+  function startPlayerActionOrBlock(): boolean {
+    if (!playerCanActNow()) return false;
+    // Bloquear inputs mientras se emite el log de resultado de la acción
+    setControlsLocked(true);
+    return true;
+  }
+
+  function endPlayerActionAwaitEnter(next: () => void) {
+    const pid = activePlayerIdRef.current;
+    if (pid) {
+      setActedThisRound(m => ({ ...(m || {}), [pid]: true }));
+    }
+    // Guardar la continuación (llamada al presionar Enter en el panel)
+    postActionContinueRef.current = next;
+    // controlsLocked se mantiene true hasta que onContinue lo libere
   }
 
   const [foundNotes, setFoundNotes] = useState<GameNote[]>([]);
@@ -544,12 +575,12 @@ export default function App(){
     setEnemies(spawned);
   }
   function performAttack(enemyId: string){
-    if (isEnemyPhase) return;
-    if (!activePlayer) return;
+    if (controlsLocked || isEnemyPhase) return;
+    if (!startPlayerActionOrBlock()) return;
+    if (!activePlayer) { setControlsLocked(false); return; }
     const actor = activePlayer;
-    if (actedThisRound[actor.id]) return;
     const enemy = enemies.find(e=>e.id===enemyId);
-    if(!enemy) return;
+    if(!enemy){ setControlsLocked(false); return; }
 
     const w = findWeaponById(actor.equippedWeaponId || "fists") || { id: "fists", name: "Puños", type: "melee" as const };
     const flavor = weaponFlavorFrom(w.id, w.name, w.type);
@@ -570,11 +601,10 @@ export default function App(){
       if(w.type === "ranged"){
         updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
       }
-      timePenalty(20);
-      if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
-        setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
-      }
-      advanceTurn();
+      endPlayerActionAwaitEnter(() => {
+        timePenalty(45);
+        advanceTurn();
+      });
       return;
     }
 
@@ -620,11 +650,10 @@ export default function App(){
       updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
     }
 
-    timePenalty(20);
-    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
-      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
-    }
-    advanceTurn();
+    endPlayerActionAwaitEnter(() => {
+      timePenalty(45);
+      advanceTurn();
+    });
   }
 
   function maybeInflictStatusFromEnemyHit(enemy: any, target: Player, dmg: number): string[] {
@@ -731,18 +760,17 @@ function finishEnemyPhase() {
 
 
   function defend(){
-    if (isEnemyPhase) return;
-    if (!activePlayer) return;
+    if (controlsLocked || isEnemyPhase) return;
+    if (!startPlayerActionOrBlock()) return;
+    if (!activePlayer) { setControlsLocked(false); return; }
     const actor = activePlayer;
-    if (actedThisRound[actor.id]) return;
     updatePlayer(actor.id, { defense: actor.defense + 3 });
     pushLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
     pushBattle(`${actor.name} se cubre entre los escombros (+DEF temporal).`);
-    timePenalty(10);
-    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
-      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
-    }
-    advanceTurn();
+    endPlayerActionAwaitEnter(() => {
+      timePenalty(45);
+      advanceTurn();
+    });
   }
 
   function cureOneStatusIfAny(p: Player){
@@ -759,30 +787,29 @@ function finishEnemyPhase() {
   }
 
   function healSelf(){
-    if (isEnemyPhase) return;
+    if (controlsLocked || isEnemyPhase) return;
     if (!activePlayer) return;
     const actor = activePlayer;
-    if (actedThisRound[actor.id]) return;
     if(resources.medicine<=0) { pushLog("Sin medicina suficiente."); return; }
+    if (!startPlayerActionOrBlock()) return;
     const healAmt = Math.min(10, actor.hpMax - actor.hp);
     updatePlayer(actor.id, { hp: clamp(actor.hp+10, 0, actor.hpMax) });
     setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
     pushLog(`💊 ${actor.name} se venda rápido (+${healAmt} PV).`);
     pushBattle(render(pick(HEAL_LINES), { P: actor.name, V: healAmt }));
-   cureOneStatusIfAny(actor);
-    timePenalty(25);
-    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
-      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
-    }
-    advanceTurn();
+    cureOneStatusIfAny(actor);
+    endPlayerActionAwaitEnter(() => {
+      timePenalty(45);
+      advanceTurn();
+    });
   }
 
   function flee(){
-    if (isEnemyPhase) return;
+    if (controlsLocked || isEnemyPhase) return;
+    if (enemies.length===0) return;
     if (!activePlayer) return;
     const actor = activePlayer;
-    if (actedThisRound[actor.id]) return;
-    if(enemies.length===0) return;
+    if (!startPlayerActionOrBlock()) return;
     const fr = roll(1,20, mod(actor.attrs.Destreza));
     pushBattle(render(pick(FLEE_LINES), { P: actor.name }));
     if(fr.total>=15){
@@ -795,11 +822,10 @@ function finishEnemyPhase() {
       pushLog("⚠️ El escape falla, te rodean por un momento.");
       pushBattle(`${actor.name} no logra escapar.`);
     }
-    timePenalty(30);
-    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
-      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
-    }
-    advanceTurn();
+    endPlayerActionAwaitEnter(() => {
+      timePenalty(45);
+      advanceTurn();
+    });
   }
 
   function alivePlayersList() {
@@ -1212,6 +1238,8 @@ function advanceTurn() {
             onDefend={defend}
             onHeal={healSelf}
             onFlee={flee}
+            controlsLocked={controlsLocked}
+            isEnemyPhase={isEnemyPhase}
             onClose={()=>{
               if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
               else setDiscardCombat(d=>[currentCard, ...d]);
@@ -1233,6 +1261,16 @@ function advanceTurn() {
           text={tw.text}
           typing={tw.typing}
           onEnter={() => tw.typing ? tw.skipTyping() : tw.continueNext()}
+          onTypingChange={(typing) => {
+            // Si hay una postAcción pendiente, el lock se mantiene, sino depende del typing
+            setControlsLocked(!!postActionContinueRef.current || typing);
+          }}
+          onContinue={() => {
+            const fn = postActionContinueRef.current;
+            postActionContinueRef.current = null;
+            setControlsLocked(false);
+            if (typeof fn === "function") fn();
+          }}
           currentActor={activePlayer?.name ?? (isEnemyPhase ? enemies[enemyIdx]?.name : undefined)}
         />
 
@@ -1334,6 +1372,8 @@ function CardView(props:{
   onDefend: ()=>void;
   onHeal: ()=>void;
   onFlee: ()=>void;
+  controlsLocked: boolean;
+  isEnemyPhase: boolean;
 }){
   const isDecision = props.card.type==="decision";
   return (
@@ -1371,7 +1411,13 @@ function CardView(props:{
                       <h4 className="font-bold">{e.name}</h4>
                       <p className="text-sm text-neutral-400">DEF {e.def} • ATK {e.atk}</p>
                     </div>
-                    <button className="btn btn-red text-white" onClick={()=>props.onAttack(e.id)}>🗡️ Atacar</button>
+                    <button
+                      className="btn btn-red text-white"
+                      onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onAttack(e.id); }}
+                      disabled={props.controlsLocked || props.isEnemyPhase}
+                    >
+                      🗡️ Atacar
+                    </button>
                   </div>
                   <div className="mt-2 h-2 bg-neutral-800 rounded-full overflow-hidden">
                     <div className={clsx("h-full", e.hp/e.hpMax>0.6?"bg-green-600":e.hp/e.hpMax>0.3?"bg-yellow-500":"bg-red-600")} style={{width:`${(e.hp/e.hpMax)*100}%`}}/>
@@ -1381,9 +1427,27 @@ function CardView(props:{
             )}
           </div>
           <div className="space-y-2">
-            <button className="btn btn-ghost w-full" onClick={props.onDefend}>🛡️ Defender</button>
-            <button className="btn btn-ghost w-full" onClick={props.onHeal}>💊 Curarse</button>
-            <button className="btn btn-ghost w-full" onClick={props.onFlee}>🏃 Huir</button>
+            <button
+              className="btn btn-ghost w-full"
+              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onDefend(); }}
+              disabled={props.controlsLocked || props.isEnemyPhase}
+            >
+              🛡️ Defender
+            </button>
+            <button
+              className="btn btn-ghost w-full"
+              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onHeal(); }}
+              disabled={props.controlsLocked || props.isEnemyPhase}
+            >
+              💊 Curarse
+            </button>
+            <button
+              className="btn btn-ghost w-full"
+              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onFlee(); }}
+              disabled={props.controlsLocked || props.isEnemyPhase}
+            >
+              🏃 Huir
+            </button>
           </div>
         </div>
       )}
