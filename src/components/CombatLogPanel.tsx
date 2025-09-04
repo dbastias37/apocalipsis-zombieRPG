@@ -5,19 +5,36 @@ export default function CombatLogPanel({
   typing,
   onEnter,
   currentActor, // nombre del actor en turno (jugador o enemigo)
+  onTypingChange,
+  onContinue,
 }: {
   text: string;
   typing: boolean;
   onEnter: () => void;
   currentActor?: string;
+  onTypingChange?: (typing: boolean) => void;
+  onContinue?: () => void;
 }) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Enter") onEnter();
+  function handleContinue() {
+    if (typing) {
+      onEnter();
+    } else {
+      onEnter();
+      onContinue?.();
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onEnter]);
+  }
+
+  useEffect(() => {
+    function handle(e: KeyboardEvent) {
+      if (e.key === "Enter") handleContinue();
+    }
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [handleContinue]);
+
+  useEffect(() => {
+    onTypingChange?.(typing);
+  }, [typing, onTypingChange]);
 
   // Normaliza a UNA sola línea: quita saltos y espacios múltiples
   const oneLine = useMemo(() => {
@@ -28,7 +45,7 @@ export default function CombatLogPanel({
   }, [text]);
 
   return (
-    <div className="my-3 rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 shadow-inner">
+    <div className="my-3 rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 shadow-inner" onClick={handleContinue}>
       {/* Efecto 'breath' definido localmente */}
       <style>{`
         @keyframes breath {
