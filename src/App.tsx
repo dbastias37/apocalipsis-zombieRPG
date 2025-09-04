@@ -4,7 +4,10 @@ import { clsx } from "clsx";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
-import EndTurnOverlay, { EndTurnData } from "./components/EndTurnOverlay";
+import CombatLogPanel from "./components/CombatLogPanel";
+import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
+import { MELEE_MISS, RANGED_MISS, HEAL_LINES, FLEE_LINES, ENEMY_HIT, ENEMY_MISS, renderTpl, pick } from "./data/combatPhrases";
+import { findWeaponById } from "./data/weapons";
 import { Conditions } from "./systems/status";
 
 // === Tipos ===
@@ -210,7 +213,11 @@ export default function App(){
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
   const [enemyIdx, setEnemyIdx] = useState<number>(0);
   const [actedThisRound, setActedThisRound] = useState<Record<string, boolean>>({});
-  const [endTurnUI, setEndTurnUI] = useState<EndTurnData | null>(null);
+  const tw = useTypewriterQueue();
+  // helper para pushear mensajes al panel
+  function pushBattle(text: string, onDone?: () => void){
+    tw.push({ text, onDone });
+  }
 
   const [foundNotes, setFoundNotes] = useState<GameNote[]>([]);
   const [explorationActive, setExplorationActive] = useState<boolean>(false);
@@ -502,6 +509,9 @@ export default function App(){
     const enemy = enemies.find(e=>e.id===enemyId);
     if(!enemy) return;
     const hasGun = actor.inventory.includes("Pistola") || actor.inventory.includes("Rifle");
+    const weapon = findWeaponById(actor.equippedWeaponId);
+    const weaponName = weapon?.name ?? (hasGun ? (actor.inventory.includes("Rifle") ? "Rifle" : "Pistola") : "arma");
+    const type = weapon?.type ?? (hasGun ? "ranged" : "melee");
     const atkRoll = roll(1,20, mod(actor.attrs.Fuerza) + (hasGun?4:0));
     const hit = atkRoll.total >= enemy.def || atkRoll.natural===20;
     const scene = currentCard?.scene ?? "callejon";
@@ -510,6 +520,8 @@ export default function App(){
       const newHp = enemy.hp - dmg;
       setEnemies(es=> es.map(e=> e.id===enemyId ? {...e, hp: newHp} : e).filter(e=> e.hp>0));
       pushLog(`🗡️ ${actor.name} ataca en el ${scene} y asesta ${dmg} de daño a ${enemy.name}.`);
+      if(type==='melee') pushBattle(`${actor.name} ha golpeado con ${weaponName} a ${enemy.name} — ${dmg} de daño.`);
+      else pushBattle(`${actor.name} ha disparado contra ${enemy.name} — ${dmg} de daño.`);
       if(newHp<=0){
         pushLog(`✅ ${enemy.name} cae hecho trizas.`);
         setThreat(t=>Math.max(0,t-2));
@@ -534,6 +546,8 @@ export default function App(){
       }
     }else{
       pushLog(`❌ ${actor.name} falla el golpe; el eco en el ${scene} lo distrae.`);
+      if(type==='melee') pushBattle(renderTpl(pick(MELEE_MISS), { P: actor.name, E: enemy.name, W: weaponName }));
+      else pushBattle(renderTpl(pick(RANGED_MISS), { P: actor.name, E: enemy.name, W: weaponName }));
     }
     timePenalty(20);
     advanceTurn();
@@ -554,36 +568,26 @@ export default function App(){
         const dmg = roll(1,6,2).total;
         updatePlayer(target.id, { hp: Math.max(0, target.hp - dmg) });
         pushLog(`💥 ${enemy.name} golpea a ${target.name}: -${dmg} PV.`);
+        pushBattle(renderTpl(pick(ENEMY_HIT), { P: target.name, E: enemy.name, V: dmg }));
         if (target.hp - dmg <= 0) {
           updatePlayer(target.id, { status: "dead" });
           pushLog(`💀 ${target.name} cae para no levantarse jamás.`);
         }
       } else {
         pushLog(`🛡️ ${target.name} esquiva el ataque de ${enemy.name}.`);
+        pushBattle(renderTpl(pick(ENEMY_MISS), { P: target.name, E: enemy.name }));
       }
     }
 
-    // Pantalla fin de turno de este enemigo
-    setEndTurnUI({
-      title: `El enemigo ${enemy.name} ha terminado su turno`,
-      subtitle: undefined,
-      onContinue: () => {
-        setEndTurnUI(null);
-        const nextEnemyIdx = idx + 1;
-        if (nextEnemyIdx < aliveEnemies.length) {
-          // Siguiente enemigo
-          setEnemyIdx(nextEnemyIdx);
-          setEndTurnUI({
-            title: `Prepárate le toca a : ${aliveEnemies[nextEnemyIdx].name}`,
-            onContinue: () => {
-              setEndTurnUI(null);
-              runEnemyTurnRound(nextEnemyIdx);
-            }
-          });
-        } else {
-          // Terminan los enemigos
-          finishEnemyPhase();
-        }
+    pushBattle(`El enemigo ${enemy.name} ha terminado su turno`, () => {
+      const nextEnemyIdx = idx + 1;
+      if (nextEnemyIdx < aliveEnemies.length) {
+        setEnemyIdx(nextEnemyIdx);
+        pushBattle(`Prepárate le toca a : ${aliveEnemies[nextEnemyIdx].name}`, () => {
+          runEnemyTurnRound(nextEnemyIdx);
+        });
+      } else {
+        finishEnemyPhase();
       }
     });
   }
@@ -592,11 +596,7 @@ export default function App(){
     setIsEnemyPhase(false);
     // Reinicia ronda de jugadores (useEffect ya rearma actedThisRound y turn=0)
     const firstName = alivePlayers[0]?.name ?? "Jugador";
-    setEndTurnUI({
-      title: `${firstName} prepárate`,
-      subtitle: undefined,
-      onContinue: () => setEndTurnUI(null)
-    });
+    pushBattle(`${firstName} prepárate`);
   }
 
   function defend(){
@@ -606,6 +606,7 @@ export default function App(){
     if (actedThisRound[actor.id]) return;
     updatePlayer(actor.id, { defense: actor.defense + 3 });
     pushLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
+    pushBattle(`${actor.name} se cubre entre los escombros (+DEF temporal).`);
     timePenalty(10); advanceTurn();
   }
 
@@ -615,9 +616,11 @@ export default function App(){
     const actor = activePlayer;
     if (actedThisRound[actor.id]) return;
     if(resources.medicine<=0) { pushLog("Sin medicina suficiente."); return; }
+    const healAmt = Math.min(10, actor.hpMax - actor.hp);
     updatePlayer(actor.id, { hp: clamp(actor.hp+10, 0, actor.hpMax) });
     setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
-    pushLog(`💊 ${actor.name} se venda rápido (+10 PV).`);
+    pushLog(`💊 ${actor.name} se venda rápido (+${healAmt} PV).`);
+    pushBattle(renderTpl(pick(HEAL_LINES), { P: actor.name, V: healAmt }));
     timePenalty(25); advanceTurn();
   }
 
@@ -628,13 +631,16 @@ export default function App(){
     if (actedThisRound[actor.id]) return;
     if(enemies.length===0) return;
     const fr = roll(1,20, mod(actor.attrs.Destreza));
+    pushBattle(renderTpl(pick(FLEE_LINES), { P: actor.name }));
     if(fr.total>=15){
       pushLog("🏃 Huyen por pasillos colapsados. ¡Escape exitoso!");
+      pushBattle(`${actor.name} ha escapado.`);
       setEnemies([]);
       setCurrentCard(null);
       setMorale(m=>clamp(m-3,0,100));
     } else {
       pushLog("⚠️ El escape falla, te rodean por un momento.");
+      pushBattle(`${actor.name} no logra escapar.`);
     }
     timePenalty(30); advanceTurn();
   }
@@ -662,33 +668,19 @@ export default function App(){
     if (foundNext) {
       const prevName = activePlayer ? activePlayer.name : "Jugador";
       const nextName = alivePlayers[nextIdx].name;
-      setEndTurnUI({
-        title: `${prevName} tu turno ha terminado`,
-        subtitle: `ahora le toca a: ${nextName}`,
-        onContinue: () => {
-          setEndTurnUI(null);
-          setTurn(nextIdx);
-        }
+      pushBattle(`${prevName} tu turno ha terminado\nahora le toca a: ${nextName}`, () => {
+        setTurn(nextIdx);
       });
     } else {
       if (aliveEnemies.length > 0) {
-        setEndTurnUI({
-          title: `Prepárate le toca a : ${aliveEnemies[0].name}`,
-          subtitle: undefined,
-          onContinue: () => {
-            setEndTurnUI(null);
-            setIsEnemyPhase(true);
-            setEnemyIdx(0);
-            runEnemyTurnRound(0);
-          }
+        pushBattle(`Prepárate le toca a : ${aliveEnemies[0].name}`, () => {
+          setIsEnemyPhase(true);
+          setEnemyIdx(0);
+          runEnemyTurnRound(0);
         });
       } else {
         const firstName = alivePlayers[0]?.name ?? "Jugador";
-        setEndTurnUI({
-          title: `${firstName} prepárate`,
-          subtitle: undefined,
-          onContinue: () => setEndTurnUI(null)
-        });
+        pushBattle(`${firstName} prepárate`);
       }
     }
   }
@@ -1022,6 +1014,12 @@ export default function App(){
             onResolve={resolveTimedEventPositively}
           />
         )}
+        <CombatLogPanel
+          text={tw.text}
+          typing={tw.typing}
+          onEnter={() => tw.typing ? tw.skipTyping() : tw.continueNext()}
+          currentActor={activePlayer?.name ?? (isEnemyPhase ? enemies[enemyIdx]?.name : undefined)}
+        />
 
         <PartyPanel
           players={players}
@@ -1061,7 +1059,6 @@ export default function App(){
           </div>
         </div>
       )}
-      <EndTurnOverlay data={endTurnUI} />
       <WelcomeOverlay />
     </div>
   );
