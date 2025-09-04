@@ -128,15 +128,6 @@ function clsx(...classes: (string | false | null | undefined)[]){
   return classes.filter(Boolean).join(' ');
 }
 
-const philosopherQuotes = [
-  { a:"Albert Camus", q:"En medio del odio me pareció que había dentro de mí un amor invencible." },
-  { a:"Friedrich Nietzsche", q:"Quien con monstruos lucha cuide de convertirse a su vez en monstruo." },
-  { a:"Hannah Arendt", q:"La mayor maldad es el mal cometido por nadie: la banalidad del mal." },
-  { a:"Søren Kierkegaard", q:"La ansiedad es el vértigo de la libertad." },
-  { a:"Simone de Beauvoir", q:"No se nace mujer: se llega a serlo." },
-  { a:"Zygmunt Bauman", q:"El miedo es el precio a pagar por sentirnos vivos." },
-  { a:"Michel Foucault", q:"El poder es tolerable solo si produce placer." },
-].sort(()=>Math.random()-0.5);
 
 const professions = [
   { id: 'medic', name: 'Médica' },
@@ -299,7 +290,6 @@ export default function GameRoot(){
   } = useLevel();
 
   // Cita visible
-  const todaysQuote = useMemo(()=> philosopherQuotes[(day-1) % philosopherQuotes.length], [day]);
 
   // Reloj del día
   useEffect(()=>{
@@ -1040,7 +1030,6 @@ export default function GameRoot(){
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <QuoteBox author={todaysQuote.a} quote={todaysQuote.q} />
         <div className="flex gap-2">
           <button className={tab==='story'?"btn btn-red text-white":"btn btn-ghost"} onClick={()=>setTab('story')}>📖 Historia</button>
           <button className={tab==='manual'?"btn btn-red text-white":"btn btn-ghost"} onClick={()=>setTab('manual')}>📕 Manual</button>
@@ -1172,15 +1161,6 @@ function HeaderHUD(props:{
         </div>
       </div>
     </header>
-  );
-}
-
-function QuoteBox({author, quote}:{author:string; quote:string}){
-  return (
-    <div className="card bg-neutral-900 border-neutral-800 p-4">
-      <p className="italic text-neutral-300">“{quote}”</p>
-      <p className="text-right text-sm text-neutral-500 mt-2">— {author}</p>
-    </div>
   );
 }
 

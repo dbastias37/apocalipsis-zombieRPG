@@ -3,8 +3,6 @@
 // - Conserva los mismos IDs (1..50)
 // - Conserva claves de efectos ya soportadas por handleStoryChoice
 // - Añade category:"story" para pintar en morado
-// - Añade campo opcional `citation` para mostrar una cita corta de filósofo
-//   (la narrativa ya no nombra filósofos directamente)
 
 export type StoryCard = {
   id: number;
@@ -31,7 +29,6 @@ export type StoryCard = {
     };
   }>;
   philosophy?: string;
-  citation?: { quote: string; author: string };
 };
 
 export const storyCards: StoryCard[] = [
@@ -46,7 +43,6 @@ export const storyCards: StoryCard[] = [
       { text: "Intentar salvarlo", effect: { medicine: -3, karma: 10 } }
     ],
     philosophy: "mercy",
-    citation: { quote: "La compasión es base de la moral.", author: "Schopenhauer" }
   },
   {
     id: 2,
@@ -59,7 +55,6 @@ export const storyCards: StoryCard[] = [
       { text: "No intervenir", effect: { morale: -15, karma: 0 } }
     ],
     philosophy: "trolley_problem",
-    citation: { quote: "La suma no decide el deber.", author: "Kant" }
   },
   {
     id: 3,
@@ -72,7 +67,6 @@ export const storyCards: StoryCard[] = [
       { text: "Intercambio justo", effect: { water: -2, food: 3, morale: 3 } }
     ],
     philosophy: "beauty_in_chaos",
-    citation: { quote: "Amamos lo bello por sí mismo.", author: "Aristóteles" }
   },
   {
     id: 4,
@@ -85,7 +79,6 @@ export const storyCards: StoryCard[] = [
       { text: "Tomar la decisión difícil", effect: { morale: -8, karma: -5 } }
     ],
     philosophy: "identity",
-    citation: { quote: "La identidad es continuidad en el cambio.", author: "Heráclito" }
   },
   {
     id: 5,
@@ -98,7 +91,6 @@ export const storyCards: StoryCard[] = [
       { text: "Dejar que otros decidan", effect: { morale: -2 } }
     ],
     philosophy: "truth_vs_comfort",
-    citation: { quote: "La verdad, aunque duela, libera.", author: "Séneca" }
   },
   {
     id: 6,
@@ -111,7 +103,6 @@ export const storyCards: StoryCard[] = [
       { text: "Negociar mejores términos", effect: { karma: 2 } }
     ],
     philosophy: "social_contract",
-    citation: { quote: "El poder necesita legitimidad.", author: "Rousseau" }
   },
   {
     id: 7,
@@ -124,7 +115,6 @@ export const storyCards: StoryCard[] = [
       { text: "Dejar evidencia sutil", effect: { morale: -2 } }
     ],
     philosophy: "platos_cave",
-    citation: { quote: "De la sombra al sol: dolor y verdad.", author: "Platón" }
   },
   {
     id: 8,
@@ -137,7 +127,6 @@ export const storyCards: StoryCard[] = [
       { text: "Apoyo silencioso", effect: { morale: 5 } }
     ],
     philosophy: "burden_of_leadership",
-    citation: { quote: "Gobernar es servir.", author: "Marco Aurelio" }
   },
   {
     id: 9,
@@ -150,7 +139,6 @@ export const storyCards: StoryCard[] = [
       { text: "Intentar rehabilitación", effect: { morale: -1, karma: 4 } }
     ],
     philosophy: "justice_vs_revenge",
-    citation: { quote: "Al luchar con monstruos, cuídate.", author: "Nietzsche" }
   },
   {
     id: 10,
@@ -163,7 +151,6 @@ export const storyCards: StoryCard[] = [
       { text: "Votar en grupo", effect: {} }
     ],
     philosophy: "dignity_in_death",
-    citation: { quote: "La dignidad no es lujo.", author: "Cicerón" }
   },
   {
     id: 11,
@@ -176,7 +163,6 @@ export const storyCards: StoryCard[] = [
       { text: "Negociar alternativas", effect: { karma: 2 } }
     ],
     philosophy: "trust_in_artificial",
-    citation: { quote: "La técnica no decide el bien.", author: "Heidegger" }
   },
   {
     id: 12,
@@ -189,7 +175,6 @@ export const storyCards: StoryCard[] = [
       { text: "Construir balsa", effect: { materials: -10 } }
     ],
     philosophy: "change_and_flux",
-    citation: { quote: "Todo fluye, nada permanece.", author: "Heráclito" }
   },
   {
     id: 13,
@@ -202,7 +187,6 @@ export const storyCards: StoryCard[] = [
       { text: "Salvar libros selectos", effect: { morale: 3 } }
     ],
     philosophy: "value_of_culture",
-    citation: { quote: "La cultura es memoria viva.", author: "T. S. Eliot" }
   },
   {
     id: 14,
@@ -215,7 +199,6 @@ export const storyCards: StoryCard[] = [
       { text: "Cuarentena mutua", effect: { morale: -1 } }
     ],
     philosophy: "prisoners_dilemma",
-    citation: { quote: "La confianza es un riesgo.", author: "Luhmann" }
   },
   {
     id: 15,
@@ -228,7 +211,6 @@ export const storyCards: StoryCard[] = [
       { text: "El sueño imposible", effect: { morale: 5 } }
     ],
     philosophy: "path_dependence",
-    citation: { quote: "Elegir es renunciar a futuros.", author: "Sartre" }
   },
   {
     id: 16,
@@ -241,7 +223,6 @@ export const storyCards: StoryCard[] = [
       { text: "Encontrar propósito", effect: { morale: 5 } }
     ],
     philosophy: "survivors_guilt",
-    citation: { quote: "Estamos condenados a ser libres.", author: "Sartre" }
   },
   {
     id: 17,
@@ -254,7 +235,6 @@ export const storyCards: StoryCard[] = [
       { text: "Rotación democrática", effect: { morale: 1 } }
     ],
     philosophy: "surveillance_society",
-    citation: { quote: "Ver es ejercer poder.", author: "Foucault" }
   },
   {
     id: 18,
@@ -267,7 +247,6 @@ export const storyCards: StoryCard[] = [
       { text: "Período de prueba", effect: {} }
     ],
     philosophy: "tolerance_paradox",
-    citation: { quote: "Tolerar lo intolerante destruye.", author: "Popper" }
   },
   {
     id: 19,
@@ -280,7 +259,6 @@ export const storyCards: StoryCard[] = [
       { text: "Aceptar la futilidad", effect: { morale: -3 } }
     ],
     philosophy: "absurdism",
-    citation: { quote: "Hay que imaginar a Sísifo feliz.", author: "Camus" }
   },
   {
     id: 20,
@@ -293,7 +271,6 @@ export const storyCards: StoryCard[] = [
       { text: "Documentarlo todo", effect: { morale: -1 } }
     ],
     philosophy: "chinese_room",
-    citation: { quote: "Simular no es comprender.", author: "Searle" }
   },
   {
     id: 21,
@@ -306,7 +283,6 @@ export const storyCards: StoryCard[] = [
       { text: "Redención condicional", effect: { morale: -1, karma: 2 } }
     ],
     philosophy: "redemption",
-    citation: { quote: "Nadie es solo su peor acto.", author: "Hannah Arendt" }
   },
   {
     id: 22,
@@ -319,7 +295,6 @@ export const storyCards: StoryCard[] = [
       { text: "Quedarse juntos", effect: { morale: 2 } }
     ],
     philosophy: "might_vs_right",
-    citation: { quote: "El fuerte hace lo que puede.", author: "Tucídides" }
   },
   {
     id: 23,
@@ -332,7 +307,6 @@ export const storyCards: StoryCard[] = [
       { text: "Respetar sus deseos", effect: { morale: 2 } }
     ],
     philosophy: "ends_vs_means",
-    citation: { quote: "El fin no justifica medios.", author: "Kant" }
   },
   {
     id: 24,
@@ -345,7 +319,6 @@ export const storyCards: StoryCard[] = [
       { text: "Dirigir hacia acción", effect: { morale: -1 } }
     ],
     philosophy: "dangerous_ideas",
-    citation: { quote: "Algunas ideas son cuchillos.", author: "Francis Bacon" }
   },
   {
     id: 25,
@@ -358,7 +331,6 @@ export const storyCards: StoryCard[] = [
       { text: "Contacto gradual", effect: { morale: -1 } }
     ],
     philosophy: "madness_and_society",
-    citation: { quote: "La norma define la locura.", author: "Foucault" }
   },
   {
     id: 26,
@@ -371,7 +343,6 @@ export const storyCards: StoryCard[] = [
       { text: "Balance pragmático", effect: { morale: 2 } }
     ],
     philosophy: "education_purpose",
-    citation: { quote: "Educar es sembrar futuro.", author: "Aristóteles" }
   },
   {
     id: 27,
@@ -384,7 +355,6 @@ export const storyCards: StoryCard[] = [
       { text: "Enviar respuesta", effect: { morale: -1 } }
     ],
     philosophy: "meaning_seeking",
-    citation: { quote: "El hombre busca sentido.", author: "Viktor Frankl" }
   },
   {
     id: 28,
@@ -397,7 +367,6 @@ export const storyCards: StoryCard[] = [
       { text: "Caso por caso", effect: { morale: -1 } }
     ],
     philosophy: "bodily_autonomy",
-    citation: { quote: "El cuerpo es tuyo.", author: "John Stuart Mill" }
   },
   {
     id: 29,
@@ -410,7 +379,6 @@ export const storyCards: StoryCard[] = [
       { text: "Dejarla elegir", effect: { morale: 1 } }
     ],
     philosophy: "chosen_one",
-    citation: { quote: "El deber nace de la libertad.", author: "Kierkegaard" }
   },
   {
     id: 30,
@@ -423,7 +391,6 @@ export const storyCards: StoryCard[] = [
       { text: "Seguir sus señales", effect: { morale: -1 } }
     ],
     philosophy: "language_barriers",
-    citation: { quote: "Los límites del lenguaje limitan el mundo.", author: "Wittgenstein" }
   },
   {
     id: 31,
@@ -436,7 +403,6 @@ export const storyCards: StoryCard[] = [
       { text: "Arte con condiciones", effect: { morale: 4 } }
     ],
     philosophy: "art_necessity",
-    citation: { quote: "El arte lava el polvo del alma.", author: "Picasso" }
   },
   {
     id: 32,
@@ -449,7 +415,6 @@ export const storyCards: StoryCard[] = [
       { text: "Sistema mixto", effect: { morale: 1 } }
     ],
     philosophy: "fairness_vs_efficiency",
-    citation: { quote: "La justicia es imparcialidad.", author: "Rawls" }
   },
   {
     id: 33,
@@ -462,7 +427,6 @@ export const storyCards: StoryCard[] = [
       { text: "Defensas minimalistas", effect: {} }
     ],
     philosophy: "security_vs_freedom",
-    citation: { quote: "La libertad se arriesga o no es tal.", author: "Kierkegaard" }
   },
   {
     id: 34,
@@ -475,7 +439,6 @@ export const storyCards: StoryCard[] = [
       { text: "Decidir más adelante", effect: {} }
     ],
     philosophy: "dangerous_knowledge",
-    citation: { quote: "Saber es poder y peligro.", author: "Francis Bacon" }
   },
   {
     id: 35,
@@ -488,7 +451,6 @@ export const storyCards: StoryCard[] = [
       { text: "Uso selectivo", effect: { morale: -1 } }
     ],
     philosophy: "confronting_mortality",
-    citation: { quote: "Mirar al abismo tiene precio.", author: "Nietzsche" }
   },
   {
     id: 36,
@@ -501,7 +463,6 @@ export const storyCards: StoryCard[] = [
       { text: "Observar solamente", effect: {} }
     ],
     philosophy: "ways_of_knowing",
-    citation: { quote: "Conocer es ampliar sentidos.", author: "Merleau-Ponty" }
   },
   {
     id: 37,
@@ -514,7 +475,6 @@ export const storyCards: StoryCard[] = [
       { text: "Sabiduría preservada", effect: { materials: 5 } }
     ],
     philosophy: "impossible_choices",
-    citation: { quote: "Elegir es crear enemigos.", author: "Machiavelo" }
   },
   {
     id: 38,
@@ -527,7 +487,6 @@ export const storyCards: StoryCard[] = [
       { text: "Observación a distancia", effect: {} }
     ],
     philosophy: "consciousness_study",
-    citation: { quote: "¿Cómo es ser otro?", author: "Thomas Nagel" }
   },
   {
     id: 39,
@@ -540,7 +499,6 @@ export const storyCards: StoryCard[] = [
       { text: "As para emergencias", effect: { morale: -1 } }
     ],
     philosophy: "power_and_character",
-    citation: { quote: "El poder revela al carácter.", author: "Platón" }
   },
   {
     id: 40,
@@ -553,7 +511,6 @@ export const storyCards: StoryCard[] = [
       { text: "Silencio respetuoso", effect: {} }
     ],
     philosophy: "problem_of_evil",
-    citation: { quote: "El mal desafía la razón.", author: "Epicuro" }
   },
   {
     id: 41,
@@ -566,7 +523,6 @@ export const storyCards: StoryCard[] = [
       { text: "Autoridad temporal", effect: {} }
     ],
     philosophy: "social_contract_extreme",
-    citation: { quote: "Sin orden, guerra de todos.", author: "Hobbes" }
   },
   {
     id: 42,
@@ -579,7 +535,6 @@ export const storyCards: StoryCard[] = [
       { text: "Terapéutico limitado", effect: { morale: 1 } }
     ],
     philosophy: "experience_machine",
-    citation: { quote: "El placer no basta para la vida.", author: "Nozick" }
   },
   {
     id: 43,
@@ -592,7 +547,6 @@ export const storyCards: StoryCard[] = [
       { text: "Expedición de búsqueda", effect: { fuel: -3, morale: 1 } }
     ],
     philosophy: "memory_reliability",
-    citation: { quote: "La memoria inventa lo vivido.", author: "Borges" }
   },
   {
     id: 44,
@@ -605,7 +559,6 @@ export const storyCards: StoryCard[] = [
       { text: "Un voluntario", effect: { karma: 3 } }
     ],
     philosophy: "random_vs_chosen_sacrifice",
-    citation: { quote: "El azar no absuelve.", author: "Camus" }
   },
   {
     id: 45,
@@ -618,7 +571,6 @@ export const storyCards: StoryCard[] = [
       { text: "Mensaje críptico", effect: { morale: -1 } }
     ],
     philosophy: "temporal_ethics",
-    citation: { quote: "Cada elección reescribe el ser.", author: "Heidegger" }
   },
   {
     id: 46,
@@ -631,7 +583,6 @@ export const storyCards: StoryCard[] = [
       { text: "Música contenida", effect: { morale: 4 } }
     ],
     philosophy: "expression_vs_survival",
-    citation: { quote: "Sin música, la vida sería un error.", author: "Nietzsche" }
   },
   {
     id: 47,
@@ -644,7 +595,6 @@ export const storyCards: StoryCard[] = [
       { text: "El médico decide", effect: {} }
     ],
     philosophy: "medical_triage",
-    citation: { quote: "Primero, no hacer daño.", author: "Hipócrates" }
   },
   {
     id: 48,
@@ -657,7 +607,6 @@ export const storyCards: StoryCard[] = [
       { text: "Consejo de ancianos", effect: { morale: 1 } }
     ],
     philosophy: "duties_to_dead",
-    citation: { quote: "Respetar a los muertos dignifica.", author: "Cicerón" }
   },
   {
     id: 49,
@@ -670,7 +619,6 @@ export const storyCards: StoryCard[] = [
       { text: "Buscar alternativas", effect: { morale: 2 } }
     ],
     philosophy: "last_man",
-    citation: { quote: "Solo no es humano.", author: "Aristóteles" }
   },
   {
     id: 50,
@@ -683,7 +631,6 @@ export const storyCards: StoryCard[] = [
       { text: "Preparar sucesores", effect: { morale: 1 } }
     ],
     philosophy: "ultimate_sacrifice",
-    citation: { quote: "Dar la vida por el bien común.", author: "Sócrates" }
   }
 ];
 

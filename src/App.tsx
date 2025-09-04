@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
@@ -71,15 +71,6 @@ function roll(times:number, faces:number, mod=0){
 
 function mod(score:number){ return Math.floor((score-10)/2); }
 
-const philosopherQuotes = [
-  { a:"Albert Camus", q:"En medio del odio me pareció que había dentro de mí un amor invencible." },
-  { a:"Friedrich Nietzsche", q:"Quien con monstruos lucha cuide de convertirse a su vez en monstruo." },
-  { a:"Hannah Arendt", q:"La mayor maldad es el mal cometido por nadie: la banalidad del mal." },
-  { a:"Søren Kierkegaard", q:"La ansiedad es el vértigo de la libertad." },
-  { a:"Simone de Beauvoir", q:"No se nace mujer: se llega a serlo." },
-  { a:"Zygmunt Bauman", q:"El miedo es el precio a pagar por sentirnos vivos." },
-  { a:"Michel Foucault", q:"El poder es tolerable solo si produce placer." },
-].sort(()=>Math.random()-0.5);
 
 const baseEnemies: Enemy[] = [
   { id: uid(), name: "Zombi Común", hp: 15, hpMax: 15, def: 10, atk: 2 },
@@ -233,7 +224,6 @@ export default function App(){
   const [log, setLog] = useState<string[]>([]);
 
   // Cita visible
-  const todaysQuote = useMemo(()=> philosopherQuotes[(day-1) % philosopherQuotes.length], [day]);
 
   const alivePlayers = players.filter(p => p.status !== "dead");
   const aliveEnemies = enemies;
@@ -984,8 +974,6 @@ export default function App(){
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <QuoteBox author={todaysQuote.a} quote={todaysQuote.q} />
-
         {/* Zonas principales */}
         <DeckControls
           onDrawDecision={drawDecision} onDrawCombat={drawCombat}
@@ -1099,15 +1087,6 @@ function HeaderHUD(props:{
         </div>
       </div>
     </header>
-  );
-}
-
-function QuoteBox({author, quote}:{author:string; quote:string}){
-  return (
-    <div className="card bg-neutral-900 border-neutral-800 p-4">
-      <p className="italic text-neutral-300">“{quote}”</p>
-      <p className="text-right text-sm text-neutral-500 mt-2">— {author}</p>
-    </div>
   );
 }
 

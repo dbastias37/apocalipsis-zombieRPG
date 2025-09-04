@@ -222,13 +222,6 @@ export default function DeckUI({
               {current.text}
             </p>
 
-            {/* Cita filosófica si existe (solo en cartas de decisión) */}
-            {"citation" in current && current.citation ? (
-              <div className="mt-4 p-3 rounded-lg bg-neutral-900/60 border border-neutral-800 text-sm italic text-neutral-400">
-                “{current.citation.quote}” — {current.citation.author}
-              </div>
-            ) : null}
-
             <div className="grid md:grid-cols-3 gap-3 mt-6">
               {current.choices.map((ch, idx) => (
                 <button
