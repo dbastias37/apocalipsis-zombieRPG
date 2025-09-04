@@ -28,7 +28,12 @@ import WeaponPicker from "./components/WeaponPicker";
 import CombatEndSummary from "./components/overlays/CombatEndSummary";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
 import HealAllyModal from "./components/overlays/HealAllyModal";
+import DayEndModal from "./components/overlays/DayEndModal";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
+import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
+import { day2ExplorationCards } from "./data/days/day2/explorationCards.day2";
+import type { ExplorationCard } from "./data/explorationCards";
+import type { DecisionCard } from "./data/decisionCards";
 import {
   Conditions,
   hasCondition,
@@ -161,13 +166,25 @@ const baseEnemies: Enemy[] = [
 ];
 
 // === Cartas (ejemplos; puedes ampliar) ===
-const decisionDeckSeed: Card[] = day1DecisionCards.map(c => ({
-  id: c.id,
-  type: "decision" as const,
-  title: c.title,
-  text: c.text,
-  choices: c.choices as any,
-}));
+function mapDecisionCards(cards: DecisionCard[]): Card[] {
+  return cards.map(c => ({
+    id: c.id,
+    type: "decision" as const,
+    title: c.title,
+    text: c.text,
+    choices: c.choices as any,
+  }));
+}
+
+function getDecisionDeckForDay(d: number) {
+  if (d === 2) return day2DecisionCards;
+  return day1DecisionCards;
+}
+
+function getExplorationDeckForDay(d: number): ExplorationCard[] {
+  if (d === 2) return day2ExplorationCards;
+  return [];
+}
 
 const combatDeckSeed: Card[] = [
   {
@@ -235,7 +252,7 @@ const EXPLORATION_EVENTS: ExplorationEvent[] = [
 export default function App(){
   // Estado base
   const [state, setState] = useState<GameState>("menu");
-  const [day, setDay] = useState(1);
+  const [day, setDay] = useState<number>(1);
   const [phase, setPhase] = useState<Phase>("dawn");
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
   const [timeRunning, setTimeRunning] = useState(true);
@@ -260,7 +277,8 @@ export default function App(){
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
 
   // Mazo de cartas
-  const [decisionDeck, setDecisionDeck] = useState<Card[]>(shuffle([...decisionDeckSeed]));
+  const [decisionDeck, setDecisionDeck] = useState<Card[]>(() => shuffle(mapDecisionCards(getDecisionDeckForDay(day))));
+  const [explorationDeck, setExplorationDeck] = useState<ExplorationCard[]>(() => shuffle(getExplorationDeckForDay(day)));
   const [combatDeck, setCombatDeck] = useState<Card[]>(shuffle([...combatDeckSeed]));
   const [discardDecision, setDiscardDecision] = useState<Card[]>([]);
   const [discardCombat, setDiscardCombat] = useState<Card[]>([]);
@@ -271,12 +289,15 @@ export default function App(){
 
   const [battleStats, setBattleStats] = useState<BattleStats>({ byPlayer: {}, lootNames: [] });
   const [dayStats, setDayStats] = useState({ damageDealt: 0, misses: 0, shotsFired: 0 });
+  const [stats, setStats] = useState({ decisions:0, explorations:0, battles:0, kills:0 });
 
-  // overlay de fin de combate
+  // overlay de fin de combate y fin de día
   const [showCombatEnd, setShowCombatEnd] = useState(false);
   const [combatEndLines, setCombatEndLines] = useState<string[]>([]);
   const [infectionDead, setInfectionDead] = useState<{id:string,name:string}|null>(null);
   const [showHealAlly, setShowHealAlly] = useState(false);
+  const [showDayEnd, setShowDayEnd] = useState(false);
+  const [dayEndLines, setDayEndLines] = useState<string[]>([]);
 
   // Turnos
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
@@ -390,6 +411,11 @@ export default function App(){
     }
     return true;
   })();
+
+  useEffect(() => {
+    setDecisionDeck(shuffle(mapDecisionCards(getDecisionDeckForDay(day))));
+    setExplorationDeck(shuffle(getExplorationDeckForDay(day)));
+  }, [day]);
 
   useEffect(() => {
     if (isEnemyPhase) return;
@@ -514,6 +540,17 @@ export default function App(){
     return clamp(100 - (ms/DAY_LENGTH_MS)*100, 0, 100);
   }
 
+  function makeDaySummaryLines(): string[] {
+    const lines: string[] = [];
+    lines.push("— RESUMEN DEL DÍA —");
+    lines.push(`Decisiones tomadas: ${stats.decisions ?? 0}`);
+    lines.push(`Exploraciones realizadas: ${stats.explorations ?? 0}`);
+    lines.push(`Enfrentamientos: ${stats.battles ?? 0}`);
+    lines.push(`Enemigos abatidos: ${stats.kills ?? 0}`);
+    lines.push(`Cambios de recursos — Comida:${resources.food ?? 0} Agua:${resources.water ?? 0} Med:${resources.medicine ?? 0}`);
+    return lines;
+  }
+
   function nextPhase(ph:Phase): Phase {
     if(ph==="dawn") return "day";
     if(ph==="day") return "dusk";
@@ -585,7 +622,13 @@ export default function App(){
   }
 
   function endOfDay(reason:'deck'|'timer'|'manual'='manual'){
-    setDecisionDeck(shuffle([...decisionDeckSeed]));
+    if(day===1){
+      setDayEndLines(makeDaySummaryLines());
+      setShowDayEnd(true);
+      setControlsLocked(true);
+      setTimeRunning(false);
+      return;
+    }
     setDiscardDecision([]);
     if(reason==='deck') pushLog("El mazo se agotó. La jornada termina y el grupo descansa.");
 
@@ -647,6 +690,7 @@ export default function App(){
     if (!activePlayer) return;
     const actor = activePlayer;
     if (actedThisRound[actor.id]) return;
+    setStats(s => ({ ...s, decisions: s.decisions + 1 }));
     // aplicar efectos
     const {
       morale: dm,
@@ -717,6 +761,7 @@ export default function App(){
   function spawnEnemies(count:number){
     const spawned = Array.from({length: count}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
     setEnemies(spawned);
+    setStats(s => ({ ...s, battles: s.battles + 1 }));
   }
 
   type CounterEffect = 'hit'|'bleeding'|'stunned'|'infected';
@@ -751,6 +796,7 @@ export default function App(){
     if (newHp <= 0) {
       pushLog(`✅ ${enemy.name} cae hecho trizas.`);
       setThreat(t => Math.max(0, t - 2));
+      setStats(s => ({ ...s, kills: s.kills + 1 }));
       const tier = tierByEnemy(enemy);
       if (Math.random() < 0.6) {
         const drop = randomWeaponNameByTier(tier as any);
@@ -1477,6 +1523,43 @@ function advanceTurn() {
       return;
     }
     setExplorationActive(true);
+    setStats(s => ({ ...s, explorations: s.explorations + 1 }));
+
+    if(explorationDeck.length > 0){
+      const [card, ...rest] = explorationDeck;
+      setExplorationDeck(rest);
+      if(card.advanceMs) timePenalty(card.advanceMs/1000);
+      if(card.loot){
+        const r = card.loot;
+        setResources(prev => ({
+          ...prev,
+          food: (prev.food || 0) + (r.food || 0),
+          water: (prev.water || 0) + (r.water || 0),
+          materials: (prev.materials || 0) + (r.materials || 0),
+          ammo: (prev.ammo || 0) + (r.ammo || 0),
+          medicine: (prev.medicine || 0) + (r.medicine || 0),
+          fuel: (prev.fuel || 0) + (r.fuel || 0),
+        }));
+      }
+      if(card.threat) setThreat(t=>Math.max(0, t + card.threat));
+      if(card.zombies && card.zombies>0){
+        spawnEnemies(card.zombies);
+        setBattleStats({ byPlayer: {}, lootNames: [] });
+        setCurrentCard({ id: uid(), type: "combat", title: card.title, text: card.text });
+        pushLog(`Exploración interrumpida: ${card.title}`);
+        if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+          setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+        }
+        finalizeTurnWithEndConditions(() => {
+          advanceTurn();
+        });
+        return;
+      }
+      pushLog(`🔎 ${card.title}`);
+      pushLog(card.text);
+      discoverRandomNote(0.25);
+      return;
+    }
 
     timePenalty(60 + Math.floor(Math.random()*60));
 
@@ -1539,10 +1622,10 @@ function advanceTurn() {
       if (Math.random() < 0.03) {
         if (playerId) {
           const res = tryAddToBackpack(playerId, BP_UP);
-          pushLog(`🎁 Encuentras ${BP_UP}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+          pushLog(`🎒 Encuentras ${BP_UP}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
         } else {
           setStash(s=>[...s, BP_UP]);
-          pushLog(`🎁 Encuentras ${BP_UP}. Guardado en el alijo.`);
+          pushLog(`🎒 Encuentras ${BP_UP}. Guardado en el alijo.`);
         }
       }
     })(activePlayer?.id);
@@ -1555,6 +1638,9 @@ function advanceTurn() {
         const bp = [...(p?.backpack ?? []), ammoBox];
         updatePlayer(holderId, { backpack: bp });
         pushLog(`🧰 En la exploración hallas ${ammoBox.name}. Guardado en tu mochila.`);
+      } else {
+        setStash(s=>[...s, ammoBox.name]);
+        pushLog(`🧰 En la exploración hallas ${ammoBox.name}. Guardado en el alijo.`);
       }
     }
 
@@ -1932,6 +2018,18 @@ function advanceTurn() {
         open={!!infectionDead}
         playerName={infectionDead?.name ?? ""}
         onClose={() => setInfectionDead(null)}
+      />
+      <DayEndModal
+        open={showDayEnd}
+        lines={dayEndLines}
+        onNextDay={() => {
+          setShowDayEnd(false);
+          setControlsLocked(false);
+          setTimeRunning(true);
+          setStats({ decisions:0, explorations:0, battles:0, kills:0 });
+          nextDay(true);
+          pushLog("— Comienza el Día 2 —");
+        }}
       />
       <WelcomeOverlay />
     </div>
