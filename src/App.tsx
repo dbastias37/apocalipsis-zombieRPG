@@ -15,7 +15,6 @@ import {
   addCondition,
   removeCondition,
   applyStartOfTurnConditions,
-  applyEndOfTurnConditions,
   cureCondition,
 } from "./systems/status";
 
@@ -178,7 +177,8 @@ export default function App(){
     mkPlayer("Marcus", "Soldado"),
     mkPlayer("Elena", "Psicóloga"),
   ]);
-  const [turn, setTurn] = useState(0);
+  const [turnOrder, setTurnOrder] = useState<string[] | null>(null);
+  const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
 
   // Mazo de cartas
   const [decisionDeck, setDecisionDeck] = useState<Card[]>(shuffle([...decisionDeckSeed]));
@@ -194,6 +194,23 @@ export default function App(){
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
   const [enemyIdx, setEnemyIdx] = useState<number>(0);
   const [actedThisRound, setActedThisRound] = useState<Record<string, boolean>>({});
+
+  // ---- Refs para leer estado “fresco” dentro de callbacks/efectos ----
+  const actedThisRoundRef = useRef<Record<string, boolean>>({});
+  useEffect(()=>{ actedThisRoundRef.current = actedThisRound; }, [actedThisRound]);
+
+  const playersRef = useRef(players);
+  useEffect(()=>{ playersRef.current = players; }, [players]);
+
+  const turnOrderRef = useRef<string[]>(turnOrder ?? []);
+  useEffect(()=>{ turnOrderRef.current = turnOrder ?? []; }, [turnOrder]);
+
+  const activePlayerIdRef = useRef<string|null>(activePlayerId ?? null);
+  useEffect(()=>{ activePlayerIdRef.current = activePlayerId ?? null; }, [activePlayerId]);
+
+  const isEnemyPhaseRef = useRef(isEnemyPhase);
+  useEffect(()=>{ isEnemyPhaseRef.current = isEnemyPhase; }, [isEnemyPhase]);
+
   const tw = useTypewriterQueue();
   // helper para pushear mensajes al panel
   function pushBattle(text: string, onDone?: () => void){
@@ -217,27 +234,22 @@ export default function App(){
 
   const alivePlayers = players.filter(p => p.status !== "dead");
   const aliveEnemies = enemies;
-  const activePlayer = alivePlayers.length > 0 ? alivePlayers[turn % Math.max(1, alivePlayers.length)] : null;
-
-  useEffect(() => {
-    if (!isEnemyPhase) {
-      const init: Record<string, boolean> = {};
-      for (const p of alivePlayers) init[p.id] = false;
-      setActedThisRound(init);
-      setTurn(0);
-    }
-  }, [isEnemyPhase, players]);
+  const activePlayer = activePlayerId ? players.find(p => p.id === activePlayerId) ?? null : null;
 
   useEffect(() => {
     if (isEnemyPhase) return;
-    if (!activePlayer) return;
-    const p = activePlayer;
-    const start = applyStartOfTurnConditions({ ...p, maxHp: p.hpMax }, logMsg);
-    if (start.newConditions) updatePlayer(p.id, { conditions: start.newConditions });
-    if (start.skipAction) {
-      advanceTurn();
+    const alive = players.filter(p => p.status !== "dead");
+    setActedThisRound(() => {
+      const flags: Record<string, boolean> = {};
+      alive.forEach(p => { flags[p.id] = false; });
+      return flags;
+    });
+    if (!activePlayerId && alive.length > 0) {
+      setActivePlayerId(alive[0].id);
+    } else if (activePlayerId && !alive.some(p => p.id === activePlayerId)) {
+      setActivePlayerId(alive[0]?.id ?? null);
     }
-  }, [turn, isEnemyPhase]);
+  }, [players, isEnemyPhase]);
 
   // Reloj del día
   useEffect(()=>{
@@ -519,6 +531,9 @@ export default function App(){
       }
     }
     timePenalty(45);
+    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+    }
     advanceTurn();
   }
 
@@ -556,6 +571,9 @@ export default function App(){
         updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
       }
       timePenalty(20);
+      if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+        setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+      }
       advanceTurn();
       return;
     }
@@ -603,6 +621,9 @@ export default function App(){
     }
 
     timePenalty(20);
+    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+    }
     advanceTurn();
   }
 
@@ -631,7 +652,8 @@ export default function App(){
     return applied;
   }
 
-  function runEnemyTurnRound(idx: number) {
+  function runEnemyTurnRound(idx = 0) {
+    setEnemyIdx(idx);
     const enemy = aliveEnemies[idx];
     if (!enemy) {
       // No hay enemigo en idx -> terminar fase enemigos
@@ -667,10 +689,7 @@ export default function App(){
     pushBattle(`El enemigo ${enemy.name} ha terminado su turno`, () => {
       const nextEnemyIdx = idx + 1;
       if (nextEnemyIdx < aliveEnemies.length) {
-        setEnemyIdx(nextEnemyIdx);
-        pushBattle(`Prepárate le toca a : ${aliveEnemies[nextEnemyIdx].name}`, () => {
-          runEnemyTurnRound(nextEnemyIdx);
-        });
+        runEnemyTurnRound(nextEnemyIdx);
       } else {
         finishEnemyPhase();
       }
@@ -678,10 +697,35 @@ export default function App(){
   }
 
   function finishEnemyPhase() {
+    // 1) Registrar fin de fase
+    pushBattle?.("El enemigo ha terminado su turno.");
+
+    // 2) Resetear banderas de turno de jugadores vivos
+    const alive = alivePlayersList();
+    setActedThisRound(() => {
+      const flags: Record<string, boolean> = {};
+      alive.forEach(p => { flags[p.id] = false; });
+      return flags;
+    });
+
+    // 3) Salir de la fase de enemigos
     setIsEnemyPhase(false);
-    // Reinicia ronda de jugadores (useEffect ya rearma actedThisRound y turn=0)
-    const firstName = alivePlayers[0]?.name ?? "Jugador";
-    pushBattle(`${firstName} prepárate`);
+
+    // 4) Entregar turno al primer jugador vivo según el orden
+    const order = (turnOrderRef.current?.length ? turnOrderRef.current : alive.map(p => p.id));
+    const firstId = order.find(pid => alive.some(p => p.id === pid)) ?? (alive[0]?.id ?? null);
+    setActivePlayerId(firstId ?? null);
+
+    if (firstId) {
+      const pl = alive.find(p => p.id === firstId)!;
+      const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
+      if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
+      if (start.skipAction) {
+        setActedThisRound(m => ({ ...m, [pl.id]: true }));
+        requestAnimationFrame(() => advanceTurn());
+      }
+      pushBattle?.(`— Turno de ${playersRef.current.find(p=>p.id===firstId)?.name} —`);
+    }
   }
 
   function defend(){
@@ -692,7 +736,11 @@ export default function App(){
     updatePlayer(actor.id, { defense: actor.defense + 3 });
     pushLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
     pushBattle(`${actor.name} se cubre entre los escombros (+DEF temporal).`);
-    timePenalty(10); advanceTurn();
+    timePenalty(10);
+    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+    }
+    advanceTurn();
   }
 
   function cureOneStatusIfAny(p: Player){
@@ -719,8 +767,12 @@ export default function App(){
     setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
     pushLog(`💊 ${actor.name} se venda rápido (+${healAmt} PV).`);
     pushBattle(render(pick(HEAL_LINES), { P: actor.name, V: healAmt }));
-    cureOneStatusIfAny(actor);
-    timePenalty(25); advanceTurn();
+   cureOneStatusIfAny(actor);
+    timePenalty(25);
+    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+    }
+    advanceTurn();
   }
 
   function flee(){
@@ -741,58 +793,83 @@ export default function App(){
       pushLog("⚠️ El escape falla, te rodean por un momento.");
       pushBattle(`${actor.name} no logra escapar.`);
     }
-    timePenalty(30); advanceTurn();
+    timePenalty(30);
+    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+    }
+    advanceTurn();
+  }
+
+  function alivePlayersList() {
+    return (playersRef.current ?? []).filter(p => p.hp > 0);
+  }
+
+  function nextUnactedPlayerId(currentId: string | null) {
+    const alive = alivePlayersList();
+    if (alive.length === 0) return null;
+
+    const order = (turnOrderRef.current?.length ? turnOrderRef.current : alive.map(p => p.id));
+    const acted = actedThisRoundRef.current;
+
+    const startIdx = currentId ? Math.max(0, order.indexOf(currentId)) : -1;
+    for (let step = 1; step <= order.length; step++) {
+      const idx = (startIdx + step) % order.length;
+      const pid = order[idx];
+      const p = alive.find(ap => ap.id === pid);
+      if (p && !acted[pid]) return pid;
+    }
+    return null;
+  }
+
+  function allPlayersActedThisRound() {
+    const alive = alivePlayersList();
+    const acted = actedThisRoundRef.current;
+    return alive.length > 0 && alive.every(p => acted[p.id]);
   }
 
   function advanceTurn() {
-    if (alivePlayers.length === 0) return;
-    if (activePlayer) {
-      const p = activePlayer;
-      const end = applyEndOfTurnConditions({ ...p, maxHp: p.hpMax }, logMsg);
-      if (end.hpDelta) {
-        const newHp = Math.max(0, p.hp + end.hpDelta);
-        updatePlayer(p.id, { hp: newHp, conditions: end.newConditions });
-        if (newHp <= 0) {
-          updatePlayer(p.id, { status: "dead" });
-        }
-      } else {
-        if (end.newConditions) updatePlayer(p.id, { conditions: end.newConditions });
-      }
+    // Si estamos en fase de enemigos, no reasignar jugadores aquí
+    if (isEnemyPhaseRef.current) return;
+
+    const currentId = activePlayerIdRef.current ?? null;
+
+    // 1) ¿ya actuaron todos los jugadores vivos?
+    if (allPlayersActedThisRound()) {
+      // Cambiar a fase de enemigos
+      setIsEnemyPhase(true);
+      setActivePlayerId(null);
+      pushBattle?.("Prepárate: enemigos al ataque.");
+      pushBattle?.("— Fase de Enemigos —");
+      runEnemyTurnRound(); // al final de runEnemyTurnRound debe llamarse finishEnemyPhase()
+      return;
     }
 
-    let updated = actedThisRound;
-    if (activePlayer) {
-      updated = { ...actedThisRound, [activePlayer.id]: true };
-      setActedThisRound(updated);
+    // 2) Buscar siguiente jugador vivo que no haya actuado
+    const nextId = nextUnactedPlayerId(currentId);
+    if (!nextId) {
+      // fallback por si corrió un KO en medio; fuerza fase enemigos
+      setIsEnemyPhase(true);
+      setActivePlayerId(null);
+      pushBattle?.("Prepárate: enemigos al ataque.");
+      pushBattle?.("— Fase de Enemigos —");
+      runEnemyTurnRound();
+      return;
     }
 
-    const len = alivePlayers.length;
-    let nextIdx = (turn + 1) % Math.max(1, len);
-    let looped = 0;
-    let foundNext = false;
-    while (looped < len) {
-      const candidate = alivePlayers[nextIdx];
-      if (candidate && !updated[candidate.id]) { foundNext = true; break; }
-      nextIdx = (nextIdx + 1) % len;
-      looped++;
-    }
+    // 3) Activar turno del siguiente jugador y aplicar condiciones de inicio
+    setActivePlayerId(prev => prev === nextId ? prev : nextId);
+    const alive = alivePlayersList();
+    const pl = alive.find(p => p.id === nextId);
+    if (pl) {
+      const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); pushLog?.(msg); });
+      if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
 
-    if (foundNext) {
-      const prevName = activePlayer ? activePlayer.name : "Jugador";
-      const nextName = alivePlayers[nextIdx].name;
-      pushBattle(`${prevName} tu turno ha terminado — ahora le toca a: ${nextName}`, () => {
-        setTurn(nextIdx);
-      });
-    } else {
-      if (aliveEnemies.length > 0) {
-        pushBattle(`Prepárate le toca a : ${aliveEnemies[0].name}`, () => {
-          setIsEnemyPhase(true);
-          setEnemyIdx(0);
-          runEnemyTurnRound(0);
-        });
-      } else {
-        const firstName = alivePlayers[0]?.name ?? "Jugador";
-        pushBattle(`${firstName} prepárate`);
+      if (start.skipAction) {
+        // No puede actuar por aturdido, cuenta como que actuó
+        setActedThisRound(m => ({ ...m, [pl.id]: true }));
+        // Avanzar inmediatamente al siguiente
+        requestAnimationFrame(() => advanceTurn());
+        return;
       }
     }
   }
@@ -875,6 +952,9 @@ export default function App(){
       spawnEnemies(count);
       setCurrentCard({ id: uid(), type: "combat", title: "Encuentro inesperado", text: "Durante la exploración aparecen enemigos." });
       pushLog(`Exploración interrumpida: ¡${count} enemigos!`);
+      if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+        setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+      }
       advanceTurn();
       return;
     }
@@ -932,6 +1012,9 @@ export default function App(){
 
     pushLog(`${ev.text} — Recompensa obtenida.`);
     setExplorationActive(false);
+    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+    }
     advanceTurn();
   }
 
@@ -1135,7 +1218,7 @@ export default function App(){
           players={players}
           onUpdatePlayer={updatePlayer}
           onRemove={removePlayer}
-          activePlayerId={activePlayer?.id}
+          activePlayerId={activePlayerId ?? undefined}
           isEnemyPhase={isEnemyPhase}
         />
 
