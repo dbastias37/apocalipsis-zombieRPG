@@ -60,6 +60,8 @@ import { pickRandomContainer, openContainer } from "./systems/containers";
 import { getCurrentDay } from "./utils/day";
 import type { GameState as GameWorldState, ContainersState } from "./types/game";
 
+const currentDay = getCurrentDay((globalThis as any).__GAME_STATE__ ?? (globalThis as any));
+
 
 // === Botiquín helpers ===
 type MedkitItem = { name: string; medicines: number; kind?: string };
@@ -1577,7 +1579,6 @@ function advanceTurn() {
     if(!containersState.lastOpenedWasContainer){
       const rollC = Math.random();
       if(rollC < 0.40){
-        const currentDay = getCurrentDay({ day });
         const c = pickRandomContainer(currentDay, { resources, containersState });
         if(c){
           gameLog(`🧭 Encontraste un contenedor: ${c.name} (${c.place})`);

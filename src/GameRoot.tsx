@@ -230,6 +230,7 @@ export default function GameRoot(){
   // Estado base
   const [state, setState] = useState<GameState>("playing");
   const [day, setDay] = useState(1);
+  React.useEffect(() => { (globalThis as any).__DAY = day; }, [day]);
   const [phase, setPhase] = useState<Phase>("dawn");
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
   const [timeRunning, setTimeRunning] = useState(false);
