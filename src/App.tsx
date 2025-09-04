@@ -24,7 +24,15 @@ import {
   counterEffectText,
 } from "./data/combatPhrases";
 import { WEAPONS } from "./data/weapons";
-import { getSelectedWeapon, getAmmoFor, isRangedWeapon } from "./systems/weapons";
+import { getSelectedWeapon, isRangedWeapon } from "./systems/weapons";
+import {
+  listAmmoBoxes,
+  listAmmoboxes,
+  reloadSelectedWeapon,
+  getLoadedAmmo,
+  spendAmmo,
+  totalAmmoInInventory,
+} from "./systems/ammo";
 import WeaponPicker from "./components/WeaponPicker";
 import CombatEndSummary from "./components/overlays/CombatEndSummary";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
@@ -408,7 +416,7 @@ export default function App(){
     if (!p) return false;
     const w = getSelectedWeapon(p);
     if (isRangedWeapon(w)) {
-      return getAmmoFor(p, w.id) > 0;
+      return getLoadedAmmo(p, w.id) > 0;
     }
     return true;
   })();
@@ -830,14 +838,23 @@ export default function App(){
     const isMelee = w?.type === "melee";
 
     if (isRanged) {
-      const ammo = getAmmoFor(actor, w.id);
-      if (ammo <= 0) {
-        const line = `${actor.name} intenta disparar ${w.name}, pero no queda munición.`;
+      const loaded = getLoadedAmmo(actor, w.id);
+      if (loaded <= 0) {
+        const line = `${actor.name} intenta disparar ${w.name}, pero no tiene munición cargada.`;
         pushBattle(line);
         pushLog(line);
         endPlayerActionAwaitEnter(() => {});
         return;
       }
+      const { player: updated, ok } = spendAmmo(actor, w.id, 1);
+      if (!ok) {
+        const line = `${actor.name} no logra disparar: el arma está vacía.`;
+        pushBattle(line);
+        pushLog(line);
+        endPlayerActionAwaitEnter(() => {});
+        return;
+      }
+      setPlayers(ps => ps.map(p => p.id === actor.id ? updated : p));
     }
 
     const atkRoll = roll(1,20, mod(actor.attrs.Fuerza) + (isRanged ? 4 : 0));
@@ -855,8 +872,6 @@ export default function App(){
       next.points = (next.meleeHits + next.rangedHits) * 2 + next.heals * 1;
       return { ...prev, byPlayer: { ...prev.byPlayer, [actor.id]: next } };
     });
-
-    if (isRanged) consumeAmmo(actor.id, w.id, 1);
 
     if(!hit){
       const missPool = isRanged ? MISS_RANGED : MISS_MELEE;
@@ -1403,36 +1418,6 @@ function advanceTurn() {
   function setPlayerSelectedWeapon(playerId: string, weaponId: string) {
     updatePlayer(playerId, { selectedWeaponId: weaponId });
   }
-  function consumeAmmo(playerId: string, weaponId: string, amount = 1) {
-    const p = players.find(pl => pl.id === playerId);
-    if (!p) return;
-    const m = { ...(p.ammoByWeapon || {}) };
-    m[weaponId] = Math.max(0, (m[weaponId] || 0) - amount);
-    updatePlayer(playerId, { ammoByWeapon: m });
-  }
-
-  function listAmmoBoxes(p: Player){
-    return (p.backpack ?? []).filter((it: any) => it?.type === "ammo_box");
-  }
-  function removeOneAmmoBox(pId: string){
-    const p = playersRef.current?.find(x=>x.id===pId);
-    if(!p) return null;
-    const bp = [...(p.backpack ?? [])];
-    const idx = bp.findIndex(it => it?.type === "ammo_box");
-    if (idx < 0) return null;
-    const box = bp[idx];
-    bp.splice(idx,1);
-    updatePlayer(pId, { backpack: bp });
-    return box as AmmoBox;
-  }
-  function addAmmoToWeapon(pId: string, weaponId: string, amount:number){
-    const p = playersRef.current?.find(x=>x.id===pId);
-    if(!p) return;
-    const m = { ...(p.ammoByWeapon ?? {}) };
-    m[weaponId] = (m[weaponId] ?? 0) + Math.max(0, amount|0);
-    updatePlayer(pId, { ammoByWeapon: m });
-  }
-
   function backpackWeapons(p: Player) {
     return p.inventory
       .map(name => WEAPONS.find(w => w.name === name || w.id === name))
@@ -2327,8 +2312,9 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
 
 function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Player>)=>void}){
   const selWeapon = getSelectedWeapon(player);
-  const rangedSel = isRangedWeapon(selWeapon);
-  const ammo = rangedSel ? getAmmoFor(player, selWeapon.id) : 0;
+  const isFirearm = isRangedWeapon(selWeapon);
+  const loaded = isFirearm ? getLoadedAmmo(player, selWeapon.id) : 0;
+  const hasBoxes = listAmmoBoxes(player?.inventory).length > 0;
   return (
     <div className="space-y-2 text-sm">
       <div className="grid grid-cols-2 gap-2">
@@ -2337,8 +2323,8 @@ function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Play
         <div>Estado: {player.status}</div>
       </div>
       <div className="text-xs mt-2">
-        Arma actual: {selWeapon.name} · Daño {selWeapon.damageMin}-{selWeapon.damageMax} ·
-        {rangedSel ? ` Munición: ${ammo}` : " Munición: --"}
+        Arma actual: {selWeapon.name} · Daño {selWeapon.damageMin}-{selWeapon.damageMax} ·{" "}
+        {isFirearm ? `Munición: ${loaded}` : "Munición: --"}
       </div>
       <div>
         <h4 className="text-neutral-400 text-xs mt-2">Objetos</h4>
@@ -2350,35 +2336,20 @@ function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Play
             })
           }
         </div>
+        <div className="text-xs opacity-80 mt-1">
+          Cajas de munición en mochila: {totalAmmoInInventory(player.inventory)}
+        </div>
       </div>
-      {player && listAmmoBoxes(player).length > 0 && (
-        <div className="mt-2">
-          <div className="text-xs opacity-80 mb-1">Munición en mochila</div>
-          <div className="flex flex-wrap gap-2">
-            {listAmmoBoxes(player).map((box:any) => (
-              <span key={box.id} className="px-2 py-1 rounded bg-white/10 border border-white/10 text-xs">
-                Caja de munición ({box.bullets})
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-      {player && rangedSel && listAmmoBoxes(player).length > 0 && (
-        <div className="mt-3">
-          <button
-            className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500"
-            onClick={()=>{
-              const box = removeOneAmmoBox(player.id);
-              if (!box) return;
-              addAmmoToWeapon(player.id, selWeapon.id, box.bullets);
-              pushBattle?.(`${player.name} recarga ${selWeapon.name}: +${box.bullets} munición.`);
-              postActionContinueRef.current = ()=>{ setControlsLocked(false); };
-              setControlsLocked(true);
-            }}
-          >
-            Recargar arma
-          </button>
-        </div>
+      {isFirearm && hasBoxes && (
+        <button
+          className="btn btn-sm mt-2"
+          onClick={() => {
+            const updated = reloadSelectedWeapon(player, pushBattle);
+            onUpdate(updated);
+          }}
+        >
+          Recargar arma
+        </button>
       )}
     </div>
   );
