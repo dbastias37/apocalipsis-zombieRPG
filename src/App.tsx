@@ -8,15 +8,15 @@ import CombatLogPanel from "./components/CombatLogPanel";
 import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
 import { weaponFlavorFrom, hitPhraseByFlavor, MISS_MELEE, MISS_RANGED, TAIL_BLEED, TAIL_STUN, TAIL_INFECT, HEAL_LINES, FLEE_LINES, render, pick } from "./data/combatPhrases";
 import { findWeaponById } from "./data/weapons";
-import {
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
+import {
   Conditions,
   hasCondition,
   addCondition,
+  removeCondition,
   applyStartOfTurnConditions,
   applyEndOfTurnConditions,
   cureCondition,
-  type ConditionId,
 } from "./systems/status";
 
 // === Tipos ===
@@ -464,56 +464,62 @@ export default function App(){
     const actor = activePlayer;
     if (actedThisRound[actor.id]) return;
     // aplicar efectos
-    if(choice.effect){
-      const { morale: dm, threat: dt, zombies, spawnEnemies, advanceMs, ...res } = choice.effect as any;
-      if(dm) setMorale(m=>clamp(m+dm,0,100));
-      if(dt) setThreat(t=>Math.max(0,t+dt));
-      const rDelta = res as Partial<Resources>;
-      if(Object.keys(rDelta).length){
-        setResources(r=>{
-          const next = { ...r };
-          (Object.keys(rDelta) as (keyof Resources)[]).forEach(k => {
-            next[k] = Math.max(0, (r[k] ?? 0) + (rDelta[k] as number));
-          });
-          return next;
+    const {
+      morale: dm,
+      threat: dt,
+      zombies,
+      spawnEnemies: spawnFromEffectCount,
+      advanceMs,
+      ...res
+    } = (choice?.effect ?? {}) as any;
+    if (dm) setMorale(m => clamp(m + dm, 0, 100));
+    if (dt) setThreat(t => Math.max(0, t + dt));
+    const rDelta = res as Partial<Resources>;
+    if (Object.keys(rDelta).length) {
+      setResources(r => {
+        const next = { ...r };
+        (Object.keys(rDelta) as (keyof Resources)[]).forEach(k => {
+          next[k] = Math.max(0, (r[k] ?? 0) + (rDelta[k] as number));
         });
+        return next;
+      });
+    }
+
+    // Avance de tiempo desde la decisión
+    if (typeof advanceMs === 'number' && advanceMs > 0) {
+      setClockMs(ms => Math.max(0, ms - advanceMs));
+    }
+
+    // Zombis/combate forzado a partir de la carta
+    const toSpawn =
+      (typeof zombies === 'number' ? zombies : 0) +
+      (typeof spawnFromEffectCount === 'number' ? spawnFromEffectCount : 0);
+
+    if (toSpawn > 0) {
+      // OJO: esta es la FUNCIÓN del juego, no el campo del effect
+      spawnEnemies(toSpawn);
+      if (currentCard) {
+        // Mantener la carta abierta, pero ya como combate
+        setCurrentCard({ ...currentCard, type: "combat" });
       }
-      if(spawnEnemies && spawnEnemies>0){
-        const spawned = Array.from({length: spawnEnemies}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
-        setEnemies(spawned);
-        setCurrentCard({ ...(currentCard as Card), type: "combat" });
-        pushLog(`⚔️ Tu decisión provocó un combate (${spawned.length}).`);
+      pushLog(`⚔️ Tu decisión provocó un combate (${toSpawn}).`);
+    }
+
+    // narrativa
+    pushLog(`📖 Decisión tomada: ${choice.text}`);
+
+    // descartar carta o mantener si abre combate
+    if (currentCard) {
+      if (typeof toSpawn === 'number' && toSpawn > 0) {
+        // mantener la carta actual convertida a 'combat'
+      } else {
+        if (currentCard.type === "decision") setDiscardDecision(d => [currentCard, ...d]);
+        else setDiscardCombat(d => [currentCard, ...d]);
+        setCurrentCard(null);
       }
     }
-    
-// Avance de tiempo desde la decisión
-if (typeof advanceMs === 'number' && advanceMs > 0) {
-  setClockMs(ms => Math.max(0, ms - advanceMs));
-}
-// Zombis/combate forzado a partir de la carta
-const toSpawn = (typeof zombies === 'number' ? zombies : 0) + (typeof spawnEnemies === 'number' ? spawnEnemies : 0);
-if (toSpawn > 0) {
-  spawnEnemies(toSpawn);
-  if (currentCard) {
-    setCurrentCard({ ...currentCard, type: "combat" });
-  }
-  pushLog(`⚔️ Tu decisión provocó un combate (${toSpawn}).`);
-}
-      // narrativa
-    pushLog(`📖 Decisión tomada: ${choice.text}`);
-    
-// descartar carta o mantener si abre combate
-if (currentCard) {
-  if (typeof toSpawn === 'number' && toSpawn > 0) {
-    // mantener la carta actual convertida a 'combat'
-  } else {
-    if (currentCard.type === "decision") setDiscardDecision(d => [currentCard, ...d]);
-    else setDiscardCombat(d => [currentCard, ...d]);
-    setCurrentCard(null);
-  }
-}
-timePenalty(45); advanceTurn();
-// penalizar ~45s
+    timePenalty(45);
+    advanceTurn();
   }
 
   // ——— Combate muy simplificado ———
@@ -690,7 +696,7 @@ timePenalty(45); advanceTurn();
   }
 
   function cureOneStatusIfAny(p: Player){
-    const order: ConditionId[] = ['bleeding','stunned','infected'];
+    const order: (keyof Conditions)[] = ['bleeding','stunned','infected'];
     let c = p.conditions ?? {};
     for (const id of order){
       if (hasCondition(c, id)){
