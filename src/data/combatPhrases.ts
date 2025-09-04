@@ -57,11 +57,15 @@ export function weaponFlavorFrom(id: string, name: string, type: "melee"|"ranged
 // --- FRASES DE ÉXITO (se añaden “colas” de estado si aplica) ---
 export const HIT_FISTS = [
   "${P} suelta un puñetazo directo a ${E} (−${D}).",
-  "Con los puños, ${P} impacta a ${E} (−${D}).",
   "${P} conecta un derechazo contra ${E} (−${D}).",
+  "Gancho preciso de ${P} impacta a ${E} (−${D}).",
   "Golpe en corto: ${P} sacude a ${E} (−${D}).",
   "${P} martilla con los nudillos a ${E} (−${D}).",
-  "Un gancho preciso de ${P} da a ${E} (−${D}).",
+  "${P} rompe la guardia y da a ${E} (−${D}).",
+  "Combo veloz de ${P} alcanza a ${E} (−${D}).",
+  "${P} empuja y remata a ${E} (−${D}).",
+  "Un cruzado firme de ${P} golpea a ${E} (−${D}).",
+  "Codo corto de ${P} hiere a ${E} (−${D}).",
 ];
 
 export const HIT_MELEE_BLADE = [
@@ -70,7 +74,11 @@ export const HIT_MELEE_BLADE = [
   "Filo certero: ${P} hiere a ${E} con ${W} (−${D}).",
   "${W} silba y alcanza a ${E} (−${D}).",
   "${P} asesta un tajo con ${W} (−${D}).",
-  "Con ${W}, ${P} busca arterias y golpea (−${D}).",
+  "Estocada de ${W} perfora a ${E} (−${D}).",
+  "Tajo descendente de ${P} con ${W} (−${D}).",
+  "Corte lateral desarma a ${E} (−${D}).",
+  "Filo limpio de ${W} en ${E} (−${D}).",
+  "Cuchillada rápida de ${P} hiere a ${E} (−${D}).",
 ];
 
 export const HIT_MELEE_BLUNT = [
@@ -80,6 +88,10 @@ export const HIT_MELEE_BLUNT = [
   "Impacto seco de ${P} con ${W} en ${E} (−${D}).",
   "${P} balancea ${W} y tumba a ${E} (−${D}).",
   "Golpazo de ${W} directo a ${E} (−${D}).",
+  "${P} rompe el ritmo de ${E} con ${W} (−${D}).",
+  "Toque a la sien: ${E} tambalea (−${D}).",
+  "Machetazo de ${W} (contundente) a ${E} (−${D}).",
+  "Barrido de ${P} con ${W} en ${E} (−${D}).",
 ];
 
 export const HIT_PISTOL = [
@@ -88,14 +100,24 @@ export const HIT_PISTOL = [
   "La bala de ${W} alcanza a ${E} (−${D}).",
   "Disparo limpio de ${P} con ${W} (−${D}).",
   "${P} aprieta el gatillo y hiere a ${E} (−${D}).",
+  "Corta detonación: ${P} acierta con ${W} (−${D}).",
+  "Punto de mira firme: ${E} recibe (−${D}).",
+  "El eco del ${W} trae daño a ${E} (−${D}).",
+  "De lado, ${P} clava el tiro (−${D}).",
+  "Munición bien puesta de ${W} (−${D}).",
 ];
 
 export const HIT_RIFLE = [
   "${P} apunta con ${W} y perfora a ${E} (−${D}).",
   "Tiro a distancia: ${P} castiga a ${E} con ${W} (−${D}).",
-  "El proyectil de ${W} atraviesa cobertura (−${D}).",
+  "Proyectil de ${W} atraviesa cobertura (−${D}).",
   "Disparo preciso de ${P} con ${W} (−${D}).",
   "Ráfaga controlada de ${W} contra ${E} (−${D}).",
+  "Respira y aprieta: ${E} recibe (−${D}).",
+  "Punto rojo sobre ${E}: impacto (−${D}).",
+  "Línea recta de ${W} hiere (−${D}).",
+  "Tiro que atraviesa, ${E} cae (−${D}).",
+  "La mira canta: impacto (−${D}).",
 ];
 
 export const HIT_SHOTGUN = [
@@ -104,6 +126,11 @@ export const HIT_SHOTGUN = [
   "A bocajarro: ${P} castiga con ${W} (−${D}).",
   "Trueno de ${W}: ${E} recibe impacto (−${D}).",
   "Escopetazo de ${P} que sacude a ${E} (−${D}).",
+  "Nube de plomo cubre a ${E} (−${D}).",
+  "Retroceso controlado, daño serio (−${D}).",
+  "Carga corta, efecto brutal (−${D}).",
+  "Disparo abierto, ${E} no lo esquiva (−${D}).",
+  "Golpe de perdigones sobre ${E} (−${D}).",
 ];
 
 export const HIT_SMG = [
@@ -112,6 +139,11 @@ export const HIT_SMG = [
   "Control de retroceso: ${P} acierta con ${W} (−${D}).",
   "Corta ráfaga de ${W} contra ${E} (−${D}).",
   "Trac-trac de ${W}: ${E} es impactado (−${D}).",
+  "Ráfaga contenida, ${E} sufre (−${D}).",
+  "Ventana de tiro, daño (−${D}).",
+  "Vibración en manos, impacto (−${D}).",
+  "Trazadoras muerden a ${E} (−${D}).",
+  "Sujetar y soltar: acierto (−${D}).",
 ];
 
 export const HIT_XBOW = [
@@ -120,6 +152,11 @@ export const HIT_XBOW = [
   "Silencio letal: ${W} impacta a ${E} (−${D}).",
   "Tiro certero de ${W}: ${E} sufre (−${D}).",
   "El virote se incrusta en ${E} (−${D}).",
+  "Pluma y punta, daño (−${D}).",
+  "Tensado justo, impacto (−${D}).",
+  "Sin ruido, dolor (−${D}).",
+  "Curva leve, centro en ${E} (−${D}).",
+  "Cuerda vibra, acierto (−${D}).",
 ];
 
 export const HIT_SLING = [
@@ -128,6 +165,11 @@ export const HIT_SLING = [
   "Proyectil improvisado con ${W} alcanza a ${E} (−${D}).",
   "Tiro de ${W} directo a ${E} (−${D}).",
   "La piedra rebota y hiere a ${E} (−${D}).",
+  "Giro y suelta: impacto (−${D}).",
+  "Tiro curvo que pega (−${D}).",
+  "Golpe limpio de ${W} (−${D}).",
+  "Proyectil rápido contra ${E} (−${D}).",
+  "Impacto seco, ${E} acusa (−${D}).",
 ];
 
 // --- FRASES DE FALLO (10 cada una) ---

@@ -7,7 +7,8 @@ import WelcomeOverlay from "./components/WelcomeOverlay";
 import CombatLogPanel from "./components/CombatLogPanel";
 import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
 import { weaponFlavorFrom, hitPhraseByFlavor, MISS_MELEE, MISS_RANGED, TAIL_BLEED, TAIL_STUN, TAIL_INFECT, HEAL_LINES, FLEE_LINES, render, pick } from "./data/combatPhrases";
-import { findWeaponById } from "./data/weapons";
+import { findWeaponById, WEAPONS } from "./data/weapons";
+import WeaponPicker from "./components/WeaponPicker";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import {
   Conditions,
@@ -32,11 +33,11 @@ type Player = {
   energy: number; energyMax: number;
   defense: number;
   status: "ok"|"wounded"|"infected"|"dead";
-  ammo: number;
   inventory: string[];
   attrs: Attributes;
   conditions?: Conditions;
-  equippedWeaponId?: string;
+  selectedWeaponId?: string;
+  ammoByWeapon?: Record<string, number>;
   backpackCapacity?: number;
 };
 
@@ -176,7 +177,11 @@ export default function App(){
     mkPlayer("Sarah", "Médica"),
     mkPlayer("Marcus", "Soldado"),
     mkPlayer("Elena", "Psicóloga"),
-  ]);
+  ].map(p => ({
+    ...p,
+    selectedWeaponId: p.selectedWeaponId ?? "fists",
+    ammoByWeapon: p.ammoByWeapon ?? {},
+  })));
   const [turnOrder, setTurnOrder] = useState<string[] | null>(null);
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
 
@@ -266,6 +271,15 @@ export default function App(){
   const alivePlayers = players.filter(p => p.status !== "dead");
   const aliveEnemies = enemies;
   const activePlayer = activePlayerId ? players.find(p => p.id === activePlayerId) ?? null : null;
+  const canAttackWithSelected = (() => {
+    const p = activePlayer;
+    if (!p) return false;
+    const w = getSelectedWeapon(p);
+    if (w.type === "ranged") {
+      return getAmmoFor(p, w.id) > 0;
+    }
+    return true;
+  })();
 
   useEffect(() => {
     if (isEnemyPhase) return;
@@ -335,11 +349,11 @@ export default function App(){
       energy: 10, energyMax: 10,
       defense: 10 + mod(attrs.Destreza),
       status: "ok",
-      ammo: 20,
       inventory: ["Navaja"],
       conditions: {},
       attrs,
-      equippedWeaponId: 'fists',
+      selectedWeaponId: 'fists',
+      ammoByWeapon: {},
       backpackCapacity: 8,
     };
   }
@@ -582,25 +596,36 @@ export default function App(){
     const enemy = enemies.find(e=>e.id===enemyId);
     if(!enemy){ setControlsLocked(false); return; }
 
-    const w = findWeaponById(actor.equippedWeaponId || "fists") || { id: "fists", name: "Puños", type: "melee" as const };
+    const w = getSelectedWeapon(actor);
     const flavor = weaponFlavorFrom(w.id, w.name, w.type);
+    const isRanged = isRangedWeapon(w);
 
-    const atkRoll = roll(1,20, mod(actor.attrs.Fuerza) + (w.type === "ranged" ? 4 : 0));
+    if (isRanged) {
+      const ammo = getAmmoFor(actor, w.id);
+      if (ammo <= 0) {
+        const line = `${actor.name} intenta disparar ${w.name}, pero no queda munición.`;
+        pushBattle(line);
+        pushLog(line);
+        endPlayerActionAwaitEnter(() => {});
+        return;
+      }
+    }
+
+    const atkRoll = roll(1,20, mod(actor.attrs.Fuerza) + (isRanged ? 4 : 0));
     const hit = atkRoll.total >= enemy.def || atkRoll.natural===20;
 
+    if (isRanged) consumeAmmo(actor.id, w.id, 1);
+
     if(!hit){
-      const missPool = w.type === "ranged" ? MISS_RANGED : MISS_MELEE;
+      const missPool = isRanged ? MISS_RANGED : MISS_MELEE;
       const line = render(pick(missPool), { P: actor.name, E: enemy.name, W: w.name });
       pushBattle(line);
       pushLog(line);
       setDayStats(s=>({
         ...s,
         misses: s.misses + 1,
-        shotsFired: s.shotsFired + (w.type === "ranged" ? 1 : 0),
+        shotsFired: s.shotsFired + (isRanged ? 1 : 0),
       }));
-      if(w.type === "ranged"){
-        updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
-      }
       endPlayerActionAwaitEnter(() => {
         timePenalty(45);
         advanceTurn();
@@ -608,7 +633,7 @@ export default function App(){
       return;
     }
 
-    const dmg = roll(1,6, w.type === "ranged" ? 4 : mod(actor.attrs.Fuerza)).total;
+    const dmg = roll(w.damage?.times || 1, w.damage?.faces || 6, (isRanged ? 0 : mod(actor.attrs.Fuerza)) + (w.damage?.mod || 0)).total;
     const newHp = enemy.hp - dmg;
     setEnemies(es=> es.map(e=> e.id===enemyId ? {...e, hp: newHp} : e).filter(e=> e.hp>0));
 
@@ -625,7 +650,7 @@ export default function App(){
     setDayStats(s=>({
       ...s,
       damageDealt: s.damageDealt + dmg,
-      shotsFired: s.shotsFired + (w.type === "ranged" ? 1 : 0),
+      shotsFired: s.shotsFired + (isRanged ? 1 : 0),
     }));
 
     if(newHp<=0){
@@ -644,10 +669,6 @@ export default function App(){
         const res = tryAddToBackpack(actor.id, name);
         pushLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
       }
-    }
-
-    if(w.type === "ranged"){
-      updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
     }
 
     endPlayerActionAwaitEnter(() => {
@@ -924,6 +945,38 @@ function advanceTurn() {
 
   function updatePlayer(id:string, patch: Partial<Player>){
     setPlayers(ps=> ps.map(p => p.id===id ? {...p, ...patch} : p));
+  }
+
+  function getSelectedWeapon(player: Player) {
+    const wid = player.selectedWeaponId || "fists";
+    return findWeaponById(wid) || { id: "fists", name: "Puños", type: "melee" as const, damage: { times:1, faces:4, mod:0 } };
+  }
+
+  function setPlayerSelectedWeapon(playerId: string, weaponId: string) {
+    updatePlayer(playerId, { selectedWeaponId: weaponId });
+  }
+
+  function getAmmoFor(player: Player, weaponId: string) {
+    if (!player.ammoByWeapon) return 0;
+    return player.ammoByWeapon[weaponId] || 0;
+  }
+
+  function consumeAmmo(playerId: string, weaponId: string, amount = 1) {
+    const p = players.find(pl => pl.id === playerId);
+    if (!p) return;
+    const m = { ...(p.ammoByWeapon || {}) };
+    m[weaponId] = Math.max(0, (m[weaponId] || 0) - amount);
+    updatePlayer(playerId, { ammoByWeapon: m });
+  }
+
+  function isRangedWeapon(w: any) {
+    return w?.type === "ranged";
+  }
+
+  function backpackWeapons(p: Player) {
+    return p.inventory
+      .map(name => WEAPONS.find(w => w.name === name || w.id === name))
+      .filter((w): w is any => !!w);
   }
 
   function getItemById(id?: string) {
@@ -1240,6 +1293,7 @@ function advanceTurn() {
             onFlee={flee}
             controlsLocked={controlsLocked}
             isEnemyPhase={isEnemyPhase}
+            canAttackWithSelected={canAttackWithSelected}
             onClose={()=>{
               if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
               else setDiscardCombat(d=>[currentCard, ...d]);
@@ -1255,6 +1309,15 @@ function advanceTurn() {
             event={timedEvent}
             now={nowRef.current}
             onResolve={resolveTimedEventPositively}
+          />
+        )}
+
+        {activePlayer && (
+          <WeaponPicker
+            player={activePlayer}
+            backpack={backpackWeapons(activePlayer)}
+            onSelect={(wid) => setPlayerSelectedWeapon(activePlayer.id, wid)}
+            ammoFor={(wid) => getAmmoFor(activePlayer, wid)}
           />
         )}
         <CombatLogPanel
@@ -1374,6 +1437,7 @@ function CardView(props:{
   onFlee: ()=>void;
   controlsLocked: boolean;
   isEnemyPhase: boolean;
+  canAttackWithSelected: boolean;
 }){
   const isDecision = props.card.type==="decision";
   return (
@@ -1413,10 +1477,10 @@ function CardView(props:{
                     </div>
                     <button
                       className="btn btn-red text-white"
-                      onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onAttack(e.id); }}
-                      disabled={props.controlsLocked || props.isEnemyPhase}
+                      onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || !props.canAttackWithSelected) return; props.onAttack(e.id); }}
+                      disabled={props.controlsLocked || props.isEnemyPhase || !props.canAttackWithSelected}
                     >
-                      🗡️ Atacar
+                      {props.canAttackWithSelected ? "🗡️ Atacar" : "Sin munición"}
                     </button>
                   </div>
                   <div className="mt-2 h-2 bg-neutral-800 rounded-full overflow-hidden">
@@ -1586,7 +1650,6 @@ function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Play
     <div className="space-y-2 text-sm">
       <div className="grid grid-cols-2 gap-2">
         <div>DEF: {player.defense}</div>
-        <div>Munición: {player.ammo}</div>
         <div>Inventario: {player.inventory.length}</div>
         <div>Estado: {player.status}</div>
       </div>
