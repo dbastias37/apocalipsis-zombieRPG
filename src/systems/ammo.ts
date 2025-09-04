@@ -1,5 +1,6 @@
 // src/systems/ammo.ts
 import { getSelectedWeapon, isRangedWeapon } from "./weapons";
+import { gameLog } from "../utils/logger";
 
 /** Detecta si un item del inventario es una caja de munición. */
 export function isAmmoBox(item: any): boolean {
@@ -67,22 +68,26 @@ export function spendAmmo(player: any, weaponId: string, amount = 1) {
 }
 
 /** Recarga el arma seleccionada del jugador consumiendo UNA caja del inventario. */
-export function reloadSelectedWeapon(player: any, pushLog?: (s: string) => void) {
+export function reloadSelectedWeapon(player: any, onBattleLog?: (s: string) => void) {
   if (!player) return player;
   const w = getSelectedWeapon(player);
+  const log = (msg: string) => {
+    onBattleLog?.(msg);
+    gameLog(msg);
+  };
   if (!isRangedWeapon(w)) {
-    pushLog?.(`${player.name} intenta recargar, pero ${w.name} no usa munición.`);
+    log(`${player.name} intenta recargar, pero ${w.name} no usa munición.`);
     return player;
   }
   const { bullets, newInventory } = consumeOneAmmoBox(player.inventory);
   if (bullets <= 0) {
-    pushLog?.(`${player.name} no tiene cajas de munición disponibles.`);
+    log(`${player.name} no tiene cajas de munición disponibles.`);
     return player;
   }
   const cur = getLoadedAmmo(player, w.id);
   const nextCount = cur + bullets;
   const updated = setLoadedAmmo({ ...player, inventory: newInventory }, w.id, nextCount);
-  pushLog?.(`${player.name} recarga ${w.name}: +${bullets} balas (munición: ${nextCount}).`);
+  log(`${player.name} recarga ${w.name}: +${bullets} balas (munición: ${nextCount}).`);
   return updated;
 }
 

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
@@ -38,6 +38,7 @@ import CombatEndSummary from "./components/overlays/CombatEndSummary";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
 import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
+import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
 import { day2ExplorationCards } from "./data/days/day2/explorationCards.day2";
@@ -390,7 +391,7 @@ export default function App(){
     const ap = (playersRef.current ?? []).find(p => p.id === apId);
     if (!ap) { next(); return; }
 
-    const end = applyEndOfTurnConditions(ap, (msg)=>{ pushBattle?.(msg); onLog?.(msg); });
+    const end = applyEndOfTurnConditions(ap, (msg)=>{ pushBattle?.(msg); gameLog(msg); });
     if (end.hpDelta || end.newConditions) {
       updatePlayer(ap.id, {
         hp: Math.max(0, ap.hp + (end.hpDelta || 0)),
@@ -424,7 +425,16 @@ export default function App(){
   const [timedEvent, setTimedEvent] = useState<TimedEvent|null>(null);
 
   // Registro de narrativa
-  const [log, setLog] = useState<string[]>([]);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  const pushLog = useCallback((msg: string) => {
+    setLogs(prev => [msg, ...prev].slice(0,200));
+  }, []);
+
+  // Registrar logger global
+  useEffect(() => {
+    registerLogger(pushLog);
+  }, [pushLog]);
 
   // Cita visible
 
@@ -539,18 +549,14 @@ export default function App(){
 
   function start(){
     setState("playing");
-    setLog([`📝 Día ${day}: El mundo ya no es el mismo.`]);
+    setLogs([`📝 Día ${day}: El mundo ya no es el mismo.`]);
     setFoundNotes([]);
     setExplorationActive(false);
   }
 
-  function pushLog(entry:string){
-    setLog(prev => [entry, ...prev].slice(0,200));
-  }
-
   function logMsg(s:string){
     if (typeof pushBattle === "function") pushBattle(s);
-    if (typeof pushLog === "function") pushLog(s);
+    pushLog(s);
   }
 
   function formatTime(ms:number){
@@ -1108,7 +1114,7 @@ function finishEnemyPhase() {
 
   if (firstId) {
     const pl = alive.find(p => p.id === firstId)!;
-    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); onLog?.(msg); });
+    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); gameLog(msg); });
     if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
     if (start.hpDelta) {
       const hp = clamp(pl.hp + start.hpDelta, 0, pl.hpMax);
@@ -1370,7 +1376,7 @@ function advanceTurn() {
   setActivePlayerId(prev => prev === nextId ? prev : nextId);
   const pl = aliveNow.find(p => p.id === nextId);
   if (pl) {
-    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); onLog?.(msg); });
+    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); gameLog(msg); });
     if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
     if (start.hpDelta) {
       const hp = clamp(pl.hp + start.hpDelta, 0, pl.hpMax);
@@ -1431,7 +1437,7 @@ function advanceTurn() {
       woke.forEach(n => {
         const line = `💤 ${n} se sacude y recupera el sentido.`;
         pushBattle?.(line);
-        onLog?.(line);
+        gameLog(line);
       });
     }
   }
@@ -1719,7 +1725,7 @@ function advanceTurn() {
   }
 
   function giveItemToPlayer(playerId:string, item:string){
-    onLog?.(`📦 Traslado: se entregó "${item}" al inventario del jugador ${players.find(p=>p.id===playerId)?.name ?? playerId}.`);
+    gameLog(`📦 Traslado: se entregó "${item}" al inventario del jugador ${players.find(p=>p.id===playerId)?.name ?? playerId}.`);
     if(!stash.includes(item)) return;
     const p = players.find(pp=>pp.id===playerId);
     if(!p) return;
@@ -1739,7 +1745,7 @@ function advanceTurn() {
       return {...p, inventory: inv};
     }));
     setStash(s=> [...s, item]);
-    onLog?.(`📦 Traslado: ${players.find(p=>p.id===playerId)?.name ?? playerId} devolvió "${item}" al alijo.`);
+    gameLog(`📦 Traslado: ${players.find(p=>p.id===playerId)?.name ?? playerId} devolvió "${item}" al alijo.`);
   }
 
   function removePlayer(id:string){
@@ -1902,7 +1908,7 @@ function advanceTurn() {
 
         <CampPanel resources={resources} setResources={setResources} />
 
-        <LogPanel log={log} />
+        <LogPanel log={logs} />
       </main>
 
       {state==="paused" && (
@@ -2329,7 +2335,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
       <div className="card bg-neutral-900 border-neutral-800 p-6">
         <h3 className="text-xl font-bold mb-3">Detalles</h3>
         {selected ? (
-          <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} onLog={pushLog} />
+          <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} />
         ) : (
           <p className="text-neutral-500">Selecciona un personaje.</p>
         )}
@@ -2338,7 +2344,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
   );
 }
 
-function Details({player, onUpdate, addMedicine, onLog}:{player:Player; onUpdate:(patch:Partial<Player>)=>void; addMedicine:(n:number)=>void; onLog:(s:string)=>void}){
+function Details({player, onUpdate, addMedicine}:{player:Player; onUpdate:(patch:Partial<Player>)=>void; addMedicine:(n:number)=>void;}){
   const [medkitOpen, setMedkitOpen] = useState(false);
   const [medkitTake, setMedkitTake] = useState(1);
 
@@ -2436,9 +2442,9 @@ function Details({player, onUpdate, addMedicine, onLog}:{player:Player; onUpdate
                             // actualizar recursos del campamento
                             addMedicine(take);
                             // logs: abrir y uso
-                            onLog?.("🟢 Abriste el botiquín.");
+                            gameLog("🟢 Abriste el botiquín.");
                             const msg = variants[Math.floor(Math.random()*variants.length)].replace("{N}", String(take));
-                            onLog?.(`🩹 ${msg}`);
+                            gameLog(`🩹 ${msg}`);
                             // cerrar modal
                             setMedkitOpen(false);
                           }}
