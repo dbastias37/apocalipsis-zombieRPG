@@ -2,15 +2,17 @@ import React, { useMemo } from 'react';
 import { getAvailableContainers, openContainer } from '../systems/containers';
 import { GameState } from '../types/game';
 import { gameLog } from '../utils/logger';
+import { getCurrentDay } from '../utils/day';
 
 type Props = {
-  day: number;
+  day?: number;
   state: GameState;
   setState: (updater:(s:GameState)=>GameState) => void;
 };
 
 export default function ContainersSection({ day, state, setState }: Props) {
-  const list = useMemo(() => getAvailableContainers(day, state), [day, state]);
+  const currentDay = typeof day === 'number' ? day : getCurrentDay(state);
+  const list = useMemo(() => getAvailableContainers(currentDay, state), [currentDay, state]);
 
   if (!list.length) return (
     <div className="mt-2 text-sm opacity-70">Sin contenedores disponibles por ahora.</div>
@@ -31,7 +33,7 @@ export default function ContainersSection({ day, state, setState }: Props) {
               onClick={()=>{
                 setState(prev=>{
                   const next = { ...prev };
-                  const gained = openContainer(day, c.id, next);
+                  const gained = openContainer(currentDay, c.id, next);
                   if (gained <= 0) {
                     gameLog('No se pudo abrir el contenedor.');
                   }

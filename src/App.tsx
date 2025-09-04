@@ -57,6 +57,7 @@ import {
 } from "./systems/status";
 import ContainersSection from "./components/ContainersSection";
 import { pickRandomContainer, openContainer } from "./systems/containers";
+import { getCurrentDay } from "./utils/day";
 import type { GameState as GameWorldState, ContainersState } from "./types/game";
 
 
@@ -1575,10 +1576,11 @@ function advanceTurn() {
     if(!containersState.lastOpenedWasContainer){
       const rollC = Math.random();
       if(rollC < 0.40){
-        const c = pickRandomContainer(day, { resources, containersState });
+        const currentDay = getCurrentDay({ day });
+        const c = pickRandomContainer(currentDay, { resources, containersState });
         if(c){
           gameLog(`🧭 Encontraste un contenedor: ${c.name} (${c.place})`);
-          openContainer(day, c.id, { resources, containersState });
+          openContainer(currentDay, c.id, { resources, containersState });
           setResources(r=>({ ...r }));
           setContainersState(s=>({ ...s }));
           setExplorationActive(false);
