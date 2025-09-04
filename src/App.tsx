@@ -288,6 +288,7 @@ export default function App(){
   // Estado base
   const [state, setState] = useState<GameState>("menu");
   const [day, setDay] = useState<number>(1);
+  React.useEffect(()=>{ (globalThis as any).__DAY = day; }, [day]);
   const [phase, setPhase] = useState<Phase>("dawn");
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
   const [timeRunning, setTimeRunning] = useState(true);
