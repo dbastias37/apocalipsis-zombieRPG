@@ -55,12 +55,7 @@ import {
   applyEndOfTurnConditions,
   cureCondition,
 } from "./systems/status";
-import ContainersSection from "./components/ContainersSection";
-import { pickRandomContainer, openContainer } from "./systems/containers";
-import { getCurrentDay } from "./utils/day";
-import type { GameState as GameWorldState, ContainersState } from "./types/game";
 
-const currentDay = getCurrentDay((globalThis as any).__GAME_STATE__ ?? (globalThis as any));
 
 
 // === Botiquín helpers ===
@@ -298,18 +293,7 @@ export default function App(){
   const [morale, setMorale] = useState(60);
   const [threat, setThreat] = useState(10);
   const [resources, setResources] = useState<Resources>({ food: 15, water: 15, medicine: 6, fuel: 10, ammo: 30, materials: 12 });
-  const [containersState, setContainersState] = useState<ContainersState>({
-    openedIdsByDay: {1:new Set(),2:new Set(),3:new Set()},
-    lastOpenedWasContainer: false
-  });
   const [camp, setCamp] = useState<Camp>({ defense: 10, comfort: 10 });
-
-  const worldState: GameWorldState = { resources, containersState };
-  const setWorldState = (updater:(s:GameWorldState)=>GameWorldState) => {
-    const next = updater({ resources, containersState });
-    if (next.resources !== resources) setResources(next.resources);
-    if (next.containersState !== containersState) setContainersState(next.containersState);
-  };
 
   const [players, setPlayers] = useState<Player[]>([
     mkPlayer("Sarah", "Médica"),
@@ -1519,7 +1503,6 @@ function advanceTurn() {
     } else {
       pushLog("Esta nota no contiene pista accionable.");
     }
-    setContainersState(cs=>({ ...cs, lastOpenedWasContainer:false }));
   }
 
   useEffect(() => {
@@ -1571,35 +1554,13 @@ function advanceTurn() {
       pushLog(`🔎 ${card.title}`);
       pushLog(card.text);
       discoverRandomNote(0.25);
-      setContainersState(cs=>({ ...cs, lastOpenedWasContainer:false }));
       return;
     }
 
     timePenalty(60 + Math.floor(Math.random()*60));
-    if(!containersState.lastOpenedWasContainer){
-      const rollC = Math.random();
-      if(rollC < 0.40){
-        const c = pickRandomContainer(currentDay, { resources, containersState });
-        if(c){
-          gameLog(`🧭 Encontraste un contenedor: ${c.name} (${c.place})`);
-          openContainer(currentDay, c.id, { resources, containersState });
-          setResources(r=>({ ...r }));
-          setContainersState(s=>({ ...s }));
-          setExplorationActive(false);
-          if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
-            setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
-          }
-          finalizeTurnWithEndConditions(() => {
-            advanceTurn();
-          });
-          return;
-        }
-      }
-    }
 
     const roll = Math.random();
     if(roll < 0.2){
-      setContainersState(cs=>({ ...cs, lastOpenedWasContainer:false }));
       const count = 1 + Math.floor(Math.random()*3);
       spawnEnemies(count);
       setBattleStats({ byPlayer: {}, lootNames: [] });
@@ -1680,7 +1641,6 @@ function advanceTurn() {
     }
 
     pushLog(`${ev.text} — Recompensa obtenida.`);
-    setContainersState(cs=>({ ...cs, lastOpenedWasContainer:false }));
     setExplorationActive(false);
     if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
       setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
@@ -2558,8 +2518,6 @@ function InventoryPanel({stash, players, giveItem, takeItem, foundNotes, followN
           </div>
         )}
       </div>
-
-      <ContainersSection day={day} state={worldState} setState={setWorldState} />
 
       <div className="mt-6 bg-gradient-to-br from-neutral-900 to-black border border-neutral-800 rounded-2xl p-6">
         <h3 className="text-xl font-bold mb-4">🗒️ Notas encontradas</h3>

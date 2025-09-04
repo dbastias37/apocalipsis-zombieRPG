@@ -1,6 +1,4 @@
-import type { GameState } from "../types/game";
-
-export type World = GameState;
+export type World = any;
 
 let WORLD_REF: World = {} as World;
 
