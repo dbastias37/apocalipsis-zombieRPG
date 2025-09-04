@@ -6,11 +6,27 @@ import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
 import CombatLogPanel from "./components/CombatLogPanel";
 import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
-import { weaponFlavorFrom, hitPhraseByFlavor, MISS_MELEE, MISS_RANGED, TAIL_BLEED, TAIL_STUN, TAIL_INFECT, HEAL_LINES, FLEE_LINES, render, pick } from "./data/combatPhrases";
+import {
+  weaponFlavorFrom,
+  hitPhraseByFlavor,
+  MISS_MELEE,
+  MISS_RANGED,
+  TAIL_BLEED,
+  TAIL_STUN,
+  TAIL_INFECT,
+  HEAL_LINES,
+  FLEE_LINES,
+  render,
+  pick,
+  ENEMY_COUNTER_20,
+  renderCounter,
+  counterEffectText,
+} from "./data/combatPhrases";
 import { findWeaponById, WEAPONS } from "./data/weapons";
 import WeaponPicker from "./components/WeaponPicker";
 import CombatEndSummary from "./components/overlays/CombatEndSummary";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
+import HealAllyModal from "./components/overlays/HealAllyModal";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import {
   Conditions,
@@ -219,6 +235,7 @@ export default function App(){
   const [showCombatEnd, setShowCombatEnd] = useState(false);
   const [combatEndLines, setCombatEndLines] = useState<string[]>([]);
   const [infectionDead, setInfectionDead] = useState<{id:string,name:string}|null>(null);
+  const [showHealAlly, setShowHealAlly] = useState(false);
 
   // Turnos
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
@@ -642,8 +659,6 @@ export default function App(){
     setEnemies(spawned);
   }
 
-  function randInt(min:number, max:number){ return Math.floor(Math.random()*(max-min+1))+min; }
-
   type CounterEffect = 'hit'|'bleeding'|'stunned'|'infected';
 
   function pickCounterEffect(): CounterEffect {
@@ -652,20 +667,6 @@ export default function App(){
     if (r < 0.55) return 'stunned';
     if (r < 0.70) return 'infected';
     return 'hit';
-  }
-
-  function applyCounterEffectToPlayer(playerId:string, eff:CounterEffect){
-    const p = playersRef.current?.find(x=>x.id===playerId);
-    if (!p) return;
-    let newCond = { ...(p.conditions ?? {}) };
-    if (eff === 'bleeding'){
-      newCond = addCondition(newCond, { id:'bleeding', persistent:true });
-    } else if (eff === 'stunned'){
-      newCond = addCondition(newCond, { id:'stunned', turnsLeft:1 });
-    } else if (eff === 'infected'){
-      newCond = addCondition(newCond, { id:'infected', persistent:true, expiresAtMs: Date.now()+120000 });
-    }
-    updatePlayer(playerId, { conditions: newCond });
   }
 
   function applyDamageToPlayer(playerId:string, dmg:number, enemy:Enemy){
@@ -731,19 +732,25 @@ export default function App(){
       }));
       endPlayerActionAwaitEnter(() => {
         if (!USE_COUNTERATTACK_MODE) { timePenalty(45); advanceTurn(); return; }
-
-        const eff = pickCounterEffect();
-        const dmg = randInt(1,10);
-        const effVerb =
-          eff==='bleeding' ? "dejado sangrando" :
-          eff==='stunned'  ? "aturdido" :
-          eff==='infected' ? "infectado" : "golpeado";
+        const effRoll = pickCounterEffect();
+        const dmg = Math.floor(1 + Math.random()*10);
+        const effText = counterEffectText(effRoll);
 
         applyDamageToPlayer(actor.id, dmg, enemy);
 
-        if (eff!=='hit') applyCounterEffectToPlayer(actor.id, eff);
+        if (effRoll === 'bleeding') {
+          updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'bleeding', persistent:true }) });
+        } else if (effRoll === 'stunned') {
+          updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'stunned', turnsLeft:1 }) });
+        } else if (effRoll === 'infected') {
+          updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'infected', persistent:true, expiresAtMs: Date.now()+120000 }) });
+        }
 
-        pushBattle(`${enemy.name} contraatacó y ha ${effVerb} a ${actor.name} (−${dmg} PV).`);
+        const line = renderCounter(
+          ENEMY_COUNTER_20[Math.floor(Math.random()*ENEMY_COUNTER_20.length)],
+          { A: enemy.name, P: actor.name, D: dmg, EFF: effText }
+        );
+        pushBattle(line);
 
         postActionContinueRef.current = () => {
           timePenalty(45);
@@ -1542,6 +1549,7 @@ function advanceTurn() {
             onAttack={performAttack}
             onDefend={defend}
             onHeal={healSelf}
+            onHealAlly={() => { setShowHealAlly(true); setControlsLocked(true); }}
             onFlee={flee}
             controlsLocked={controlsLocked}
             isEnemyPhase={isEnemyPhase}
@@ -1627,6 +1635,57 @@ function advanceTurn() {
           </div>
         </div>
       )}
+      <HealAllyModal
+        open={showHealAlly}
+        players={players}
+        onPick={(targetId)=>{
+          setShowHealAlly(false);
+          const actor = players.find(p=>p.id===activePlayerId);
+          const target = players.find(p=>p.id===targetId);
+          if(!actor || !target){ setControlsLocked(false); return; }
+
+          const inf = hasCondition(target.conditions,'infected');
+          const ble = hasCondition(target.conditions,'bleeding');
+
+          if (inf) {
+            setResources(r=>{
+              const meds = r.medicine ?? 0;
+              if (meds <= 0) {
+                pushBattle(`${actor.name} intenta curar a ${target.name}, pero no hay medicina.`);
+                if (ble) {
+                  updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
+                  pushBattle(`${actor.name} logra detener la hemorragia de ${target.name}.`);
+                  postActionContinueRef.current = ()=>{ timePenalty(25); advanceTurn(); setControlsLocked(false); };
+                } else {
+                  postActionContinueRef.current = ()=>{ timePenalty(10); advanceTurn(); setControlsLocked(false); };
+                }
+                return r;
+              }
+              const nr = { ...r, medicine: Math.max(0, meds - 1) };
+              updatePlayer(target.id, { conditions: removeCondition(target.conditions,'infected') });
+              pushBattle(`${actor.name} administra medicina a ${target.name} y supera la infección.`);
+              if (ble) {
+                updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
+                pushBattle(`Además, ${actor.name} consigue detener la hemorragia de ${target.name}.`);
+              }
+              postActionContinueRef.current = ()=>{ timePenalty(30); advanceTurn(); setControlsLocked(false); };
+              return nr;
+            });
+            return;
+          }
+
+          if (ble) {
+            updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
+            pushBattle(`${actor.name} detiene la hemorragia de ${target.name}.`);
+            postActionContinueRef.current = ()=>{ timePenalty(20); advanceTurn(); setControlsLocked(false); };
+            return;
+          }
+
+          pushBattle(`${actor.name} verifica a ${target.name}: no requiere curación ahora.`);
+          postActionContinueRef.current = ()=>{ timePenalty(10); advanceTurn(); setControlsLocked(false); };
+        }}
+        onClose={()=>{ setShowHealAlly(false); setControlsLocked(false); }}
+      />
       <CombatEndSummary
         open={showCombatEnd}
         lines={combatEndLines}
@@ -1722,6 +1781,7 @@ function CardView(props:{
   onAttack: (id:string)=>void;
   onDefend: ()=>void;
   onHeal: ()=>void;
+  onHealAlly: ()=>void;
   onFlee: ()=>void;
   controlsLocked: boolean;
   isEnemyPhase: boolean;
@@ -1785,6 +1845,13 @@ function CardView(props:{
               disabled={props.controlsLocked || props.isEnemyPhase}
             >
               🛡️ Defender
+            </button>
+            <button
+              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onHealAlly(); }}
+              disabled={props.controlsLocked || props.isEnemyPhase}
+              className="px-3 py-2 w-full rounded-xl border border-white/15 hover:bg-white/5"
+            >
+              Curar aliado
             </button>
             <button
               className="btn btn-ghost w-full"
