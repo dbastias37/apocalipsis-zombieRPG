@@ -59,7 +59,6 @@ import ContainersSection from "./components/ContainersSection";
 import { pickRandomContainer, openContainer } from "./systems/containers";
 import { getCurrentDay } from "./utils/day";
 import type { GameState as GameWorldState, ContainersState } from "./types/game";
-import { setWorldRef } from "./state/world";
 
 
 // === Botiquín helpers ===
@@ -289,7 +288,6 @@ export default function App(){
   // Estado base
   const [state, setState] = useState<GameState>("menu");
   const [day, setDay] = useState<number>(1);
-  useEffect(()=>{ (globalThis as any).day = day; },[day]);
   const [phase, setPhase] = useState<Phase>("dawn");
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
   const [timeRunning, setTimeRunning] = useState(true);
@@ -309,11 +307,6 @@ export default function App(){
     if (next.resources !== resources) setResources(next.resources);
     if (next.containersState !== containersState) setContainersState(next.containersState);
   };
-
-    useEffect(() => {
-      setWorldRef(worldState);
-      (globalThis as any).worldState = worldState;
-    }, [worldState]);
 
   const [players, setPlayers] = useState<Player[]>([
     mkPlayer("Sarah", "Médica"),

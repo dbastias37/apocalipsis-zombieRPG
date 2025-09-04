@@ -14,9 +14,9 @@ export default function ContainersSection({ day, state, setState }: Props) {
   const currentDay = typeof day === 'number' ? day : getCurrentDay(state);
   const list = useMemo(() => getAvailableContainers(currentDay, state), [currentDay, state]);
 
-  if (!list.length) return (
-    <div className="mt-2 text-sm opacity-70">Sin contenedores disponibles por ahora.</div>
-  );
+  if (!list.length) {
+    return <div className="mt-2 text-sm opacity-70">Sin contenedores disponibles por ahora.</div>;
+  }
 
   return (
     <div className="mt-4">
@@ -29,10 +29,10 @@ export default function ContainersSection({ day, state, setState }: Props) {
               <div className="text-xs opacity-70">{c.place}</div>
             </div>
             <button
-              className="px-3 py-1 rounded-lg bg-emerald-600 text-white hover:opacity-90 animate-pulse"
+              className="px-3 py-1 rounded-lg bg-emerald-600 text-white hover:opacity-90"
               onClick={()=>{
                 setState(prev=>{
-                  const next = { ...prev };
+                  const next: any = { ...prev };
                   const gained = openContainer(currentDay, c.id, next);
                   if (gained <= 0) {
                     gameLog('No se pudo abrir el contenedor.');
