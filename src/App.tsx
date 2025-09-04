@@ -59,7 +59,7 @@ import ContainersSection from "./components/ContainersSection";
 import { pickRandomContainer, openContainer } from "./systems/containers";
 import { getCurrentDay } from "./utils/day";
 import type { GameState as GameWorldState, ContainersState } from "./types/game";
-import { bindWorldRef } from "./state/world";
+import { setWorldRef } from "./state/world";
 
 
 // === Botiquín helpers ===
@@ -310,9 +310,10 @@ export default function App(){
     if (next.containersState !== containersState) setContainersState(next.containersState);
   };
 
-  useEffect(() => {
-    bindWorldRef(worldState);
-  }, [worldState]);
+    useEffect(() => {
+      setWorldRef(worldState);
+      (globalThis as any).worldState = worldState;
+    }, [worldState]);
 
   const [players, setPlayers] = useState<Player[]>([
     mkPlayer("Sarah", "Médica"),
