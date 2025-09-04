@@ -981,6 +981,9 @@ function finishEnemyPhase() {
     return;
   }
 
+  // ➊ NUEVO: los enemigos aturdidos "despiertan" al iniciar la nueva ronda
+  decayEnemyStunsOneRoundWithLog();
+
   // Resetear banderas de turno de jugadores vivos
   const alive = (playersRef.current ?? []).filter(p => p.hp > 0);
   setActedThisRound(() => {
@@ -1233,7 +1236,7 @@ function advanceTurn() {
         aliveNow.forEach(p => { flags[p.id] = false; });
         return flags;
       });
-      decayEnemyStunsOneRound();
+      decayEnemyStunsOneRoundWithLog();
       localActed = {};
     }
   }
@@ -1290,19 +1293,41 @@ function advanceTurn() {
     setEnemies(arr => arr.map(e => e.id === enemyId ? { ...e, ...patch } : e));
   }
 
-  // Llamar cuando empieza una nueva ronda de jugadores (se resetea "actedThisRound")
-  function decayEnemyStunsOneRound() {
-    setEnemies(arr => arr.map(e => {
+  // Reduce en 1 la duración de "stunned" de cada enemigo al inicio de una nueva ronda de jugadores.
+  // Si un enemigo deja de estar aturdido (y sigue vivo), lo registramos en el log.
+  function decayEnemyStunsOneRoundWithLog() {
+    const prev = enemiesRef.current ?? [];
+    const next = prev.map(e => {
       const st = e.conditions?.stunned;
       if (!st) return e;
       const tl = typeof st.turnsLeft === 'number' ? st.turnsLeft - 1 : 0;
       if (tl <= 0) {
-        const nc = { ...(e.conditions ?? {}) } as any;
+        const nc = { ...(e.conditions ?? {}) };
         delete nc.stunned;
         return { ...e, conditions: nc };
       }
       return { ...e, conditions: { ...(e.conditions ?? {}), stunned: { ...st, turnsLeft: tl } } };
-    }));
+    });
+
+    // Log de "se despierta" para quienes lo perdieron y siguen vivos
+    const woke: string[] = [];
+    for (let i = 0; i < prev.length; i++) {
+      const wasStunned = !!prev[i].conditions?.stunned;
+      const nowStunned = !!next[i].conditions?.stunned;
+      if (wasStunned && !nowStunned && (next[i].hp ?? 1) > 0) {
+        woke.push(next[i].name);
+      }
+    }
+
+    setEnemies(next);
+
+    if (woke.length) {
+      woke.forEach(n => {
+        const line = `💤 ${n} se sacude y recupera el sentido.`;
+        pushBattle?.(line);
+        pushLog?.(line);
+      });
+    }
   }
 
   function getSelectedWeapon(player: Player) {
