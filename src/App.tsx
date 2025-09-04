@@ -60,7 +60,16 @@ type Player = {
   backpackCapacity?: number;
 };
 
-type Enemy = { id: string; name: string; hp: number; hpMax: number; def: number; atk: number; special?: string; };
+type Enemy = {
+  id: string;
+  name: string;
+  hp: number;
+  hpMax: number;
+  def: number;
+  atk: number;
+  special?: string;
+  conditions?: Conditions;
+};
 type Resources = { food: number; water: number; medicine: number; fuel: number; ammo: number; materials: number; };
 type Camp = { defense: number; comfort: number };
 
@@ -103,6 +112,14 @@ const DAY_LENGTH_MS = DAY_LENGTH_MIN * 60 * 1000;
 
 // Activa el modo de contraataque (sin fase de turnos de enemigos)
 const USE_COUNTERATTACK_MODE = true;
+
+// Probabilidad de aturdir con armas melee y rangos de daño/coste
+const MELEE_STUN_CHANCE = 0.30;        // 30% por golpe acertado
+const MELEE_STUN_DMG_MIN = 1;
+const MELEE_STUN_DMG_MAX = 4;
+const ENERGY_COST_STUN_MIN = 4;
+const ENERGY_COST_STUN_MAX = 7;
+const ENERGY_COST_MELEE_HIT_NO_STUN = 2;
 
 function uid() { return Math.random().toString(36).slice(2,10); }
 function clamp(n:number,min:number,max:number){return Math.max(min,Math.min(max,n));}
@@ -214,6 +231,8 @@ export default function App(){
     mkPlayer("Elena", "Psicóloga"),
   ].map(p => ({
     ...p,
+    energy: p.energy ?? 100,
+    energyMax: p.energyMax ?? 100,
     selectedWeaponId: p.selectedWeaponId ?? "fists",
     ammoByWeapon: p.ammoByWeapon ?? {},
   })));
@@ -699,6 +718,36 @@ export default function App(){
       pushLog(`💀 ${p.name} cae para no levantarse jamás.`);
     }
   }
+
+  function applyDamageToEnemy(enemyId: string, dmg: number, actor: Player){
+    const enemy = enemiesRef.current?.find(e => e.id === enemyId);
+    if (!enemy) return;
+    const newHp = enemy.hp - dmg;
+    const afterEnemies = (enemiesRef.current ?? []).map(e => e.id === enemyId ? { ...e, hp: newHp } : e).filter(e => e.hp > 0);
+    setEnemies(afterEnemies);
+
+    if (newHp <= 0) {
+      pushLog(`✅ ${enemy.name} cae hecho trizas.`);
+      setThreat(t => Math.max(0, t - 2));
+      const tier = tierByEnemy(enemy);
+      if (Math.random() < 0.6) {
+        const drop = randomWeaponNameByTier(tier as any);
+        const res = tryAddToBackpack(actor.id, drop);
+        pushLog(`🧷 ${enemy.name} suelta ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+        setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, drop] }));
+      }
+      if (Math.random() < 0.05) {
+        const name = "Ampliación de Mochila (+4)";
+        const res = tryAddToBackpack(actor.id, name);
+        pushLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+        setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, name] }));
+      }
+    }
+
+    if (afterEnemies.length === 0) {
+      maybeOpenCombatEnd();
+    }
+  }
   function performAttack(enemyId: string){
     if (controlsLocked || isEnemyPhase) return;
     if (!startPlayerActionOrBlock()) return;
@@ -710,6 +759,7 @@ export default function App(){
     const w = getSelectedWeapon(actor);
     const flavor = weaponFlavorFrom(w.id, w.name, w.type);
     const isRanged = isRangedWeapon(w);
+    const isMelee = w?.type === "melee";
 
     if (isRanged) {
       const ammo = getAmmoFor(actor, w.id);
@@ -750,6 +800,14 @@ export default function App(){
         misses: s.misses + 1,
         shotsFired: s.shotsFired + (isRanged ? 1 : 0),
       }));
+      if (hasCondition(enemy.conditions, 'stunned')) {
+        pushBattle(`${enemy.name} intenta reaccionar, pero está aturdido y no contraataca.`);
+        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+          timePenalty(45);
+          advanceTurn();
+        }));
+        return;
+      }
       endPlayerActionAwaitEnter(() => {
         // Genera contraataque
         const eff = pickCounterEffect(); // define o reutiliza tu helper
@@ -793,10 +851,34 @@ export default function App(){
       return;
     }
 
+    if (isMelee) {
+      const willStun = Math.random() < MELEE_STUN_CHANCE;
+      if (willStun) {
+        const stunDmg = Math.floor(MELEE_STUN_DMG_MIN + Math.random() * (MELEE_STUN_DMG_MAX - MELEE_STUN_DMG_MIN + 1));
+        const newHp = enemy.hp - stunDmg;
+        applyDamageToEnemy(enemy.id, stunDmg, actor);
+        if (newHp > 0) {
+          const prevC = enemy.conditions ?? {};
+          const newC = addCondition(prevC, { id: 'stunned', turnsLeft: 1 });
+          updateEnemy(enemy.id, { conditions: newC });
+        }
+        const cost = Math.floor(ENERGY_COST_STUN_MIN + Math.random() * (ENERGY_COST_STUN_MAX - ENERGY_COST_STUN_MIN + 1));
+        updatePlayer(actor.id, { energy: Math.max(0, (actor.energy ?? 100) - cost) });
+        pushBattle(`💫 ${actor.name} aturde a ${enemy.name} con ${w.name} (−${stunDmg} PV).`);
+        pushBattle(`⚡ ${actor.name} gasta ${cost} de energía.`);
+        setDayStats(s=>({ ...s, damageDealt: s.damageDealt + stunDmg, shotsFired: s.shotsFired + (isRanged ? 1 : 0) }));
+        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+          timePenalty(45);
+          advanceTurn();
+        }));
+        return;
+      } else {
+        updatePlayer(actor.id, { energy: Math.max(0, (actor.energy ?? 100) - ENERGY_COST_MELEE_HIT_NO_STUN) });
+        pushBattle(`⚡ ${actor.name} gasta ${ENERGY_COST_MELEE_HIT_NO_STUN} de energía.`);
+      }
+    }
     const dmg = roll(w.damage?.times || 1, w.damage?.faces || 6, (isRanged ? 0 : mod(actor.attrs.Fuerza)) + (w.damage?.mod || 0)).total;
-    const newHp = enemy.hp - dmg;
-    const afterEnemies = enemies.map(e=> e.id===enemyId ? {...e, hp: newHp} : e).filter(e=> e.hp>0);
-    setEnemies(afterEnemies);
+    applyDamageToEnemy(enemy.id, dmg, actor);
 
     const base = render(pick(hitPhraseByFlavor(flavor)), { P: actor.name, E: enemy.name, W: w.name, D: dmg });
     let tails: string[] = [];
@@ -813,30 +895,6 @@ export default function App(){
       damageDealt: s.damageDealt + dmg,
       shotsFired: s.shotsFired + (isRanged ? 1 : 0),
     }));
-
-    if(newHp<=0){
-      pushLog(`✅ ${enemy.name} cae hecho trizas.`);
-      setThreat(t=>Math.max(0,t-2));
-
-      const tier = tierByEnemy(enemy);
-      if (Math.random() < 0.6) {
-        const drop = randomWeaponNameByTier(tier as any);
-        const res = tryAddToBackpack(actor.id, drop);
-        pushLog(`🧷 ${enemy.name} suelta ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
-        setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, drop] }));
-      }
-
-      if (Math.random() < 0.05) {
-        const name = "Ampliación de Mochila (+4)";
-        const res = tryAddToBackpack(actor.id, name);
-        pushLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
-        setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, name] }));
-      }
-    }
-
-    if(afterEnemies.length === 0){
-      maybeOpenCombatEnd();
-    }
 
     endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(45);
@@ -1194,6 +1252,7 @@ function advanceTurn() {
         aliveNow.forEach(p => { flags[p.id] = false; });
         return flags;
       });
+      decayEnemyStunsOneRound();
       localActed = {};
     }
   }
@@ -1244,6 +1303,25 @@ function advanceTurn() {
 
   function updatePlayer(id:string, patch: Partial<Player>){
     setPlayers(ps=> ps.map(p => p.id===id ? {...p, ...patch} : p));
+  }
+
+  function updateEnemy(enemyId: string, patch: Partial<Enemy>) {
+    setEnemies(arr => arr.map(e => e.id === enemyId ? { ...e, ...patch } : e));
+  }
+
+  // Llamar cuando empieza una nueva ronda de jugadores (se resetea "actedThisRound")
+  function decayEnemyStunsOneRound() {
+    setEnemies(arr => arr.map(e => {
+      const st = e.conditions?.stunned;
+      if (!st) return e;
+      const tl = typeof st.turnsLeft === 'number' ? st.turnsLeft - 1 : 0;
+      if (tl <= 0) {
+        const nc = { ...(e.conditions ?? {}) } as any;
+        delete nc.stunned;
+        return { ...e, conditions: nc };
+      }
+      return { ...e, conditions: { ...(e.conditions ?? {}), stunned: { ...st, turnsLeft: tl } } };
+    }));
   }
 
   function getSelectedWeapon(player: Player) {
@@ -1882,26 +1960,35 @@ function CardView(props:{
                 <p className="text-lg">🕊️ No quedan enemigos. La zona está momentáneamente segura.</p>
               </div>
             ) : (
-              props.enemies.map(e=>(
-                <div key={e.id} className="p-4 bg-neutral-900 rounded-xl border border-red-900">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-bold">{e.name}</h4>
-                      <p className="text-sm text-neutral-400">DEF {e.def} • ATK {e.atk}</p>
+              props.enemies.map(e=>{
+                const isEnemyStunned = hasCondition(e.conditions, 'stunned');
+                return (
+                  <div key={e.id} className={[
+                    "p-4 bg-neutral-900 rounded-xl border border-red-900",
+                    isEnemyStunned ? "saturate-0 grayscale border-zinc-400/60" : "",
+                  ].join(" ")}>
+                    <div className="text-xs opacity-80 mb-1">
+                      {isEnemyStunned && <span className="px-2 py-0.5 rounded bg-zinc-600/80">Aturdido</span>}
                     </div>
-                    <button
-                      className="btn btn-red text-white"
-                      onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || !props.canAttackWithSelected) return; props.onAttack(e.id); }}
-                      disabled={props.controlsLocked || props.isEnemyPhase || !props.canAttackWithSelected}
-                    >
-                      {props.canAttackWithSelected ? "🗡️ Atacar" : "Sin munición"}
-                    </button>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold">{e.name}</h4>
+                        <p className="text-sm text-neutral-400">DEF {e.def} • ATK {e.atk}</p>
+                      </div>
+                      <button
+                        className="btn btn-red text-white"
+                        onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || !props.canAttackWithSelected) return; props.onAttack(e.id); }}
+                        disabled={props.controlsLocked || props.isEnemyPhase || !props.canAttackWithSelected}
+                      >
+                        {props.canAttackWithSelected ? "🗡️ Atacar" : "Sin munición"}
+                      </button>
+                    </div>
+                    <div className="mt-2 h-2 bg-neutral-800 rounded-full overflow-hidden">
+                      <div className={clsx("h-full", e.hp/e.hpMax>0.6?"bg-green-600":e.hp/e.hpMax>0.3?"bg-yellow-500":"bg-red-600")} style={{width:`${(e.hp/e.hpMax)*100}%`}}/>
+                    </div>
                   </div>
-                  <div className="mt-2 h-2 bg-neutral-800 rounded-full overflow-hidden">
-                    <div className={clsx("h-full", e.hp/e.hpMax>0.6?"bg-green-600":e.hp/e.hpMax>0.3?"bg-yellow-500":"bg-red-600")} style={{width:`${(e.hp/e.hpMax)*100}%`}}/>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
           <div className="space-y-2">
