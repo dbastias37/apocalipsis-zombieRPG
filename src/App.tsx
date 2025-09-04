@@ -216,7 +216,11 @@ export default function App(){
   const tw = useTypewriterQueue();
   // helper para pushear mensajes al panel
   function pushBattle(text: string, onDone?: () => void){
-    tw.push({ text, onDone });
+    const clean = text
+      .replace(/\s*\n+\s*/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    tw.push({ text: clean, onDone });
   }
 
   const [foundNotes, setFoundNotes] = useState<GameNote[]>([]);
@@ -668,7 +672,7 @@ export default function App(){
     if (foundNext) {
       const prevName = activePlayer ? activePlayer.name : "Jugador";
       const nextName = alivePlayers[nextIdx].name;
-      pushBattle(`${prevName} tu turno ha terminado\nahora le toca a: ${nextName}`, () => {
+      pushBattle(`${prevName} tu turno ha terminado — ahora le toca a: ${nextName}`, () => {
         setTurn(nextIdx);
       });
     } else {
