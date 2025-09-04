@@ -1,14 +1,14 @@
 import React from "react";
 import { findWeaponById } from "../data/weapons";
+import { getSelectedWeapon, getAmmoFor, isRangedWeapon } from "../systems/weapons";
 
 type WeaponPickerProps = {
   player: any;
   backpack: { id: string; name: string; type: "melee" | "ranged"; damage?: any }[];
   onSelect: (weaponId: string) => void;
-  ammoFor: (weaponId: string) => number;
 };
 
-export default function WeaponPicker({ player, backpack, onSelect, ammoFor }: WeaponPickerProps){
+export default function WeaponPicker({ player, backpack, onSelect }: WeaponPickerProps){
   const weapons = [
     { id: "fists", name: "Puños", type: "melee" as const, damage: { min: 1, max: 2 } },
     ...backpack.filter(it => it.type === "melee" || it.type === "ranged"),
@@ -27,7 +27,7 @@ export default function WeaponPicker({ player, backpack, onSelect, ammoFor }: We
     return { ...w, name: w.name || it.name, type: w.type || it.type, damage: { min, max } };
   });
 
-  const sel = player.selectedWeaponId || "fists";
+  const sel = getSelectedWeapon(player).id;
 
   return (
     <div className="mt-3">
@@ -35,9 +35,9 @@ export default function WeaponPicker({ player, backpack, onSelect, ammoFor }: We
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         {weapons.map(w => {
           const selected = sel === w.id;
-          const isRanged = w.type === "ranged";
-          const ammo = isRanged ? ammoFor(w.id) : null;
-          const disabled = isRanged && (ammo ?? 0) <= 0;
+          const ranged = isRangedWeapon(w);
+          const ammo = ranged ? getAmmoFor(player, w.id) : null;
+          const disabled = ranged && (ammo ?? 0) <= 0;
           return (
             <button
               key={w.id}
@@ -53,7 +53,7 @@ export default function WeaponPicker({ player, backpack, onSelect, ammoFor }: We
                 Daño: {w?.damage ? `${w.damage.min ?? "?"}–${w.damage.max ?? "?"}` : "?"}
               </div>
               <div className="text-xs opacity-80">
-                Munición: {isRanged ? (ammo ?? 0) : "--"}
+                Munición: {ranged ? (ammo ?? 0) : "--"}
               </div>
             </button>
           );
