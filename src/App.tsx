@@ -6,6 +6,7 @@ import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
 import CombatLogPanel from "./components/CombatLogPanel";
 import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
+import type { AmmoBox, BackpackItem } from "./types/items";
 import {
   weaponFlavorFrom,
   hitPhraseByFlavor,
@@ -52,7 +53,8 @@ type Player = {
   energy: number; energyMax: number;
   defense: number;
   status: "ok"|"wounded"|"infected"|"dead";
-  inventory: string[];
+  inventory: any[];
+  backpack?: BackpackItem[];
   attrs: Attributes;
   conditions?: Conditions;
   selectedWeaponId?: string;
@@ -131,6 +133,24 @@ function roll(times:number, faces:number, mod=0){
 }
 
 function mod(score:number){ return Math.floor((score-10)/2); }
+
+function rollInt(min:number,max:number){ return Math.floor(min + Math.random()*(max-min+1)); }
+
+function maybeAmmoBox(){
+  if (Math.random() < 0.35){
+    const n = rollInt(6,12);
+    return { id: crypto.randomUUID(), name: `Caja de munición (${n})`, type: "ammo_box", bullets: n } as AmmoBox;
+  }
+  return null;
+}
+
+function maybeEnemyAmmoDrop(){
+  if (Math.random() < 0.30){
+    const n = rollInt(3,8);
+    return { id: crypto.randomUUID(), name: `Caja de munición (${n})`, type: "ammo_box", bullets: n } as AmmoBox;
+  }
+  return null;
+}
 
 
 const baseEnemies: Enemy[] = [
@@ -744,6 +764,13 @@ export default function App(){
         pushLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
         setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, name] }));
       }
+      const ammoDrop = maybeEnemyAmmoDrop();
+      if (ammoDrop){
+        const bp = [...(actor.backpack ?? []), ammoDrop];
+        updatePlayer(actor.id, { backpack: bp });
+        pushLog(`${actor.name} encuentra ${ammoDrop.name}.`);
+        setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, ammoDrop.name] }));
+      }
     }
   }
   function performAttack(enemyId: string){
@@ -1352,6 +1379,28 @@ function advanceTurn() {
     updatePlayer(playerId, { ammoByWeapon: m });
   }
 
+  function listAmmoBoxes(p: Player){
+    return (p.backpack ?? []).filter((it: any) => it?.type === "ammo_box");
+  }
+  function removeOneAmmoBox(pId: string){
+    const p = playersRef.current?.find(x=>x.id===pId);
+    if(!p) return null;
+    const bp = [...(p.backpack ?? [])];
+    const idx = bp.findIndex(it => it?.type === "ammo_box");
+    if (idx < 0) return null;
+    const box = bp[idx];
+    bp.splice(idx,1);
+    updatePlayer(pId, { backpack: bp });
+    return box as AmmoBox;
+  }
+  function addAmmoToWeapon(pId: string, weaponId: string, amount:number){
+    const p = playersRef.current?.find(x=>x.id===pId);
+    if(!p) return;
+    const m = { ...(p.ammoByWeapon ?? {}) };
+    m[weaponId] = (m[weaponId] ?? 0) + Math.max(0, amount|0);
+    updatePlayer(pId, { ammoByWeapon: m });
+  }
+
   function isRangedWeapon(w: any) {
     return w?.type === "ranged";
   }
@@ -1497,6 +1546,17 @@ function advanceTurn() {
         }
       }
     })(activePlayer?.id);
+
+    const ammoBox = maybeAmmoBox();
+    if (ammoBox){
+      const holderId = activePlayer?.id;
+      if(holderId){
+        const p = players.find(pl=>pl.id===holderId);
+        const bp = [...(p?.backpack ?? []), ammoBox];
+        updatePlayer(holderId, { backpack: bp });
+        pushLog(`🧰 En la exploración hallas ${ammoBox.name}. Guardado en tu mochila.`);
+      }
+    }
 
     pushLog(`${ev.text} — Recompensa obtenida.`);
     setExplorationActive(false);
@@ -2172,6 +2232,9 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
 }
 
 function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Player>)=>void}){
+  const selW = getSelectedWeapon(player);
+  const isRangedSel = !!selW && selW.type === "ranged";
+  const currentAmmo = player && selW ? getAmmoFor(player, selW.id) : 0;
   return (
     <div className="space-y-2 text-sm">
       <div className="grid grid-cols-2 gap-2">
@@ -2179,14 +2242,49 @@ function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Play
         <div>Inventario: {player.inventory.length}</div>
         <div>Estado: {player.status}</div>
       </div>
+      {isRangedSel && (
+        <div className="text-xs mt-2">Munición: {currentAmmo}</div>
+      )}
       <div>
         <h4 className="text-neutral-400 text-xs mt-2">Objetos</h4>
         <div className="flex flex-wrap gap-1 mt-1">
           {player.inventory.length===0 ? <span className="text-neutral-500 text-xs">Vacío</span> :
-            player.inventory.map((it,i)=>(<span key={i} className="px-2 py-1 bg-neutral-800 rounded text-xs">{it}</span>))
+            player.inventory.map((it,i)=>{
+              const name = typeof it === 'string' ? it : it?.name;
+              return <span key={i} className="px-2 py-1 bg-neutral-800 rounded text-xs">{name}</span>;
+            })
           }
         </div>
       </div>
+      {player && listAmmoBoxes(player).length > 0 && (
+        <div className="mt-2">
+          <div className="text-xs opacity-80 mb-1">Munición en mochila</div>
+          <div className="flex flex-wrap gap-2">
+            {listAmmoBoxes(player).map((box:any) => (
+              <span key={box.id} className="px-2 py-1 rounded bg-white/10 border border-white/10 text-xs">
+                Caja de munición ({box.bullets})
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {player && isRangedSel && listAmmoBoxes(player).length > 0 && (
+        <div className="mt-3">
+          <button
+            className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500"
+            onClick={()=>{
+              const box = removeOneAmmoBox(player.id);
+              if (!box) return;
+              addAmmoToWeapon(player.id, selW!.id, box.bullets);
+              pushBattle?.(`${player.name} recarga ${selW!.name}: +${box.bullets} munición.`);
+              postActionContinueRef.current = ()=>{ setControlsLocked(false); };
+              setControlsLocked(true);
+            }}
+          >
+            Recargar arma
+          </button>
+        </div>
+      )}
     </div>
   );
 }
