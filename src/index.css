@@ -18,3 +18,6 @@ button { cursor: pointer; }
 /* simulación de brillo neón */
 .neon-red { box-shadow: 0 0 14px rgba(255, 0, 64, .65); }
 .neon-green { box-shadow: 0 0 14px rgba(0, 255, 127, .65); }
+
+.saturate-0 { filter: saturate(0); }
+.grayscale { filter: grayscale(1); }
