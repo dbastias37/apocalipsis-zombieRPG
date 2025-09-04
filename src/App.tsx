@@ -6,7 +6,7 @@ import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
 import CombatLogPanel from "./components/CombatLogPanel";
 import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
-import { MELEE_MISS, RANGED_MISS, HEAL_LINES, FLEE_LINES, ENEMY_HIT, ENEMY_MISS, renderTpl, pick } from "./data/combatPhrases";
+import { weaponFlavorFrom, hitPhraseByFlavor, MISS_MELEE, MISS_RANGED, TAIL_BLEED, TAIL_STUN, TAIL_INFECT, HEAL_LINES, FLEE_LINES, render, pick } from "./data/combatPhrases";
 import { findWeaponById } from "./data/weapons";
 import {
   Conditions,
@@ -527,79 +527,100 @@ export default function App(){
     if (actedThisRound[actor.id]) return;
     const enemy = enemies.find(e=>e.id===enemyId);
     if(!enemy) return;
-    const hasGun = actor.inventory.includes("Pistola") || actor.inventory.includes("Rifle");
-    const weapon = findWeaponById(actor.equippedWeaponId);
-    const weaponName = weapon?.name ?? (hasGun ? (actor.inventory.includes("Rifle") ? "Rifle" : "Pistola") : "arma");
-    const type = weapon?.type ?? (hasGun ? "ranged" : "melee");
-    const atkRoll = roll(1,20, mod(actor.attrs.Fuerza) + (hasGun?4:0));
+
+    const w = findWeaponById(actor.equippedWeaponId || "fists") || { id: "fists", name: "Puños", type: "melee" as const };
+    const flavor = weaponFlavorFrom(w.id, w.name, w.type);
+
+    const atkRoll = roll(1,20, mod(actor.attrs.Fuerza) + (w.type === "ranged" ? 4 : 0));
     const hit = atkRoll.total >= enemy.def || atkRoll.natural===20;
-    const scene = currentCard?.scene ?? "callejon";
-    if(hit){
-      const dmg = roll(1,6, hasGun?4:mod(actor.attrs.Fuerza)).total;
-      const newHp = enemy.hp - dmg;
-      setEnemies(es=> es.map(e=> e.id===enemyId ? {...e, hp: newHp} : e).filter(e=> e.hp>0));
-      pushLog(`🗡️ ${actor.name} ataca en el ${scene} y asesta ${dmg} de daño a ${enemy.name}.`);
-      if(type==='melee') pushBattle(`${actor.name} ha golpeado con ${weaponName} a ${enemy.name} — ${dmg} de daño.`);
-      else pushBattle(`${actor.name} ha disparado contra ${enemy.name} — ${dmg} de daño.`);
-      if(newHp<=0){
-        pushLog(`✅ ${enemy.name} cae hecho trizas.`);
-        setThreat(t=>Math.max(0,t-2));
 
-        // Botín por muerte de enemigo → para el actor que mató
-        const tier = tierByEnemy(enemy);
-        if (Math.random() < 0.6) { // 60% de soltar arma
-          const drop = randomWeaponNameByTier(tier as any);
-          const res = tryAddToBackpack(actor.id, drop);
-          pushLog(`🧷 ${enemy.name} suelta ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
-        }
-
-        // Bonus raro: ampliación mochila (5%)
-        if (Math.random() < 0.05) {
-          const name = "Ampliación de Mochila (+4)";
-          const res = tryAddToBackpack(actor.id, name);
-          pushLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
-        }
-      }
-      if(hasGun){
+    if(!hit){
+      const missPool = w.type === "ranged" ? MISS_RANGED : MISS_MELEE;
+      const line = render(pick(missPool), { P: actor.name, E: enemy.name, W: w.name });
+      pushBattle(line);
+      pushLog(line);
+      setDayStats(s=>({
+        ...s,
+        misses: s.misses + 1,
+        shotsFired: s.shotsFired + (w.type === "ranged" ? 1 : 0),
+      }));
+      if(w.type === "ranged"){
         updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
       }
-    }else{
-      pushLog(`❌ ${actor.name} falla el golpe; el eco en el ${scene} lo distrae.`);
-      if(type==='melee') pushBattle(renderTpl(pick(MELEE_MISS), { P: actor.name, E: enemy.name, W: weaponName }));
-      else pushBattle(renderTpl(pick(RANGED_MISS), { P: actor.name, E: enemy.name, W: weaponName }));
+      timePenalty(20);
+      advanceTurn();
+      return;
     }
+
+    const dmg = roll(1,6, w.type === "ranged" ? 4 : mod(actor.attrs.Fuerza)).total;
+    const newHp = enemy.hp - dmg;
+    setEnemies(es=> es.map(e=> e.id===enemyId ? {...e, hp: newHp} : e).filter(e=> e.hp>0));
+
+    const base = render(pick(hitPhraseByFlavor(flavor)), { P: actor.name, E: enemy.name, W: w.name, D: dmg });
+    let tails: string[] = [];
+    if (w.type === "melee" && flavor === "melee_blade" && Math.random() < 0.28) tails.push(render(pick(TAIL_BLEED), { P: actor.name, E: enemy.name, W: w.name }));
+    if (w.type === "melee" && flavor === "melee_blunt" && Math.random() < 0.18) tails.push(render(pick(TAIL_STUN), { P: actor.name, E: enemy.name, W: w.name }));
+    if (w.type === "ranged" && Math.random() < 0.08) tails.push(render(pick(TAIL_BLEED), { P: actor.name, E: enemy.name, W: w.name }));
+    if (Math.random() < 0.03) tails.push(render(pick(TAIL_INFECT), { P: actor.name, E: enemy.name, W: w.name }));
+    const line = (base + (tails.length ? " " + tails.join(" ") : "")).replace(/\s+/g, " ").trim();
+    pushBattle(line);
+    pushLog(line);
+
+    setDayStats(s=>({
+      ...s,
+      damageDealt: s.damageDealt + dmg,
+      shotsFired: s.shotsFired + (w.type === "ranged" ? 1 : 0),
+    }));
+
+    if(newHp<=0){
+      pushLog(`✅ ${enemy.name} cae hecho trizas.`);
+      setThreat(t=>Math.max(0,t-2));
+
+      const tier = tierByEnemy(enemy);
+      if (Math.random() < 0.6) {
+        const drop = randomWeaponNameByTier(tier as any);
+        const res = tryAddToBackpack(actor.id, drop);
+        pushLog(`🧷 ${enemy.name} suelta ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+      }
+
+      if (Math.random() < 0.05) {
+        const name = "Ampliación de Mochila (+4)";
+        const res = tryAddToBackpack(actor.id, name);
+        pushLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+      }
+    }
+
+    if(w.type === "ranged"){
+      updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
+    }
+
     timePenalty(20);
     advanceTurn();
   }
 
-  function maybeInflictStatusFromEnemyHit(enemy: any, target: Player, dmg: number){
-    if (dmg <= 0) return;
+  function maybeInflictStatusFromEnemyHit(enemy: any, target: Player, dmg: number): string[] {
+    const applied: string[] = [];
+    if (dmg <= 0) return applied;
 
-    const INFECT_P = 0.28;
-    const BLEED_P  = 0.22;
-    const STUN_P   = 0.15;
+    const INFECT_P = 0.28, BLEED_P = 0.22, STUN_P = 0.15;
+    let c = target.conditions ?? {};
 
-    let newC = target.conditions ?? {};
-
-    if (!hasCondition(newC,'infected') && Math.random() < INFECT_P) {
-      newC = addCondition(newC, { id:'infected', persistent:true });
-      logMsg(`🧪 ${target.name} ha sido infectado.`);
+    if (!hasCondition(c,'infected') && Math.random() < INFECT_P) {
+      c = addCondition(c, { id:'infected', persistent:true });
+      applied.push("infected");
     }
-
-    if (!hasCondition(newC,'bleeding') && Math.random() < BLEED_P) {
-      const turns = 2 + Math.floor(Math.random()*2);
-      newC = addCondition(newC, { id:'bleeding', turnsLeft: turns, intensity: 1 });
-      logMsg(`🩸 ${target.name} empieza a sangrar (${turns} turnos).`);
+    if (!hasCondition(c,'bleeding') && Math.random() < BLEED_P) {
+      const t = 2 + Math.floor(Math.random()*2);
+      c = addCondition(c, { id:'bleeding', turnsLeft:t, intensity:1 });
+      applied.push("bleeding");
     }
-
-    const heavy = dmg >= 6;
-    if (!hasCondition(newC,'stunned') && (heavy ? Math.random() < (STUN_P+0.1) : Math.random() < STUN_P)) {
-      const turns = 1 + Math.floor(Math.random()*2);
-      newC = addCondition(newC, { id:'stunned', turnsLeft: turns });
-      logMsg(`💫 ${target.name} queda aturdido (${turns} turnos).`);
+    if (!hasCondition(c,'stunned') && Math.random() < STUN_P) {
+      const t = 1 + Math.floor(Math.random()*2);
+      c = addCondition(c, { id:'stunned', turnsLeft:t });
+      applied.push("stunned");
     }
-
-    updatePlayer(target.id, { conditions: newC });
+    updatePlayer(target.id, { conditions: c });
+    return applied;
   }
 
   function runEnemyTurnRound(idx: number) {
@@ -616,16 +637,22 @@ export default function App(){
       if (atkRoll.total >= target.defense) {
         const dmg = roll(1,6,2).total;
         updatePlayer(target.id, { hp: Math.max(0, target.hp - dmg) });
-        pushLog(`💥 ${enemy.name} golpea a ${target.name}: -${dmg} PV.`);
-        pushBattle(renderTpl(pick(ENEMY_HIT), { P: target.name, E: enemy.name, V: dmg }));
-        maybeInflictStatusFromEnemyHit(enemy, target, dmg);
+        let line = `${enemy.name} golpea a ${target.name} (−${dmg}).`;
+        const applied = maybeInflictStatusFromEnemyHit(enemy, target, dmg);
+        if (applied.includes("bleeding")) line += " Deja sangrando al objetivo.";
+        if (applied.includes("stunned"))  line += " El objetivo queda aturdido.";
+        if (applied.includes("infected")) line += " Posible infección en el objetivo.";
+        line = line.replace(/\s+/g," ").trim();
+        pushBattle(line);
+        pushLog(line);
         if (target.hp - dmg <= 0) {
           updatePlayer(target.id, { status: "dead" });
           pushLog(`💀 ${target.name} cae para no levantarse jamás.`);
         }
       } else {
-        pushLog(`🛡️ ${target.name} esquiva el ataque de ${enemy.name}.`);
-        pushBattle(renderTpl(pick(ENEMY_MISS), { P: target.name, E: enemy.name }));
+        const missLine = `${enemy.name} falla al atacar a ${target.name}.`;
+        pushBattle(missLine);
+        pushLog(missLine);
       }
     }
 
@@ -683,7 +710,7 @@ export default function App(){
     updatePlayer(actor.id, { hp: clamp(actor.hp+10, 0, actor.hpMax) });
     setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
     pushLog(`💊 ${actor.name} se venda rápido (+${healAmt} PV).`);
-    pushBattle(renderTpl(pick(HEAL_LINES), { P: actor.name, V: healAmt }));
+    pushBattle(render(pick(HEAL_LINES), { P: actor.name, V: healAmt }));
     cureOneStatusIfAny(actor);
     timePenalty(25); advanceTurn();
   }
@@ -695,7 +722,7 @@ export default function App(){
     if (actedThisRound[actor.id]) return;
     if(enemies.length===0) return;
     const fr = roll(1,20, mod(actor.attrs.Destreza));
-    pushBattle(renderTpl(pick(FLEE_LINES), { P: actor.name }));
+    pushBattle(render(pick(FLEE_LINES), { P: actor.name }));
     if(fr.total>=15){
       pushLog("🏃 Huyen por pasillos colapsados. ¡Escape exitoso!");
       pushBattle(`${actor.name} ha escapado.`);
