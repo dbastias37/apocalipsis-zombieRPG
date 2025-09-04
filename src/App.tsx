@@ -360,6 +360,7 @@ export default function App(){
   const alivePlayers = players.filter(p => p.status !== "dead");
   const aliveEnemies = enemies;
   const activePlayer = activePlayerId ? players.find(p => p.id === activePlayerId) ?? null : null;
+  const activeDown = !!activePlayer && activePlayer.hp <= 0;
   const canAttackWithSelected = (() => {
     const p = activePlayer;
     if (!p) return false;
@@ -725,6 +726,7 @@ export default function App(){
     const newHp = enemy.hp - dmg;
     const afterEnemies = (enemiesRef.current ?? []).map(e => e.id === enemyId ? { ...e, hp: newHp } : e).filter(e => e.hp > 0);
     setEnemies(afterEnemies);
+    enemiesRef.current = afterEnemies;
 
     if (newHp <= 0) {
       pushLog(`✅ ${enemy.name} cae hecho trizas.`);
@@ -742,10 +744,6 @@ export default function App(){
         pushLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
         setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, name] }));
       }
-    }
-
-    if (afterEnemies.length === 0) {
-      maybeOpenCombatEnd();
     }
   }
   function performAttack(enemyId: string){
@@ -857,6 +855,7 @@ export default function App(){
         const stunDmg = Math.floor(MELEE_STUN_DMG_MIN + Math.random() * (MELEE_STUN_DMG_MAX - MELEE_STUN_DMG_MIN + 1));
         const newHp = enemy.hp - stunDmg;
         applyDamageToEnemy(enemy.id, stunDmg, actor);
+        openCombatEndIfCleared();
         if (newHp > 0) {
           const prevC = enemy.conditions ?? {};
           const newC = addCondition(prevC, { id: 'stunned', turnsLeft: 1 });
@@ -879,6 +878,7 @@ export default function App(){
     }
     const dmg = roll(w.damage?.times || 1, w.damage?.faces || 6, (isRanged ? 0 : mod(actor.attrs.Fuerza)) + (w.damage?.mod || 0)).total;
     applyDamageToEnemy(enemy.id, dmg, actor);
+    openCombatEndIfCleared();
 
     const base = render(pick(hitPhraseByFlavor(flavor)), { P: actor.name, E: enemy.name, W: w.name, D: dmg });
     let tails: string[] = [];
@@ -977,7 +977,7 @@ function finishEnemyPhase() {
   pushBattle?.("El enemigo ha terminado su turno.");
 
   if ((enemiesRef.current ?? []).every(e => e.hp <= 0)) {
-    maybeOpenCombatEnd();
+    openCombatEndIfCleared();
     return;
   }
 
@@ -1120,69 +1120,50 @@ function finishEnemyPhase() {
   }
 
   function computeCombatSummaryLines(): string[] {
-    let totalMeleeHits=0, totalMeleeMisses=0, totalRangedHits=0, totalRangedMisses=0, totalHeals=0;
-    let bestId: string | null = null, bestPoints = -Infinity;
+    let mh=0, mm=0, rh=0, rm=0, heals=0, bestId:string|null=null, bestPts=-1;
+    const nameById: Record<string,string> = {}; players.forEach(p=>nameById[p.id]=p.name);
 
+    Object.entries(battleStats.byPlayer).forEach(([pid, st])=>{
+      mh+=st.meleeHits; mm+=st.meleeMisses; rh+=st.rangedHits; rm+=st.rangedMisses; heals+=st.heals;
+      if (st.points>bestPts){ bestPts=st.points; bestId=pid; }
+    });
+    const bestName = bestId ? (nameById[bestId] || "Jugador") : "Nadie";
+    const loot = battleStats.lootNames ?? [];
     const lines: string[] = [];
     lines.push("— RESUMEN DEL ENFRENTAMIENTO —");
-
-    Object.entries(battleStats.byPlayer).forEach(([pid, st]) => {
-      totalMeleeHits += st.meleeHits;
-      totalMeleeMisses += st.meleeMisses;
-      totalRangedHits += st.rangedHits;
-      totalRangedMisses += st.rangedMisses;
-      totalHeals += st.heals;
-      if (st.points > bestPoints) { bestPoints = st.points; bestId = pid; }
-    });
-
-    const nameById: Record<string,string> = {};
-    players.forEach(p => nameById[p.id] = p.name);
-
-    lines.push(`Golpes directos: ${totalMeleeHits}`);
-    lines.push(`Golpes fallidos: ${totalMeleeMisses}`);
-    lines.push(`Curaciones: ${totalHeals}`);
-    lines.push(`Disparos efectivos: ${totalRangedHits}`);
-    lines.push(`Disparos fallidos: ${totalRangedMisses}`);
-
-    const bestName = bestId ? (nameById[bestId] || "Jugador") : "Nadie";
-    lines.push(`Mejor jugador de la batalla: ${bestName} (${bestPoints>0?bestPoints:0} pts)`);
-
-    const loot = (battleStats.lootNames ?? []);
-    if (loot.length) {
+    lines.push(`Golpes directos: ${mh}`);
+    lines.push(`Golpes fallidos: ${mm}`);
+    lines.push(`Curaciones: ${heals}`);
+    lines.push(`Disparos efectivos: ${rh}`);
+    lines.push(`Disparos fallidos: ${rm}`);
+    lines.push(`Mejor jugador de la batalla: ${bestName} (${Math.max(0,bestPts) || 0} pts)`);
+    if (loot.length){
       const map: Record<string,number> = {};
       loot.forEach(n => map[n] = (map[n]||0)+1);
-      lines.push("Botín obtenido:");
+      lines.push("Botín:");
       Object.entries(map).forEach(([n,c]) => lines.push(`  • ${n} x${c}`));
     } else {
-      lines.push("Botín obtenido: —");
+      lines.push("Botín: —");
     }
-
-    lines.push("Recompensas del combate: +1 Comida, +1 Agua, +1 Medicina, +1 Fuel, +1 Munición, +1 Materiales.");
-
-    const totalPuntos = Math.max(0, totalMeleeHits*2 + totalRangedHits*2 + totalHeals*1);
-    lines.push(`Total de puntos del grupo: ${totalPuntos}`);
-
+    lines.push("Recompensas: +1 Comida, +1 Agua, +1 Medicina, +1 Fuel, +1 Munición, +1 Materiales.");
+    const total = mh*2 + rh*2 + heals;
+    lines.push(`Total de puntos del grupo: ${total}`);
     return lines;
   }
 
   function grantCombatRewards() {
     setResources(r => ({
       ...r,
-      food: (r.food ?? 0) + 1,
-      water: (r.water ?? 0) + 1,
-      medicine: (r.medicine ?? 0) + 1,
-      fuel: (r.fuel ?? 0) + 1,
-      ammo: (r.ammo ?? 0) + 1,
-      materials: (r.materials ?? 0) + 1,
+      food:(r.food??0)+1, water:(r.water??0)+1, medicine:(r.medicine??0)+1,
+      fuel:(r.fuel??0)+1, ammo:(r.ammo??0)+1, materials:(r.materials??0)+1,
     }));
   }
 
-  function maybeOpenCombatEnd() {
-    const aliveEnemies = (enemiesRef.current ?? []).filter(e => e.hp > 0);
-    const inCombat = currentCard?.type === "combat" || isEnemyPhase;
-    if (inCombat && aliveEnemies.length === 0) {
-      const lines = computeCombatSummaryLines();
-      setCombatEndLines(lines);
+  function openCombatEndIfCleared() {
+    const aliveEnemies = (enemiesRef.current ?? []).filter(e=>e.hp>0);
+    const inCombat = currentCard?.type === "combat" || isEnemyPhaseRef.current;
+    if (!showCombatEnd && inCombat && aliveEnemies.length === 0) {
+      setCombatEndLines(computeCombatSummaryLines());
       setShowCombatEnd(true);
       setControlsLocked(true);
     }
@@ -1678,6 +1659,7 @@ function advanceTurn() {
             controlsLocked={controlsLocked}
             isEnemyPhase={isEnemyPhase}
             canAttackWithSelected={canAttackWithSelected}
+            activeDown={activeDown}
             onClose={()=>{
               if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
               else setDiscardCombat(d=>[currentCard, ...d]);
@@ -1930,6 +1912,7 @@ function CardView(props:{
   controlsLocked: boolean;
   isEnemyPhase: boolean;
   canAttackWithSelected: boolean;
+  activeDown: boolean;
 }){
   const isDecision = props.card.type==="decision";
   return (
@@ -1977,8 +1960,8 @@ function CardView(props:{
                       </div>
                       <button
                         className="btn btn-red text-white"
-                        onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || !props.canAttackWithSelected) return; props.onAttack(e.id); }}
-                        disabled={props.controlsLocked || props.isEnemyPhase || !props.canAttackWithSelected}
+                        onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canAttackWithSelected) return; props.onAttack(e.id); }}
+                        disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canAttackWithSelected}
                       >
                         {props.canAttackWithSelected ? "🗡️ Atacar" : "Sin munición"}
                       </button>
@@ -1994,29 +1977,29 @@ function CardView(props:{
           <div className="space-y-2">
             <button
               className="btn btn-ghost w-full"
-              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onDefend(); }}
-              disabled={props.controlsLocked || props.isEnemyPhase}
+              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onDefend(); }}
+              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
             >
               🛡️ Defender
             </button>
             <button
-              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onHealAlly(); }}
-              disabled={props.controlsLocked || props.isEnemyPhase}
+              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onHealAlly(); }}
+              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
               className="px-3 py-2 w-full rounded-xl border border-white/15 hover:bg-white/5"
             >
               Curar aliado
             </button>
             <button
               className="btn btn-ghost w-full"
-              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onHeal(); }}
-              disabled={props.controlsLocked || props.isEnemyPhase}
+              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onHeal(); }}
+              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
             >
               💊 Curarse
             </button>
             <button
               className="btn btn-ghost w-full"
-              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase) return; props.onFlee(); }}
-              disabled={props.controlsLocked || props.isEnemyPhase}
+              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onFlee(); }}
+              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
             >
               🏃 Huir
             </button>
@@ -2086,7 +2069,8 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
       <div className="md:col-span-2 card bg-neutral-900 border-neutral-800 p-6">
         <h3 className="text-xl font-bold mb-4">👥 Supervivientes</h3>
         <div className="grid sm:grid-cols-2 gap-3">
-          {players.map(p=>{
+            {players.map(p=>{
+            const isDown = p.hp <= 0;
             const isBleeding = hasCondition(p.conditions,'bleeding');
             const isInfected = hasCondition(p.conditions,'infected');
             const isStunned = hasCondition(p.conditions,'stunned');
@@ -2098,38 +2082,37 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
             <div
               key={p.id}
               className={[
-                "rounded-2xl border p-3 transition",
-                p.status==="dead"?"bg-neutral-950 border-neutral-900 opacity-60":"bg-neutral-800/50 border-neutral-700",
+                "rounded-2xl border p-3 transition bg-neutral-800/50 border-neutral-700",
                 (!isEnemyPhase && p.id === activePlayerId) ? "ring-2 ring-emerald-400 animate-pulse" : "",
-                isStunned ? "saturate-0 grayscale" : "",
-                isBleeding ? "border-red-500/60 bg-red-900/20 neon-red animate-breath-fast" : "",
-                isInfected ? "border-emerald-400/60 bg-emerald-900/20 neon-green" : ""
+                isDown ? "saturate-0 grayscale opacity-80" : "",
+                isBleeding && !isDown ? "border-red-500/60" : "",
+                isInfected && !isDown ? "border-emerald-400/60" : "",
               ].join(" ")}
             >
-              <div className="flex justify-between items-start gap-2">
-                <input
-                  className="font-bold bg-transparent border-b border-neutral-700 outline-none focus:border-red-500"
-                  value={p.name}
-                  onChange={(e)=>onUpdatePlayer(p.id,{ name: e.target.value })}
-                />
-              </div>
-              {p.status!=="dead" && (
-                <>
-                <div className="text-xs opacity-80">
-                  <span className="px-2 py-0.5 rounded bg-white/10 mr-1">Vivo</span>
-                  {isBleeding && <span className="px-2 py-0.5 rounded bg-red-600/80">Sangrando</span>}
-                  {isInfected && <span className="px-2 py-0.5 rounded bg-emerald-600/80">Infectado</span>}
-                  {isStunned && <span className="px-2 py-0.5 rounded bg-zinc-500/80">Aturdido</span>}
-                </div>
-                {isInfected && (
-                  <div className="text-xs mt-1 opacity-80">
-                    Tiempo para curarse: {mm}:{ss}
-                  </div>
+              <input
+                className="text-sm font-semibold leading-tight bg-transparent border-b border-neutral-700 outline-none focus:border-red-500 w-full"
+                value={p.name}
+                onChange={(e)=>onUpdatePlayer(p.id,{ name: e.target.value })}
+              />
+              <div className="h-px bg-white/10 mt-1" />
+              <div className="flex flex-wrap items-center gap-1 mt-2">
+                {isDown ? (
+                  <span className="px-2 py-0.5 rounded bg-zinc-700/80 text-zinc-100">Fuera de combate</span>
+                ) : (
+                  <>
+                    <span className="px-2 py-0.5 rounded bg-white/10">Vivo</span>
+                    {isBleeding && <span className="px-2 py-0.5 rounded bg-red-600/80">Sangrando</span>}
+                    {isInfected && <span className="px-2 py-0.5 rounded bg-emerald-600/80">Infectado</span>}
+                    {isStunned && <span className="px-2 py-0.5 rounded bg-zinc-500/80">Aturdido</span>}
+                  </>
                 )}
-                </>
+              </div>
+              {isInfected && !isDown && (
+                <div className="text-xs mt-1 opacity-80">
+                  Tiempo para curarse: {mm}:{ss}
+                </div>
               )}
               <p className="text-xs text-neutral-400">{p.profession}</p>
-
               <div className="mt-2">
                 <Bar label="PV" current={p.hp} max={p.hpMax} color="green" />
                 <Bar label="Energía" current={p.energy} max={p.energyMax} color="blue" />
@@ -2146,7 +2129,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
                 )}
               </div>
             </div>
-          );
+            );
           })}
         </div>
       </div>
