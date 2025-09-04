@@ -9,6 +9,7 @@ import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
 import { weaponFlavorFrom, hitPhraseByFlavor, MISS_MELEE, MISS_RANGED, TAIL_BLEED, TAIL_STUN, TAIL_INFECT, HEAL_LINES, FLEE_LINES, render, pick } from "./data/combatPhrases";
 import { findWeaponById } from "./data/weapons";
 import {
+import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
   Conditions,
   hasCondition,
   addCondition,
@@ -88,32 +89,13 @@ const baseEnemies: Enemy[] = [
 ];
 
 // === Cartas (ejemplos; puedes ampliar) ===
-const decisionDeckSeed: Card[] = [
-  {
-    id: uid(),
-    type: "decision",
-    title: "El Jardín en la Azotea",
-    scene: "azotea",
-    text: "Una anciana ofrece semillas a cambio de agua. Cuidar belleza en ruinas requiere sacrificio.",
-    choices: [
-      { text: "Compartir agua", effect: { water: -3, morale: +6 } },
-      { text: "Negarse", effect: { morale: -4, threat: +2 } },
-      { text: "Intercambio justo", effect: { water: -1, materials: -1, morale: +3 } },
-    ],
-  },
-  {
-    id: uid(),
-    type: "decision",
-    title: "El Tren con Sitios Limitados",
-    scene: "carretera",
-    text: "Un viejo tren puede evacuar a pocos. ¿Prioridad por utilidad o azar?",
-    choices: [
-      { text: "Lotería", effect: { morale: -2 } },
-      { text: "Seleccionar por oficio", effect: { morale: -5, threat: +4 } },
-      { text: "Quedarse juntos", effect: { morale: +2, threat: +6 } },
-    ],
-  },
-];
+const decisionDeckSeed: Card[] = day1DecisionCards.map(c => ({
+  id: c.id,
+  type: "decision" as const,
+  title: c.title,
+  text: c.text,
+  choices: c.choices as any,
+}));
 
 const combatDeckSeed: Card[] = [
   {
@@ -483,7 +465,7 @@ export default function App(){
     if (actedThisRound[actor.id]) return;
     // aplicar efectos
     if(choice.effect){
-      const { morale: dm, threat: dt, spawnEnemies, ...res } = choice.effect as any;
+      const { morale: dm, threat: dt, zombies, spawnEnemies, advanceMs, ...res } = choice.effect as any;
       if(dm) setMorale(m=>clamp(m+dm,0,100));
       if(dt) setThreat(t=>Math.max(0,t+dt));
       const rDelta = res as Partial<Resources>;
@@ -503,15 +485,35 @@ export default function App(){
         pushLog(`⚔️ Tu decisión provocó un combate (${spawned.length}).`);
       }
     }
-    // narrativa
+    
+// Avance de tiempo desde la decisión
+if (typeof advanceMs === 'number' && advanceMs > 0) {
+  setClockMs(ms => Math.max(0, ms - advanceMs));
+}
+// Zombis/combate forzado a partir de la carta
+const toSpawn = (typeof zombies === 'number' ? zombies : 0) + (typeof spawnEnemies === 'number' ? spawnEnemies : 0);
+if (toSpawn > 0) {
+  spawnEnemies(toSpawn);
+  if (currentCard) {
+    setCurrentCard({ ...currentCard, type: "combat" });
+  }
+  pushLog(`⚔️ Tu decisión provocó un combate (${toSpawn}).`);
+}
+      // narrativa
     pushLog(`📖 Decisión tomada: ${choice.text}`);
-    // descartar carta
-    if(currentCard){
-      if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
-      else setDiscardCombat(d=>[currentCard, ...d]);
-    }
+    
+// descartar carta o mantener si abre combate
+if (currentCard) {
+  if (typeof toSpawn === 'number' && toSpawn > 0) {
+    // mantener la carta actual convertida a 'combat'
+  } else {
+    if (currentCard.type === "decision") setDiscardDecision(d => [currentCard, ...d]);
+    else setDiscardCombat(d => [currentCard, ...d]);
     setCurrentCard(null);
-    timePenalty(45); advanceTurn(); // penalizar ~45s
+  }
+}
+timePenalty(45); advanceTurn();
+// penalizar ~45s
   }
 
   // ——— Combate muy simplificado ———
