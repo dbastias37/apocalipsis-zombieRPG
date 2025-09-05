@@ -37,6 +37,7 @@ import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
 import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
+import NoAmmoModal from "./components/overlays/NoAmmoModal";
 import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
@@ -300,22 +301,15 @@ export default function App(){
     mkPlayer("Marcus", "Soldado"),
     mkPlayer("Elena", "Psicóloga"),
   ].map(p => {
-    const bp0 = Array.isArray((p as any).backpack) ? (p as any).backpack : [];
-    const hasBox =
-      bp0.some((it:any) =>
-        typeof it === "string"
-          ? (it.trim().toLowerCase() === "caja de munición" || it.trim().toLowerCase() === "caja de municion")
-          : (it && typeof it === "object" && typeof it.name === "string" &&
-             (it.name.toLowerCase() === "caja de munición" || it.name.toLowerCase() === "caja de municion"))
-      );
-    const bp = hasBox ? bp0 : [...bp0, { name: "Caja de munición", bullets: 15 }];
+    const table = { ...(p.ammoByWeapon ?? {}) };
+    if (typeof table.pistol !== "number") table.pistol = 3; // 3 balas iniciales
     return {
       ...p,
       energy: p.energy ?? 100,
       energyMax: p.energyMax ?? 100,
       selectedWeaponId: p.selectedWeaponId ?? "fists",
-      ammoByWeapon: p.ammoByWeapon ?? {},
-      backpack: bp,
+      ammoByWeapon: table,
+      backpack: Array.isArray((p as any).backpack) ? (p as any).backpack : [],
       inventory: Array.isArray((p as any).inventory) ? (p as any).inventory : [],
     };
   }));
@@ -346,6 +340,7 @@ export default function App(){
   const [showAmmoModal, setShowAmmoModal] = useState(false);
   const [showReloadModal, setShowReloadModal] = useState(false);
   const [dayEndLines, setDayEndLines] = useState<string[]>([]);
+  const [noAmmo, setNoAmmo] = useState<{open:boolean; enemyName?:string}>({ open:false });
 
   // Turnos
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
@@ -1100,6 +1095,15 @@ export default function App(){
   }
   function performAttack(enemyId: string){
     if (controlsLocked || isEnemyPhase) return;
+    const player = players.find(pl => pl.id === activePlayerId);
+    const wid = player?.selectedWeaponId;
+    const ammoLoaded = Number(player?.ammoByWeapon?.[wid ?? ""] ?? 0);
+    const ranged = WEAPONS.find(x => x.id === wid)?.type === "ranged";
+    const targetName = enemies.find(e=>e.id===enemyId)?.name ?? (enemies && enemies.length ? (enemies[0].name ?? "el enemigo") : "el enemigo");
+    if (ranged && ammoLoaded <= 0) {
+      setNoAmmo({ open:true, enemyName: targetName });
+      return;
+    }
     if (!startPlayerActionOrBlock()) return;
     if (!activePlayer) { setControlsLocked(false); return; }
     const actor = activePlayer;
@@ -2327,6 +2331,11 @@ function advanceTurn() {
         player={players.find(p=>p.id===activePlayerId) || null}
         onClose={()=>setShowReloadModal(false)}
         onConfirm={confirmReload}
+      />
+      <NoAmmoModal
+        open={noAmmo.open}
+        enemyName={noAmmo.enemyName}
+        onClose={() => setNoAmmo({ open:false })}
       />
       <WelcomeOverlay />
     </div>
