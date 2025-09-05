@@ -382,10 +382,21 @@ export default function App(){
     return null;
   }
 
-  // --- LA FUNCIÓN QUE FALTABA ---
+  // --- helper: detectar "Caja de munición" en la mochila del jugador activo ---
   function hasAmmoBoxInActiveBackpack(): boolean {
     const p = players.find(pl => pl.id === activePlayerId) || null;
-    return !!(p && findAmmoBoxInBackpack(p));
+    if (!p) return false;
+    const bp = Array.isArray(p.backpack) ? p.backpack : [];
+    for (const it of bp) {
+      if (typeof it === "string") {
+        const s = it.trim().toLowerCase();
+        if (s === "caja de munición" || s === "caja de municion") return true;
+      } else if (it && typeof it === "object") {
+        const name = String(it.name ?? "").toLowerCase();
+        if (name === "caja de munición" || name === "caja de municion") return true;
+      }
+    }
+    return false;
   }
 
   function confirmReload(weaponId:string, bullets:number){
