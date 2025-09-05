@@ -47,6 +47,7 @@ import { day2ExplorationCards } from "./data/days/day2/explorationCards.day2";
 import { day3ExplorationCards } from "./data/days/day3/explorationCards.day3";
 import type { ExplorationCard } from "./data/explorationCards";
 import type { DecisionCard } from "./data/decisionCards";
+import { useEnterOnTap } from "./hooks/useEnterOnTap";
 import {
   Conditions,
   hasCondition,
@@ -341,6 +342,32 @@ export default function App(){
   const [showReloadModal, setShowReloadModal] = useState(false);
   const [dayEndLines, setDayEndLines] = useState<string[]>([]);
   const [noAmmo, setNoAmmo] = useState<{open:boolean; enemyName?:string}>({ open:false });
+
+  const isSummaryOpen = showDayEnd || showCombatEnd;
+
+  useEnterOnTap({
+    enabled: true,
+    getIsSummaryOpen: () => isSummaryOpen,
+    summarySelector: '[data-enter-scope="summary"]'
+  });
+
+  useEffect(() => {
+    const onKeyDownCapture = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      if (!isSummaryOpen) return;
+
+      const scopeEl = document.querySelector('[data-enter-scope="summary"]');
+      if (!scopeEl) return;
+
+      const target = e.target as Node | null;
+      if (target && !scopeEl.contains(target)) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    };
+    document.addEventListener("keydown", onKeyDownCapture, true);
+    return () => document.removeEventListener("keydown", onKeyDownCapture, true);
+  }, [isSummaryOpen]);
 
   // Turnos
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
