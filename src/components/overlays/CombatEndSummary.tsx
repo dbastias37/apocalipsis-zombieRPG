@@ -48,7 +48,7 @@ export default function CombatEndSummary({ open, lines, onFinish }: Props) {
   const finished = !typing && idx >= lines.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" data-enter-scope="summary" data-no-enter-tap="true">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div className="relative z-10 w-full max-w-xl mx-4 rounded-2xl p-6 bg-zinc-900/95 border border-white/10 shadow-xl">
         <h2 className="text-lg font-bold text-emerald-400 mb-3">Fin del enfrentamiento</h2>
