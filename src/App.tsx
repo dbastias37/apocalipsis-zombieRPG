@@ -40,9 +40,6 @@ import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
 import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
-import type { LoreEntry } from "./types/lore";
-import LoreLibraryModal from "./components/overlays/LoreLibraryModal";
-import { buildLoreEntry } from "./systems/lore";
 import { applyAmmoBoxDeltaToBackpack, addAmmoToWeapon } from "./helpers";
 import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
@@ -514,8 +511,6 @@ export default function App(){
   }
 
   const [foundNotes, setFoundNotes] = useState<GameNote[]>([]);
-  const [loreEntries, setLoreEntries] = useState<LoreEntry[]>([]);
-  const [showLore, setShowLore] = useState(false);
   const [explorationActive, setExplorationActive] = useState<boolean>(false);
 
   // Evento con cuenta regresiva
@@ -1552,23 +1547,14 @@ function advanceTurn() {
     return ITEMS_CATALOG.find(it => it.id === id);
   }
 
-function discoverRandomNote(prob = 0.2) {
-  if (Math.random() > prob) return;
-  const undiscovered = GAME_NOTES.filter(n => !foundNotes.some(f => f.id === n.id));
-  if (undiscovered.length === 0) return;
-  const note = undiscovered[Math.floor(Math.random() * undiscovered.length)];
-  setFoundNotes(prev => [...prev, note]);
-
-  // Añadir historia asociada al hallazgo (una sola vez por nota)
-  setLoreEntries(prev => {
-    const id = `D${day}-N${note.id}`;
-    if (prev.some(e => e.id === id)) return prev;
-    const entry = buildLoreEntry(note, day);
-    return [...prev, entry];
-  });
-
-  pushLog(`Encuentras una nota: “${note.title}”${note.hintLocation ? ` (pista: ${note.hintLocation})` : ''}`);
-}
+  function discoverRandomNote(prob = 0.2) {
+    if (Math.random() > prob) return;
+    const undiscovered = GAME_NOTES.filter(n => !foundNotes.some(f => f.id === n.id));
+    if (undiscovered.length === 0) return;
+    const note = undiscovered[Math.floor(Math.random() * undiscovered.length)];
+    setFoundNotes(prev => [...prev, note]);
+    pushLog(`Encuentras una nota: “${note.title}”${note.hintLocation ? ` (pista: ${note.hintLocation})` : ''}`);
+  }
 
   function followNote(noteId: number) {
     const note = foundNotes.find(n => n.id === noteId);
@@ -1951,7 +1937,6 @@ function discoverRandomNote(prob = 0.2) {
         <DeckControls
           onDrawDecision={drawDecision} onDrawCombat={drawCombat}
           onShuffle={shuffleDecks} onRecycle={recycleDiscards}
-          onShowLore={()=>setShowLore(true)}
         />
 
         {currentCard ? (
@@ -2188,11 +2173,6 @@ function discoverRandomNote(prob = 0.2) {
         onClose={()=>setShowReloadModal(false)}
         onConfirm={confirmReload}
       />
-      <LoreLibraryModal
-        isOpen={showLore}
-        onClose={() => setShowLore(false)}
-        entries={loreEntries}
-      />
       <WelcomeOverlay />
     </div>
   );
@@ -2232,18 +2212,11 @@ function HeaderHUD(props:{
   );
 }
 
-function DeckControls(props: { onDrawDecision:()=>void; onDrawCombat:()=>void; onShuffle:()=>void; onRecycle:()=>void; onShowLore:()=>void }){
+function DeckControls(props: { onDrawDecision:()=>void; onDrawCombat:()=>void; onShuffle:()=>void; onRecycle:()=>void }){
   return (
     <div className="flex flex-wrap gap-2">
       <button className="btn btn-purple text-white" onClick={props.onDrawDecision}>🎴 Sacar Carta (Decisión)</button>
       <button className="btn btn-red text-white" onClick={props.onDrawCombat}>🩸 Sacar Carta (Combate)</button>
-      <button
-        className="ml-2 px-3 py-1.5 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-sm"
-        onClick={props.onShowLore}
-        title="Abrir Historias"
-      >
-        📖 Historias
-      </button>
       <div className="flex-1" />
       <button className="btn btn-ghost" onClick={props.onShuffle}>🔀 Barajar</button>
       <button className="btn btn-ghost" onClick={props.onRecycle}>♻️ Reintegrar descartes</button>
@@ -2491,7 +2464,23 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
         {selected ? (
           <>
             <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} />
-            {canReloadFromBox && (
+            {(() => {
+              const p = players.find(pl => pl.id === activePlayerId);
+              if (!p) return false;
+              const bp = Array.isArray((p as any).backpack) ? (p as any).backpack : [];
+              return bp.some((it:any) => {
+                if (typeof it === "string") {
+                  const s = it.trim().toLowerCase();
+                  return s === "caja de munición" || s === "caja de municion";
+                }
+                if (it && typeof it === "object") {
+                  const name = String(it.name ?? "").toLowerCase();
+                  const bullets = Number((it as any).bullets ?? 15);
+                  return (name === "caja de munición" || name === "caja de municion") && bullets > 0;
+                }
+                return false;
+              });
+            })() && (
               <button
                 className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 animate-pulse ring-1 ring-neutral-500/40 shadow-[0_0_10px_#6b7280]/50"
                 onClick={()=>setShowReloadModal(true)}
