@@ -37,7 +37,6 @@ import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
 import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
-import { getTotalAmmoAvailable, consumeAmmoFromPlayer, listReloadableWeapons } from "./helpers";
 import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
@@ -323,24 +322,6 @@ export default function App(){
   const [turnOrder, setTurnOrder] = useState<string[] | null>(null);
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
 
-  const canReloadFromBox = React.useMemo(() => {
-    const p = players.find(pl => pl.id === activePlayerId);
-    if (!p) return false;
-    const bp = Array.isArray((p as any).backpack) ? (p as any).backpack : [];
-    return bp.some((it:any) => {
-      if (typeof it === "string") {
-        const s = it.trim().toLowerCase();
-        return s === "caja de munición" || s === "caja de municion";
-      }
-      if (it && typeof it === "object") {
-        const name = String(it.name ?? "").toLowerCase();
-        const bullets = Number((it as any).bullets ?? 0);
-        return (name === "caja de munición" || name === "caja de municion") && bullets > 0;
-      }
-      return false;
-    });
-  }, [players, activePlayerId]);
-
   // Mazo de cartas
   const [decisionDeck, setDecisionDeck] = useState<Card[]>(() => shuffle(mapDecisionCards(getDecisionDeckForDay(day))));
   const [explorationDeck, setExplorationDeck] = useState<ExplorationCard[]>(() => shuffle(getExplorationDeckForDay(day)));
@@ -387,33 +368,172 @@ export default function App(){
   const actedThisRoundRef = useRef<Record<string, boolean>>(actedThisRound);
   useEffect(()=>{ actedThisRoundRef.current = actedThisRound; }, [actedThisRound]);
 
+  // Normalizador
+  function norm(s?: string){ return String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase(); }
+
+  // ¿Es caja de munición?
+  function isAmmoBoxItem(it:any): boolean {
+    if (!it) return false;
+    if (typeof it === "object" && (it.type === "ammo" || it.kind === "ammoBox")) return true;
+    const name = String(it?.name ?? it ?? "").toLowerCase();
+    return /caja\s+de\s+munici(o|ó)n/.test(name);
+  }
+
+  // balas en caja (default 15)
+  function getBoxBullets(it:any): number {
+    if (!isAmmoBoxItem(it)) return 0;
+    if (typeof it === "object") {
+      const n = Number(it.bullets ?? it.count ?? it.qty ?? it.amount ?? 15);
+      return Number.isFinite(n) && n > 0 ? Math.floor(n) : 15;
+    }
+    return 15;
+  }
+
+  // balas sueltas (string "Munición (N)" o objeto {name:"Munición", count:N})
+  function getLooseAmmoCount(it:any): number {
+    if (!it) return 0;
+    if (typeof it === "object") {
+      const nm = String(it.name ?? it.title ?? "").toLowerCase();
+      if (/munici(o|ó)n/.test(nm) && !isAmmoBoxItem(it)) {
+        const n = Number(it.count ?? it.qty ?? it.amount ?? 0);
+        return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+      }
+      return 0;
+    }
+    const s = String(it).toLowerCase();
+    const m = s.match(/munici(?:o|ó)n\s*\((\d+)\)/);
+    return m ? Math.max(0, parseInt(m[1],10)) : 0;
+  }
+
+  // total disponible (suelto + cajas) en inventario + mochila
+  function getTotalAmmoAvailable(player:any){
+    const lists = [
+      Array.isArray(player?.inventory) ? player.inventory : [],
+      Array.isArray(player?.backpack)  ? player.backpack  : [],
+    ];
+    let loose = 0, boxesBullets = 0, boxesCount = 0;
+    for (const list of lists){
+      for (const it of list){
+        const boxB = isAmmoBoxItem(it) ? getBoxBullets(it) : 0;
+        if (boxB > 0){ boxesBullets += boxB; boxesCount += 1; continue; }
+        const looseN = getLooseAmmoCount(it);
+        loose += looseN;
+      }
+    }
+    return { loose, boxesBullets, boxesCount, total: loose + boxesBullets };
+  }
+
+  // consume N balas: primero sueltas, luego cajas (parcialmente)
+  function consumeAmmoFromPlayer(player:any, requested:number){
+    let need = Math.max(0, Math.floor(requested));
+    if (need <= 0) return { player, taken: 0 };
+
+    function consumeFromList(list:any[]){
+      const out:any[] = [];
+      let taken = 0;
+      for (const it of list){
+        if (taken >= need){ out.push(it); continue; }
+
+        const loose = getLooseAmmoCount(it);
+        if (loose > 0){
+          const use = Math.min(loose, need - taken);
+          const remain = loose - use;
+          taken += use;
+          if (remain > 0){
+            if (typeof it === "string") out.push(`Munición (${remain})`);
+            else out.push({ ...(it||{}), name: "Munición", count: remain });
+          }
+          continue;
+        }
+        if (isAmmoBoxItem(it)){
+          const box = getBoxBullets(it);
+          const use = Math.min(box, need - taken);
+          const remain = box - use;
+          taken += use;
+          if (remain > 0) out.push({ name:"Caja de munición", bullets: remain, kind:"ammoBox" });
+          continue;
+        }
+        out.push(it);
+      }
+      return { out, taken };
+    }
+
+    const inv = Array.isArray(player?.inventory) ? player.inventory : [];
+    const bp  = Array.isArray(player?.backpack)  ? player.backpack  : [];
+
+    const a = consumeFromList(inv);
+    const b = (a.taken >= need) ? { out: bp, taken: 0 } : consumeFromList(bp);
+
+    const totalTaken = a.taken + b.taken;
+    return { player: { ...player, inventory: a.out, backpack: b.out }, taken: totalTaken };
+  }
+
+  // armas recargables (catálogo + strings)
+  function listReloadableWeapons(player:any): {id:string; name:string}[]{
+    const list: {id:string; name:string}[] = [];
+    const add = (id:string, name:string) => { if(!list.find(w=>w.id===id)) list.push({id,name}); };
+
+    const selId = (player as any)?.selectedWeaponId;
+    const byId = selId ? WEAPONS.find(w => w.id === selId) : null;
+    if (byId && byId.type === "ranged") add(byId.id, byId.name);
+
+    const all = [
+      ...(Array.isArray(player?.inventory) ? player.inventory : []),
+      ...(Array.isArray(player?.backpack)  ? player.backpack  : []),
+    ];
+    for (const it of all){
+      if (typeof it === "string"){
+        const s = norm(it);
+        const match = WEAPONS.find(w => w.type === "ranged" && (norm(w.name)===s || w.id===s));
+        if (match) add(match.id, match.name);
+        continue;
+      }
+      if (it && typeof it === "object"){
+        if (it.type === "ranged" && typeof it.id === "string"){
+          const w = WEAPONS.find(w => w.id === it.id) ?? { id: it.id, name: (it as any).name ?? it.id, type:"ranged" } as any;
+          add(w.id, w.name);
+        } else if (typeof (it as any).name === "string"){
+          const nm = norm((it as any).name);
+          const match2 = WEAPONS.find(w => w.type === "ranged" && norm(w.name)===nm);
+          if (match2) add(match2.id, match2.name);
+        }
+      }
+    }
+    return list;
+  }
+
+  // ¿se puede recargar? (hay balas y arma)
+  function canReloadNow(p:any): boolean {
+    const ammo = getTotalAmmoAvailable(p);
+    const weps = listReloadableWeapons(p);
+    return ammo.total > 0 && weps.length > 0;
+  }
+
+  // confirma recarga desde el modal
   function confirmReload(weaponId:string, bullets:number){
     const pid = activePlayerId;
     if(!pid) return;
     setPlayers(prev => prev.map(p=>{
       if (p.id !== pid) return p;
 
-      // 1) consumir munición del jugador (suelta -> cajas)
+      // 1) consumir balas del jugador
       const { player: afterInv, taken } = consumeAmmoFromPlayer(p, bullets);
-      if (taken <= 0) return p; // nada que tomar
+      if (taken <= 0) return p;
 
-      // 2) cargar exactamente lo tomado
+      // 2) cargar al arma
       const table = { ...(afterInv.ammoByWeapon ?? {}) };
       table[weaponId] = Math.max(0, Number(table[weaponId] ?? 0)) + taken;
 
       pushLog?.(`🔧 Recargas ${taken} munición(es) en ${weaponId}.`);
-
       return { ...afterInv, ammoByWeapon: table, selectedWeaponId: weaponId };
     }));
     setShowReloadModal(false);
 
-    // consumir turno
+    // 3) consumir turno y avanzar
     if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
       setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
     }
-    finalizeTurnWithEndConditions(() => {
-      advanceTurn();
-    });
+    finalizeTurnWithEndConditions(() => { advanceTurn(); });
   }
 
   const playersRef = useRef(players);
@@ -2439,14 +2559,9 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
             <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} />
             {(() => {
               const p = players.find(pl => pl.id === activePlayerId);
-              if (!p) return false;
-              const ammo = getTotalAmmoAvailable(p);
-              const weapons = listReloadableWeapons(p);
-              return ammo.total > 0 && weapons.length > 0;
+              return p && canReloadNow(p);
             })() && (
-              <button
-                className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200
-               hover:bg-neutral-700 transition"
+              <button className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
                 onClick={()=>setShowReloadModal(true)}
                 title="Recargar arma"
               >
