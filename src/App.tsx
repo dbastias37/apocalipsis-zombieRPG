@@ -40,7 +40,7 @@ import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
 import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
-import { findAmmoBoxInBackpack, applyAmmoBoxDeltaToBackpack, addAmmoToWeapon } from "./helpers";
+import { applyAmmoBoxDeltaToBackpack, addAmmoToWeapon } from "./helpers";
 import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
@@ -359,9 +359,33 @@ export default function App(){
   const actedThisRoundRef = useRef<Record<string, boolean>>(actedThisRound);
   useEffect(()=>{ actedThisRoundRef.current = actedThisRound; }, [actedThisRound]);
 
+  // --- helpers locales: detección de caja de munición ---
+  function normalizeAmmoBox(it:any): { name:"Caja de munición"; bullets:number } | null {
+    if(!it) return null;
+    if(typeof it === "string") {
+      const s = it.trim().toLowerCase();
+      if(s === "caja de munición" || s === "caja de municion") return { name:"Caja de munición", bullets:15 };
+      return null;
+    }
+    if(it && typeof it === "object" && (it.name?.toLowerCase?.() === "caja de munición" || it.name?.toLowerCase?.() === "caja de municion")) {
+      const n = Number(it.bullets);
+      return { name:"Caja de munición", bullets: Number.isFinite(n) && n>0 ? n : 15 };
+    }
+    return null;
+  }
+  function findAmmoBoxInBackpack(p:any): { index:number; box:{name:"Caja de munición"; bullets:number} } | null {
+    const bp = Array.isArray(p?.backpack) ? p.backpack : [];
+    for(let i=0;i<bp.length;i++){
+      const norm = normalizeAmmoBox(bp[i]);
+      if(norm) return { index:i, box:norm };
+    }
+    return null;
+  }
+
+  // --- LA FUNCIÓN QUE FALTABA ---
   function hasAmmoBoxInActiveBackpack(): boolean {
-    const p = players.find(pl=>pl.id===activePlayerId) || null;
-    return !!findAmmoBoxInBackpack(p);
+    const p = players.find(pl => pl.id === activePlayerId) || null;
+    return !!(p && findAmmoBoxInBackpack(p));
   }
 
   function confirmReload(weaponId:string, bullets:number){
