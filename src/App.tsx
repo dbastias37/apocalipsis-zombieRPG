@@ -303,15 +303,46 @@ export default function App(){
     mkPlayer("Sarah", "Médica"),
     mkPlayer("Marcus", "Soldado"),
     mkPlayer("Elena", "Psicóloga"),
-  ].map(p => ({
-    ...p,
-    energy: p.energy ?? 100,
-    energyMax: p.energyMax ?? 100,
-    selectedWeaponId: p.selectedWeaponId ?? "fists",
-    ammoByWeapon: p.ammoByWeapon ?? {},
-  })));
+  ].map(p => {
+    const bp0 = Array.isArray((p as any).backpack) ? (p as any).backpack : [];
+    const hasBox =
+      bp0.some((it:any) =>
+        typeof it === "string"
+          ? (it.trim().toLowerCase() === "caja de munición" || it.trim().toLowerCase() === "caja de municion")
+          : (it && typeof it === "object" && typeof it.name === "string" &&
+             (it.name.toLowerCase() === "caja de munición" || it.name.toLowerCase() === "caja de municion"))
+      );
+    const bp = hasBox ? bp0 : [...bp0, { name: "Caja de munición", bullets: 15 }];
+    return {
+      ...p,
+      energy: p.energy ?? 100,
+      energyMax: p.energyMax ?? 100,
+      selectedWeaponId: p.selectedWeaponId ?? "fists",
+      ammoByWeapon: p.ammoByWeapon ?? {},
+      backpack: bp,
+      inventory: Array.isArray((p as any).inventory) ? (p as any).inventory : [],
+    };
+  }));
   const [turnOrder, setTurnOrder] = useState<string[] | null>(null);
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
+
+  const canReloadFromBox = React.useMemo(() => {
+    const p = players.find(pl => pl.id === activePlayerId);
+    if (!p) return false;
+    const bp = Array.isArray((p as any).backpack) ? (p as any).backpack : [];
+    return bp.some((it:any) => {
+      if (typeof it === "string") {
+        const s = it.trim().toLowerCase();
+        return s === "caja de munición" || s === "caja de municion";
+      }
+      if (it && typeof it === "object") {
+        const name = String(it.name ?? "").toLowerCase();
+        const bullets = Number((it as any).bullets ?? 0);
+        return (name === "caja de munición" || name === "caja de municion") && bullets > 0;
+      }
+      return false;
+    });
+  }, [players, activePlayerId]);
 
   // Mazo de cartas
   const [decisionDeck, setDecisionDeck] = useState<Card[]>(() => shuffle(mapDecisionCards(getDecisionDeckForDay(day))));
@@ -380,23 +411,6 @@ export default function App(){
       if(norm) return { index:i, box:norm };
     }
     return null;
-  }
-
-  // --- helper: detectar "Caja de munición" en la mochila del jugador activo ---
-  function hasAmmoBoxInActiveBackpack(): boolean {
-    const p = players.find(pl => pl.id === activePlayerId) || null;
-    if (!p) return false;
-    const bp = Array.isArray(p.backpack) ? p.backpack : [];
-    for (const it of bp) {
-      if (typeof it === "string") {
-        const s = it.trim().toLowerCase();
-        if (s === "caja de munición" || s === "caja de municion") return true;
-      } else if (it && typeof it === "object") {
-        const name = String(it.name ?? "").toLowerCase();
-        if (name === "caja de munición" || name === "caja de municion") return true;
-      }
-    }
-    return false;
   }
 
   function confirmReload(weaponId:string, bullets:number){
@@ -2450,7 +2464,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
         {selected ? (
           <>
             <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} />
-            {hasAmmoBoxInActiveBackpack() && (
+            {canReloadFromBox && (
               <button
                 className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 animate-pulse ring-1 ring-neutral-500/40 shadow-[0_0_10px_#6b7280]/50"
                 onClick={()=>setShowReloadModal(true)}
