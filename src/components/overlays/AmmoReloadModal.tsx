@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { findAmmoBoxInBackpack, getReloadableWeapons } from "../../helpers";
+import { getTotalAmmoAvailable, listReloadableWeapons } from "../../helpers";
 
 type Weapon = { id:string; name:string };
 type Props = {
@@ -12,18 +12,18 @@ type Props = {
 export default function AmmoReloadModal({ isOpen, player, onClose, onConfirm }: Props){
   if(!isOpen || !player) return null;
 
-  const boxInfo = useMemo(()=>findAmmoBoxInBackpack(player), [player]);
-  const weapons = useMemo(()=>getReloadableWeapons(player), [player]);
+  const available = useMemo(()=>getTotalAmmoAvailable(player), [player]);
+  const weapons = useMemo(()=>listReloadableWeapons(player), [player]);
   const [wid, setWid] = useState<string>(weapons[0]?.id ?? "");
-  const maxBullets = Math.max(0, boxInfo?.box?.bullets ?? 0);
-  const [count, setCount] = useState<number>(Math.min(5, maxBullets)); // default 5 para UX
+  const [count, setCount] = useState<number>(Math.min(5, available.total)); // default 5 para UX
+  const maxBullets = available.total;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-lg rounded-2xl bg-neutral-900 text-neutral-100 shadow-2xl border border-neutral-800">
         <div className="p-5 border-b border-neutral-800">
           <h3 className="text-xl font-bold">Recarga tu arma</h3>
-          <p className="text-xs text-neutral-400 mt-1">Disponible en la caja: <b>{maxBullets}</b> municiones</p>
+          <p className="text-xs text-neutral-400 mt-1">Munición disponible: <b>{maxBullets}</b> municiones</p>
         </div>
 
         <div className="p-5 space-y-5">
@@ -52,7 +52,7 @@ export default function AmmoReloadModal({ isOpen, player, onClose, onConfirm }: 
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-semibold">Municiones a cargar</div>
-                <div className="text-xs text-neutral-400">Selecciona cuántas transferir desde la caja</div>
+                <div className="text-xs text-neutral-400">Selecciona cuántas balas cargar</div>
               </div>
               <div className="flex items-center gap-2">
                 <button className="px-3 py-1 rounded-lg bg-neutral-800 border border-neutral-700"
