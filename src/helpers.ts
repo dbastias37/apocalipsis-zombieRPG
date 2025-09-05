@@ -1,4 +1,7 @@
+import { WEAPONS } from "./data/weapons";
 // Helper functions for ammo handling and weapon listing
+
+function normalize(str?:string){return String(str||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();}
 
 // Detecta si el item es caja de munición (string u objeto)
 export function isAmmoBoxItem(it:any): boolean {
@@ -118,7 +121,47 @@ export function consumeAmmoFromPlayer(player:any, requested:number){
 
 // Lista armas recargables (usar selected + las que sean de fuego)
 import { getSelectedWeapon, isRangedWeapon } from "./systems/weapons";
+
 export function listReloadableWeapons(player:any): {id:string; name:string}[]{
+  const list: {id:string; name:string}[] = [];
+  // 1) seleccionado si es de fuego
+  const sel = (player as any)?.selectedWeaponId;
+  const catSel = WEAPONS.find(w => w.id === sel);
+  if (catSel && catSel.type === "ranged") {
+    list.push({ id: catSel.id, name: catSel.name });
+  }
+
+  // 2) detectar armas por nombre en inventario/mochila (strings)
+  const normName = (s:string) => normalize(s);
+  const addUnique = (id:string, name:string) => {
+    if (!list.find(w=>w.id===id)) list.push({ id, name });
+  };
+  const all = [
+    ...(Array.isArray((player as any)?.inventory) ? (player as any).inventory : []),
+    ...(Array.isArray((player as any)?.backpack)  ? (player as any).backpack  : []),
+  ];
+  for (const it of all){
+    if (typeof it === "string"){
+      const s = normName(it);
+      const match = WEAPONS.find(w => w.type === "ranged" && (normName(w.name)===s || w.id===s));
+      if (match) addUnique(match.id, match.name);
+      continue;
+    }
+    if (it && typeof it === "object"){
+      // objetos con type:'ranged' + id
+      if (it.type === "ranged" && typeof it.id === "string"){
+        const w = WEAPONS.find(w => w.id === it.id) ?? { id: it.id, name: (it.name ?? it.id) };
+        addUnique(w.id, w.name);
+      }
+      // strings en 'name' que hagan match
+      const nm = normName(String(it.name ?? ""));
+      const match2 = WEAPONS.find(w => w.type === "ranged" && normName(w.name)===nm);
+      if (match2) addUnique(match2.id, match2.name);
+    }
+  }
+  return list;
+}
+[]{
   const list: {id:string; name:string}[] = [];
   const sel = getSelectedWeapon(player);
   if (isRangedWeapon(sel)) list.push({ id: sel.id, name: sel.name ?? sel.id });

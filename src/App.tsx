@@ -403,7 +403,7 @@ export default function App(){
 
       pushLog?.(`🔧 Recargas ${taken} munición(es) en ${weaponId}.`);
 
-      return { ...afterInv, ammoByWeapon: table };
+      return { ...afterInv, ammoByWeapon: table, selectedWeaponId: weaponId };
     }));
     setShowReloadModal(false);
 
