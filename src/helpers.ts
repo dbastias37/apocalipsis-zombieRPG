@@ -1,4 +1,5 @@
 import { WEAPONS } from "./data/weapons";
+import { getSelectedWeapon } from "./systems/weapons";
 // Helper functions for ammo handling and weapon listing
 
 function normalize(str?:string){return String(str||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();}
@@ -120,61 +121,45 @@ export function consumeAmmoFromPlayer(player:any, requested:number){
 }
 
 // Lista armas recargables (usar selected + las que sean de fuego)
-import { getSelectedWeapon, isRangedWeapon } from "./systems/weapons";
-
-export function listReloadableWeapons(player:any): {id:string; name:string}[]{
+export function listReloadableWeapons(player:any): {id:string; name:string}[] {
   const list: {id:string; name:string}[] = [];
-  // 1) seleccionado si es de fuego
-  const sel = (player as any)?.selectedWeaponId;
-  const catSel = WEAPONS.find(w => w.id === sel);
-  if (catSel && catSel.type === "ranged") {
-    list.push({ id: catSel.id, name: catSel.name });
-  }
+  const normalize = (s?:string)=>String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
 
-  // 2) detectar armas por nombre en inventario/mochila (strings)
-  const normName = (s:string) => normalize(s);
-  const addUnique = (id:string, name:string) => {
-    if (!list.find(w=>w.id===id)) list.push({ id, name });
-  };
+  // 1) arma seleccionada si es de fuego (por id del catálogo o por getter)
+  const selId = (player as any)?.selectedWeaponId;
+  const byId = selId ? WEAPONS.find(w => w.id === selId) : null;
+  const fromGetter = typeof getSelectedWeapon === "function" ? getSelectedWeapon(player) : null;
+  const selectedRanged = byId?.type === "ranged" ? byId
+                        : (fromGetter && fromGetter.type === "ranged" ? fromGetter : null);
+  if (selectedRanged) list.push({ id: selectedRanged.id, name: selectedRanged.name ?? selectedRanged.id });
+
+  const addUnique = (id:string, name:string) => { if(!list.find(w=>w.id===id)) list.push({id,name}); };
+
+  // 2) detectar en inventario/mochila: strings y objetos
   const all = [
     ...(Array.isArray((player as any)?.inventory) ? (player as any).inventory : []),
     ...(Array.isArray((player as any)?.backpack)  ? (player as any).backpack  : []),
   ];
+
   for (const it of all){
     if (typeof it === "string"){
-      const s = normName(it);
-      const match = WEAPONS.find(w => w.type === "ranged" && (normName(w.name)===s || w.id===s));
+      const s = normalize(it);
+      const match = WEAPONS.find(w => w.type === "ranged" && (normalize(w.name)===s || w.id===s));
       if (match) addUnique(match.id, match.name);
       continue;
     }
     if (it && typeof it === "object"){
-      // objetos con type:'ranged' + id
       if (it.type === "ranged" && typeof it.id === "string"){
-        const w = WEAPONS.find(w => w.id === it.id) ?? { id: it.id, name: (it.name ?? it.id) };
+        const w = WEAPONS.find(w => w.id === it.id) ?? { id: it.id, name: (it as any).name ?? it.id };
         addUnique(w.id, w.name);
+      } else if (typeof (it as any).name === "string"){
+        const nm = normalize((it as any).name);
+        const match2 = WEAPONS.find(w => w.type === "ranged" && normalize(w.name)===nm);
+        if (match2) addUnique(match2.id, match2.name);
       }
-      // strings en 'name' que hagan match
-      const nm = normName(String(it.name ?? ""));
-      const match2 = WEAPONS.find(w => w.type === "ranged" && normName(w.name)===nm);
-      if (match2) addUnique(match2.id, match2.name);
     }
   }
   return list;
 }
-[]{
-  const list: {id:string; name:string}[] = [];
-  const sel = getSelectedWeapon(player);
-  if (isRangedWeapon(sel)) list.push({ id: sel.id, name: sel.name ?? sel.id });
 
-  // si tienes catálogo, puedes añadir otras armas del backpack con type:"ranged"
-  const bp = Array.isArray(player?.backpack) ? player.backpack : [];
-  bp.forEach((it:any)=>{
-    if (it?.type === "ranged" && it?.id){
-      if (!list.find(w=>w.id===it.id)) list.push({ id: it.id, name: it.name ?? it.id });
-    }
-  });
-
-  // si quedó vacío y el seleccionado es melee, no hay recarga posible
-  return list;
-}
 
