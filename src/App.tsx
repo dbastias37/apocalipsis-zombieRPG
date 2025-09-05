@@ -215,7 +215,7 @@ function getDecisionDeckForDay(d: number) {
 function getExplorationDeckForDay(d: number): ExplorationCard[] {
   if (d === 3) return day3ExplorationCards;
   if (d === 2) return day2ExplorationCards;
-  return [];
+  return day1ExplorationCards;
 }
 
 const combatDeckSeed: Card[] = [
