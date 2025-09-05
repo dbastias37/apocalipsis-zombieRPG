@@ -1,70 +1,137 @@
-/** normaliza un item potencialmente string a caja con bullets */
-export function normalizeAmmoBox(it:any): { name:"Caja de munición"; bullets:number } | null {
-  if(!it) return null;
-  if(typeof it === "string") {
-    const s = it.trim().toLowerCase();
-    if(s === "caja de munición" || s === "caja de municion") return { name:"Caja de munición", bullets:15 };
-    return null;
-  }
-  if(it && typeof it === "object" && (it.name?.toLowerCase?.() === "caja de munición" || it.name?.toLowerCase?.() === "caja de municion")) {
-    const n = Number(it.bullets);
-    return { name:"Caja de munición", bullets: Number.isFinite(n) && n>0 ? n : 15 };
-  }
-  return null;
+// Helper functions for ammo handling and weapon listing
+
+// Detecta si el item es caja de munición (string u objeto)
+export function isAmmoBoxItem(it:any): boolean {
+  if (!it) return false;
+  if (typeof it === "object" && (it.type === "ammo" || it.kind === "ammoBox")) return true;
+  const name = String(it?.name ?? it ?? "").toLowerCase();
+  return /caja\s+de\s+munici(o|ó)n/.test(name);
 }
 
-/** devuelve índice y caja normalizada de la PRIMERA caja en backpack; si existe, también la versión normalizada para actualizar */
-export function findAmmoBoxInBackpack(p:any): { index:number; box:{name:"Caja de munición"; bullets:number} } | null {
-  const bp = Array.isArray(p?.backpack) ? p.backpack : [];
-  for(let i=0;i<bp.length;i++){
-    const norm = normalizeAmmoBox(bp[i]);
-    if(norm) return { index:i, box:norm };
+// Lee cuántas balas contiene una caja. Por defecto 15.
+export function getBoxBullets(it:any): number {
+  if (!isAmmoBoxItem(it)) return 0;
+  if (typeof it === "object") {
+    const n = Number(it.bullets ?? it.count ?? it.qty ?? it.amount ?? 15);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 15;
   }
-  return null;
+  // string "Caja de munición"
+  return 15;
 }
 
-/** sustituye en mochila el item en idx por objeto con bullets actualizados, o lo elimina si bullets<=0 */
-export function applyAmmoBoxDeltaToBackpack(p:any, idx:number, remaining:number){
-  const bp = Array.isArray(p?.backpack) ? [...p.backpack] : [];
-  if(remaining <= 0){
-    bp.splice(idx,1);
-  } else {
-    bp[idx] = { name:"Caja de munición", bullets: remaining };
+// Regresa true y cantidad si es “Munición (N)” o {name:"Munición", count:N}
+export function getLooseAmmoCount(it:any): number {
+  if (!it) return 0;
+  if (typeof it === "object") {
+    const nm = String(it.name ?? it.title ?? "").toLowerCase();
+    if (/munici(o|ó)n/.test(nm) && !isAmmoBoxItem(it)) {
+      const n = Number(it.count ?? it.qty ?? it.amount ?? 0);
+      return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+    }
+    return 0;
   }
-  return bp;
+  // string
+  const s = String(it).toLowerCase();
+  const m = s.match(/munici(?:o|ó)n\s*\((\d+)\)/);
+  return m ? Math.max(0, parseInt(m[1],10)) : 0;
 }
 
-/** lista de armas elegibles del jugador (seguro y minimalista) */
-export function getReloadableWeapons(p:any): { id:string; name:string }[] {
-  const list: {id:string; name:string}[] = [];
-  // 1) arma seleccionada si existe
-  if (p?.selectedWeaponId) list.push({ id: p.selectedWeaponId, name: String(p.selectedWeaponId) });
-  // 2) armas que ya tengan munición registrada
-  if (p?.ammoByWeapon && typeof p.ammoByWeapon === "object") {
-    Object.keys(p.ammoByWeapon).forEach(id=>{
-      if(!list.find(w=>w.id===id)) list.push({ id, name: id });
-    });
+// Suma total disponible (suelta + cajas) en backpack + inventory
+export function getTotalAmmoAvailable(player:any){
+  const lists = [
+    Array.isArray(player?.inventory) ? player.inventory : [],
+    Array.isArray(player?.backpack)  ? player.backpack  : [],
+  ];
+  let loose = 0, boxesBullets = 0, boxesCount = 0;
+  for (const list of lists){
+    for (const it of list){
+      const boxB = isAmmoBoxItem(it) ? getBoxBullets(it) : 0;
+      if (boxB > 0){ boxesBullets += boxB; boxesCount += 1; continue; }
+      const looseN = getLooseAmmoCount(it);
+      loose += looseN;
+    }
   }
-  // 3) strings de la mochila que parezcan armas (evitar fists)
-  const bp = Array.isArray(p?.backpack) ? p.backpack : [];
-  bp.forEach((it:any)=>{
-    if (typeof it === "string") {
-      const s = it.toLowerCase();
-      if (!/fists|puños|manos/.test(s) && /pistola|rifle|subfusil|escopeta|smg|ar|revolver|arma/.test(s)) {
-        if(!list.find(w=>w.id===it)) list.push({ id: it, name: it });
+  return { loose, boxesBullets, boxesCount, total: loose + boxesBullets };
+}
+
+// Consume N balas del jugador: primero sueltas, luego cajas (parcialmente si hace falta).
+// Devuelve { playerActualizado, tomado } (tomado<=requested si no alcanza)
+export function consumeAmmoFromPlayer(player:any, requested:number){
+  let need = Math.max(0, Math.floor(requested));
+  if (need <= 0) return { player, taken: 0 };
+
+  function consumeFromList(list:any[]){
+    const out:any[] = [];
+    let taken = 0;
+    for (const it of list){
+      if (taken >= need){ out.push(it); continue; }
+
+      // 1) balas sueltas
+      const loose = getLooseAmmoCount(it);
+      if (loose > 0){
+        const use = Math.min(loose, need - taken);
+        const remain = loose - use;
+        taken += use;
+        if (remain > 0){
+          // si era string "Munición (N)" lo reemplazamos por el mismo formato actualizado
+          if (typeof it === "string"){
+            out.push(`Munición (${remain})`);
+          } else {
+            out.push({ ...(it||{}), name: it.name ?? "Munición", count: remain });
+          }
+        }
+        continue;
       }
+
+      // 2) cajas
+      if (isAmmoBoxItem(it)){
+        const box = getBoxBullets(it);
+        const use = Math.min(box, need - taken);
+        const remain = box - use;
+        taken += use;
+        if (remain > 0){
+          // mantener como objeto con bullets
+          out.push({ name: "Caja de munición", bullets: remain, kind: "ammoBox" });
+        }
+        continue;
+      }
+
+      // item normal
+      out.push(it);
+    }
+    return { out, taken };
+  }
+
+  // consume inventory luego backpack
+  const inv = Array.isArray(player?.inventory) ? player.inventory : [];
+  const bp  = Array.isArray(player?.backpack)  ? player.backpack  : [];
+
+  const a = consumeFromList(inv);
+  const b = (a.taken >= need) ? { out: bp, taken: 0 } : consumeFromList(bp);
+
+  const totalTaken = a.taken + b.taken;
+  return {
+    player: { ...player, inventory: a.out, backpack: b.out },
+    taken: totalTaken
+  };
+}
+
+// Lista armas recargables (usar selected + las que sean de fuego)
+import { getSelectedWeapon, isRangedWeapon } from "./systems/weapons";
+export function listReloadableWeapons(player:any): {id:string; name:string}[]{
+  const list: {id:string; name:string}[] = [];
+  const sel = getSelectedWeapon(player);
+  if (isRangedWeapon(sel)) list.push({ id: sel.id, name: sel.name ?? sel.id });
+
+  // si tienes catálogo, puedes añadir otras armas del backpack con type:"ranged"
+  const bp = Array.isArray(player?.backpack) ? player.backpack : [];
+  bp.forEach((it:any)=>{
+    if (it?.type === "ranged" && it?.id){
+      if (!list.find(w=>w.id===it.id)) list.push({ id: it.id, name: it.name ?? it.id });
     }
   });
-  // fallback: si quedó vacío, usa “fists” o el selected como único
-  if(list.length===0 && p?.selectedWeaponId) list.push({ id:p.selectedWeaponId, name: p.selectedWeaponId });
-  return list;
-}
 
-/** suma balas a arma del jugador (exactamente amount) */
-export function addAmmoToWeapon(p:any, weaponId:string, amount:number){
-  const map = { ...(p?.ammoByWeapon ?? {}) };
-  const prev = Number(map[weaponId] ?? 0);
-  map[weaponId] = prev + Math.max(0, Math.floor(amount));
-  return map;
+  // si quedó vacío y el seleccionado es melee, no hay recarga posible
+  return list;
 }
 

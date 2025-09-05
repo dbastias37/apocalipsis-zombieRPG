@@ -26,9 +26,6 @@ import {
 import { WEAPONS } from "./data/weapons";
 import { getSelectedWeapon, isRangedWeapon } from "./systems/weapons";
 import {
-  listAmmoBoxes,
-  listAmmoboxes,
-  reloadSelectedWeapon,
   getLoadedAmmo,
   spendAmmo,
   totalAmmoInInventory,
@@ -40,7 +37,7 @@ import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
 import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
-import { applyAmmoBoxDeltaToBackpack, addAmmoToWeapon } from "./helpers";
+import { getTotalAmmoAvailable, consumeAmmoFromPlayer, listReloadableWeapons } from "./helpers";
 import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
@@ -390,51 +387,27 @@ export default function App(){
   const actedThisRoundRef = useRef<Record<string, boolean>>(actedThisRound);
   useEffect(()=>{ actedThisRoundRef.current = actedThisRound; }, [actedThisRound]);
 
-  // --- helpers locales: detección de caja de munición ---
-  function normalizeAmmoBox(it:any): { name:"Caja de munición"; bullets:number } | null {
-    if(!it) return null;
-    if(typeof it === "string") {
-      const s = it.trim().toLowerCase();
-      if(s === "caja de munición" || s === "caja de municion") return { name:"Caja de munición", bullets:15 };
-      return null;
-    }
-    if(it && typeof it === "object" && (it.name?.toLowerCase?.() === "caja de munición" || it.name?.toLowerCase?.() === "caja de municion")) {
-      const n = Number(it.bullets);
-      return { name:"Caja de munición", bullets: Number.isFinite(n) && n>0 ? n : 15 };
-    }
-    return null;
-  }
-  function findAmmoBoxInBackpack(p:any): { index:number; box:{name:"Caja de munición"; bullets:number} } | null {
-    const bp = Array.isArray(p?.backpack) ? p.backpack : [];
-    for(let i=0;i<bp.length;i++){
-      const norm = normalizeAmmoBox(bp[i]);
-      if(norm) return { index:i, box:norm };
-    }
-    return null;
-  }
-
   function confirmReload(weaponId:string, bullets:number){
     const pid = activePlayerId;
     if(!pid) return;
-    setPlayers(prev=>{
-      const arr = prev.map(p=>{
-        if(p.id !== pid) return p;
-        const f = findAmmoBoxInBackpack(p);
-        if(!f) return p; // no caja
-        const taken = Math.min(bullets, f.box.bullets);
-        // 1) mover balas a arma
-        const ammoByWeapon = addAmmoToWeapon(p, weaponId, taken);
-        // 2) actualizar caja
-        const remaining = f.box.bullets - taken;
-        const backpack = applyAmmoBoxDeltaToBackpack(p, f.index, remaining);
-        return { ...p, ammoByWeapon, backpack };
-      });
-      return arr;
-    });
-    pushLog(`🔧 Recargas ${bullets} munición(es) en ${weaponId}.`);
+    setPlayers(prev => prev.map(p=>{
+      if (p.id !== pid) return p;
+
+      // 1) consumir munición del jugador (suelta -> cajas)
+      const { player: afterInv, taken } = consumeAmmoFromPlayer(p, bullets);
+      if (taken <= 0) return p; // nada que tomar
+
+      // 2) cargar exactamente lo tomado
+      const table = { ...(afterInv.ammoByWeapon ?? {}) };
+      table[weaponId] = Math.max(0, Number(table[weaponId] ?? 0)) + taken;
+
+      pushLog?.(`🔧 Recargas ${taken} munición(es) en ${weaponId}.`);
+
+      return { ...afterInv, ammoByWeapon: table };
+    }));
     setShowReloadModal(false);
 
-    // Consumir turno (una recarga por turno)
+    // consumir turno
     if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
       setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
     }
@@ -2467,26 +2440,17 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
             {(() => {
               const p = players.find(pl => pl.id === activePlayerId);
               if (!p) return false;
-              const bp = Array.isArray((p as any).backpack) ? (p as any).backpack : [];
-              return bp.some((it:any) => {
-                if (typeof it === "string") {
-                  const s = it.trim().toLowerCase();
-                  return s === "caja de munición" || s === "caja de municion";
-                }
-                if (it && typeof it === "object") {
-                  const name = String(it.name ?? "").toLowerCase();
-                  const bullets = Number((it as any).bullets ?? 15);
-                  return (name === "caja de munición" || name === "caja de municion") && bullets > 0;
-                }
-                return false;
-              });
+              const ammo = getTotalAmmoAvailable(p);
+              const weapons = listReloadableWeapons(p);
+              return ammo.total > 0 && weapons.length > 0;
             })() && (
               <button
-                className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 animate-pulse ring-1 ring-neutral-500/40 shadow-[0_0_10px_#6b7280]/50"
+                className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200
+               hover:bg-neutral-700 transition"
                 onClick={()=>setShowReloadModal(true)}
-                title="Usar caja de munición para recargar"
+                title="Recargar arma"
               >
-                🧰 Recargar desde Caja de munición
+                🔧 Recargar arma
               </button>
             )}
           </>
@@ -2505,7 +2469,6 @@ function Details({player, onUpdate, addMedicine}:{player:Player; onUpdate:(patch
   const selWeapon = getSelectedWeapon(player);
   const isFirearm = isRangedWeapon(selWeapon);
   const loaded = isFirearm ? getLoadedAmmo(player, selWeapon.id) : 0;
-  const hasBoxes = listAmmoBoxes(player?.inventory).length > 0;
   return (
     <div className="space-y-2 text-sm">
       <div className="grid grid-cols-2 gap-2">
@@ -2613,17 +2576,6 @@ function Details({player, onUpdate, addMedicine}:{player:Player; onUpdate:(patch
             </div>
           )}
         </>
-      )}
-      {isFirearm && hasBoxes && (
-        <button
-          className="btn btn-sm mt-2"
-          onClick={() => {
-            const updated = reloadSelectedWeapon(player, pushBattle);
-            onUpdate(updated);
-          }}
-        >
-          Recargar arma
-        </button>
       )}
     </div>
   );
