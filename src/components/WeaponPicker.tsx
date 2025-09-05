@@ -37,18 +37,21 @@ export default function WeaponPicker({ player, backpack, onSelect }: WeaponPicke
           const selected = sel === w.id;
           const ranged = isRangedWeapon(w);
           const ammo = ranged ? getAmmoFor(player, w.id) : null;
-          const disabled = ranged && (ammo ?? 0) <= 0;
+          const noAmmo = ranged && (ammo ?? 0) <= 0;
           return (
             <button
               key={w.id}
-              onClick={() => !disabled && onSelect(w.id)}
+              onClick={() => onSelect(w.id)}
               className={[
-                "text-left p-2 rounded-xl border transition",
+                "relative text-left p-2 rounded-xl border transition",
                 selected ? "border-indigo-400 bg-indigo-500/10" : "border-white/10 hover:border-white/20",
-                disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                noAmmo ? "opacity-60" : ""
               ].join(" ")}
             >
-              <div className="font-medium">{w.name}</div>
+              <div className="font-medium">
+                {w.name}
+                {noAmmo && <span className="ml-2 text-[10px] text-red-400">Sin munición</span>}
+              </div>
               <div className="text-xs opacity-80">
                 Daño: {w?.damage ? `${w.damage.min ?? "?"}–${w.damage.max ?? "?"}` : "?"}
               </div>
