@@ -41,8 +41,9 @@ import DayEndModal from "./components/overlays/DayEndModal";
 import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
-import { day2ExplorationCards } from "./data/days/day2/explorationCards.day2";
 import { day3DecisionCards } from "./data/days/day3/decisionCards.day3";
+import { day1ExplorationCards } from "./data/days/day1/explorationCards.day1";
+import { day2ExplorationCards } from "./data/days/day2/explorationCards.day2";
 import { day3ExplorationCards } from "./data/days/day3/explorationCards.day3";
 import type { ExplorationCard } from "./data/explorationCards";
 import type { DecisionCard } from "./data/decisionCards";
@@ -213,9 +214,9 @@ function getDecisionDeckForDay(d: number) {
 }
 
 function getExplorationDeckForDay(d: number): ExplorationCard[] {
-  if (d === 3) return day3ExplorationCards;
-  if (d === 2) return day2ExplorationCards;
-  return day1ExplorationCards;
+  if (d === 3) return day3ExplorationCards ?? [];
+  if (d === 2) return day2ExplorationCards ?? [];
+  return day1ExplorationCards ?? [];
 }
 
 const combatDeckSeed: Card[] = [
