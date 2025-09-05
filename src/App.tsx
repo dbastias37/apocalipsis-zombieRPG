@@ -38,6 +38,7 @@ import CombatEndSummary from "./components/overlays/CombatEndSummary";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
 import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
+import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
@@ -331,6 +332,7 @@ export default function App(){
   const [infectionDead, setInfectionDead] = useState<{id:string,name:string}|null>(null);
   const [showHealAlly, setShowHealAlly] = useState(false);
   const [showDayEnd, setShowDayEnd] = useState(false);
+  const [showAmmoModal, setShowAmmoModal] = useState(false);
   const [dayEndLines, setDayEndLines] = useState<string[]>([]);
 
   // Turnos
@@ -1751,6 +1753,28 @@ function advanceTurn() {
     gameLog(`📦 Traslado: ${players.find(p=>p.id===playerId)?.name ?? playerId} devolvió "${item}" al alijo.`);
   }
 
+  function handleWithdrawBoxes(count:number){
+    if(!count || count<=0) return;
+    setResources(r=>{
+      const next = { ...r, ammo: Math.max(0, (r.ammo||0) - count*15) };
+      return next;
+    });
+    try { setStash?.((s:any[])=>[...s, ...Array(count).fill("Caja de munición")]); } catch {}
+    pushLog?.(`📦 Sacas ${count} ${count===1?'caja':'cajas'} de munición (${count*15} municiones) del depósito.`);
+    setShowAmmoModal(false);
+  }
+
+  function handleWithdrawBullets(count:number){
+    if(!count || count<=0) return;
+    setResources(r=>{
+      const next = { ...r, ammo: Math.max(0, (r.ammo||0) - count) };
+      return next;
+    });
+    try { setStash?.((s:any[])=>[...s, `Munición (${count})`]); } catch {}
+    pushLog?.(`🔫 Sacas ${count} ${count===1?'munición':'municiones'} del depósito.`);
+    setShowAmmoModal(false);
+  }
+
   function removePlayer(id:string){
     const p = players.find(x=>x.id===id);
     if(!p) return;
@@ -1909,7 +1933,7 @@ function advanceTurn() {
           pushLog={pushLog}
         />
 
-        <CampPanel resources={resources} setResources={setResources} />
+        <CampPanel resources={resources} setResources={setResources} setShowAmmoModal={setShowAmmoModal} />
 
         <LogPanel log={logs} />
       </main>
@@ -2048,6 +2072,13 @@ function advanceTurn() {
           setExplorationDeck(shuffle(getExplorationDeckForDay(upcoming)));
           pushLog(`— Comienza el Día ${upcoming} —`);
         }}
+      />
+      <AmmoWithdrawModal
+        isOpen={showAmmoModal}
+        ammo={resources.ammo || 0}
+        onClose={()=>setShowAmmoModal(false)}
+        onWithdrawBoxes={handleWithdrawBoxes}
+        onWithdrawBullets={handleWithdrawBullets}
       />
       <WelcomeOverlay />
     </div>
@@ -2608,21 +2639,29 @@ function CampRepair({resources, camp, setResources, setCamp, pushLog}:{resources
   );
 }
 
-function CampPanel({resources, setResources}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>}){
+function CampPanel({resources, setResources, setShowAmmoModal}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>; setShowAmmoModal:React.Dispatch<React.SetStateAction<boolean>>}){
   const total = Object.values(resources).reduce((a,b)=>a+b,0);
   return (
     <div className="card bg-neutral-900 border-neutral-800 p-6">
       <h3 className="text-xl font-bold mb-4">🏕️ Campamento</h3>
       <div className="grid sm:grid-cols-3 md:grid-cols-6 gap-3">
-        {Object.entries(resources).map(([k,v])=>(
-          <div key={k} className="text-center p-3 rounded-xl bg-neutral-800">
-            <div className="text-2xl mb-1">
-              {k==="food"?"🍖":k==="water"?"💧":k==="medicine"?"💊":k==="fuel"?"⛽":k==="ammo"?"🔫":"🔨"}
+        {Object.entries(resources).map(([k,v])=>{
+          const isAmmo = k === 'ammo';
+          return (
+            <div
+              key={k}
+              className={`text-center p-3 rounded-xl bg-neutral-800 ${isAmmo ? 'cursor-pointer transition ' + ((resources.ammo||0) > 1 ? 'animate-pulse ring-2 ring-emerald-500 shadow-[0_0_12px_#10b981]' : '') : ''}`}
+              onClick={isAmmo ? (()=>{ if((resources.ammo||0) > 1) setShowAmmoModal(true); }) : undefined}
+              title={isAmmo ? 'Gestionar munición' : undefined}
+            >
+              <div className="text-2xl mb-1">
+                {k==="food"?"🍖":k==="water"?"💧":k==="medicine"?"💊":k==="fuel"?"⛽":k==="ammo"?"🔫":"🔨"}
+              </div>
+              <div className="text-xl font-bold">{v}</div>
+              <div className="text-xs text-neutral-400">{k}</div>
             </div>
-            <div className="text-xl font-bold">{v}</div>
-            <div className="text-xs text-neutral-400">{k}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <p className="mt-3 text-xs text-neutral-500">Total almacenado: {total}</p>
     </div>
