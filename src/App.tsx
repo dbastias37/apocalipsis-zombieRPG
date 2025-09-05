@@ -39,6 +39,8 @@ import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
 import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
 import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
+import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
+import { findAmmoBoxInBackpack, applyAmmoBoxDeltaToBackpack, addAmmoToWeapon } from "./helpers";
 import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
@@ -333,6 +335,7 @@ export default function App(){
   const [showHealAlly, setShowHealAlly] = useState(false);
   const [showDayEnd, setShowDayEnd] = useState(false);
   const [showAmmoModal, setShowAmmoModal] = useState(false);
+  const [showReloadModal, setShowReloadModal] = useState(false);
   const [dayEndLines, setDayEndLines] = useState<string[]>([]);
 
   // Turnos
@@ -355,6 +358,41 @@ export default function App(){
   // ---- Refs para leer estado “fresco” dentro de callbacks/efectos ----
   const actedThisRoundRef = useRef<Record<string, boolean>>(actedThisRound);
   useEffect(()=>{ actedThisRoundRef.current = actedThisRound; }, [actedThisRound]);
+
+  function hasAmmoBoxInActiveBackpack(): boolean {
+    const p = players.find(pl=>pl.id===activePlayerId) || null;
+    return !!findAmmoBoxInBackpack(p);
+  }
+
+  function confirmReload(weaponId:string, bullets:number){
+    const pid = activePlayerId;
+    if(!pid) return;
+    setPlayers(prev=>{
+      const arr = prev.map(p=>{
+        if(p.id !== pid) return p;
+        const f = findAmmoBoxInBackpack(p);
+        if(!f) return p; // no caja
+        const taken = Math.min(bullets, f.box.bullets);
+        // 1) mover balas a arma
+        const ammoByWeapon = addAmmoToWeapon(p, weaponId, taken);
+        // 2) actualizar caja
+        const remaining = f.box.bullets - taken;
+        const backpack = applyAmmoBoxDeltaToBackpack(p, f.index, remaining);
+        return { ...p, ammoByWeapon, backpack };
+      });
+      return arr;
+    });
+    pushLog(`🔧 Recargas ${bullets} munición(es) en ${weaponId}.`);
+    setShowReloadModal(false);
+
+    // Consumir turno (una recarga por turno)
+    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+    }
+    finalizeTurnWithEndConditions(() => {
+      advanceTurn();
+    });
+  }
 
   const playersRef = useRef(players);
   useEffect(()=>{ playersRef.current = players; }, [players]);
@@ -2080,6 +2118,12 @@ function advanceTurn() {
         onWithdrawBoxes={handleWithdrawBoxes}
         onWithdrawBullets={handleWithdrawBullets}
       />
+      <AmmoReloadModal
+        isOpen={showReloadModal}
+        player={players.find(p=>p.id===activePlayerId) || null}
+        onClose={()=>setShowReloadModal(false)}
+        onConfirm={confirmReload}
+      />
       <WelcomeOverlay />
     </div>
   );
@@ -2369,7 +2413,18 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
       <div className="card bg-neutral-900 border-neutral-800 p-6">
         <h3 className="text-xl font-bold mb-3">Detalles</h3>
         {selected ? (
-          <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} />
+          <>
+            <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} />
+            {hasAmmoBoxInActiveBackpack() && (
+              <button
+                className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 animate-pulse ring-1 ring-neutral-500/40 shadow-[0_0_10px_#6b7280]/50"
+                onClick={()=>setShowReloadModal(true)}
+                title="Usar caja de munición para recargar"
+              >
+                🧰 Recargar desde Caja de munición
+              </button>
+            )}
+          </>
         ) : (
           <p className="text-neutral-500">Selecciona un personaje.</p>
         )}
