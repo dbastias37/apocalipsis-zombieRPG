@@ -502,12 +502,81 @@ export default function App(){
     return list;
   }
 
-  // ¿se puede recargar? (hay balas y arma)
-  function canReloadNow(p:any): boolean {
-    const ammo = getTotalAmmoAvailable(p);
-    const weps = listReloadableWeapons(p);
-    return ammo.total > 0 && weps.length > 0;
+  // ---------- recarga: detector unificado ----------
+  function canReloadNow(arg?: any): boolean {
+    // Si se pasa un player, úsalo. Si no, usa jugador activo.
+    const p = arg ?? players.find(pl => pl.id === activePlayerId);
+    if (!p) return false;
+
+    // 3.1) total de balas disponibles (suelta + cajas) en inventario + mochila
+    const norm = (s?:string)=>String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
+    const isBox = (it:any) => {
+      if (!it) return false;
+      if (typeof it === "object" && (it.type === "ammo" || it.kind === "ammoBox")) return true;
+      const nm = norm((it?.name ?? it) as any);
+      return /caja\s+de\s+municion/.test(nm);
+    };
+    const boxBullets = (it:any) => {
+      if (!isBox(it)) return 0;
+      if (typeof it === "object") {
+        const n = Number(it.bullets ?? it.count ?? it.qty ?? it.amount ?? 15);
+        return Number.isFinite(n) && n > 0 ? Math.floor(n) : 15;
+      }
+      return 15;
+    };
+    const looseCount = (it:any) => {
+      if (!it) return 0;
+      if (typeof it === "object") {
+        const nm = norm(String(it.name ?? it.title ?? ""));
+        if (/municion/.test(nm) && !isBox(it)) {
+          const n = Number(it.count ?? it.qty ?? it.amount ?? 0);
+          return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+        }
+        return 0;
+      }
+      const s = norm(String(it));
+      const m = s.match(/municion\s*\((\d+)\)/);
+      return m ? Math.max(0, parseInt(m[1],10)) : 0;
+    };
+    const asArray = (x:any)=> Array.isArray(x) ? x : [];
+
+    const inv = asArray((p as any).inventory);
+    const bp  = asArray((p as any).backpack);
+    const all = [...inv, ...bp];
+
+    const ammoTotal = all.reduce((acc,it)=>acc + (isBox(it) ? boxBullets(it) : looseCount(it)), 0);
+    if (ammoTotal <= 0) return false;
+
+    // 3.2) hay arma de fuego? (catálogo + strings/objetos)
+    const weaponsFound: {id:string; name:string}[] = [];
+    const add = (id:string, name:string) => { if(!weaponsFound.find(w=>w.id===id)) weaponsFound.push({id,name}); };
+
+    const selId = (p as any)?.selectedWeaponId;
+    const fromId = selId ? WEAPONS.find(w => w.id === selId) : null;
+    if (fromId && fromId.type === "ranged") add(fromId.id, fromId.name);
+
+    for (const it of all){
+      if (typeof it === "string"){
+        const s = norm(it);
+        const match = WEAPONS.find(w => w.type === "ranged" && (norm(w.name)===s || w.id===s));
+        if (match) add(match.id, match.name);
+        continue;
+      }
+      if (it && typeof it === "object"){
+        if (it.type === "ranged" && typeof it.id === "string"){
+          const w = WEAPONS.find(w => w.id === it.id) ?? { id: it.id, name: (it as any).name ?? it.id, type:"ranged" };
+          add(w.id, w.name);
+        } else if (typeof (it as any).name === "string"){
+          const nm = norm((it as any).name);
+          const match2 = WEAPONS.find(w => w.type === "ranged" && norm(w.name)===nm);
+          if (match2) add(match2.id, match2.name);
+        }
+      }
+    }
+
+    return weaponsFound.length > 0;
   }
+  // ---------- fin helper ----------
 
   // confirma recarga desde el modal
   function confirmReload(weaponId:string, bullets:number){
@@ -516,20 +585,28 @@ export default function App(){
     setPlayers(prev => prev.map(p=>{
       if (p.id !== pid) return p;
 
-      // 1) consumir balas del jugador
-      const { player: afterInv, taken } = consumeAmmoFromPlayer(p, bullets);
+      // consumir balas
+      function isBox(it:any){ const nm = (it?.name ?? it ?? "").toLowerCase(); return /caja de munici/.test(nm) || it?.kind==="ammoBox" || it?.type==="ammo"; }
+      function boxBullets(it:any){ if (!isBox(it)) return 0; const n=Number(it?.bullets ?? it?.count ?? it?.qty ?? it?.amount ?? 15); return Number.isFinite(n)&&n>0?Math.floor(n):15; }
+      function loose(it:any){ if (typeof it==="string"){ const m=it.toLowerCase().match(/munici(?:o|ó)n\s*\((\d+)\)/); return m?parseInt(m[1],10):0; } if (it&&typeof it==="object"){ const nm=String(it.name??"").toLowerCase(); if(/munici/.test(nm) && !isBox(it)){ return Math.max(0, Math.floor(Number(it.count ?? it.qty ?? it.amount ?? 0))); } } return 0; }
+      function consume(list:any[], need:number){ const out:any[]=[]; let taken=0; for(const it of list){ if(taken>=need){ out.push(it); continue; } const l=loose(it); if(l>0){ const use=Math.min(l, need-taken); const rem=l-use; taken+=use; if(rem>0){ if(typeof it==="string") out.push(`Munición (${rem})`); else out.push({ ...(it||{}), name:"Munición", count:rem }); } continue; } if(isBox(it)){ const b=boxBullets(it); const use=Math.min(b, need-taken); const rem=b-use; taken+=use; if(rem>0) out.push({ name:"Caja de munición", bullets:rem, kind:"ammoBox" }); continue; } out.push(it); } return { out, taken }; }
+
+      const inv = Array.isArray((p as any).inventory) ? (p as any).inventory : [];
+      const bp  = Array.isArray((p as any).backpack)  ? (p as any).backpack  : [];
+      const a = consume(inv, bullets);
+      const b = a.taken >= bullets ? { out: bp, taken: 0 } : consume(bp, bullets - a.taken);
+      const taken = a.taken + b.taken;
+
       if (taken <= 0) return p;
 
-      // 2) cargar al arma
-      const table = { ...(afterInv.ammoByWeapon ?? {}) };
+      const table = { ...(p.ammoByWeapon ?? {}) };
       table[weaponId] = Math.max(0, Number(table[weaponId] ?? 0)) + taken;
 
       pushLog?.(`🔧 Recargas ${taken} munición(es) en ${weaponId}.`);
-      return { ...afterInv, ammoByWeapon: table, selectedWeaponId: weaponId };
+      return { ...p, inventory: a.out, backpack: b.out, ammoByWeapon: table, selectedWeaponId: weaponId };
     }));
     setShowReloadModal(false);
 
-    // 3) consumir turno y avanzar
     if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
       setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
     }
@@ -2557,11 +2634,9 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
         {selected ? (
           <>
             <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} />
-            {(() => {
-              const p = players.find(pl => pl.id === activePlayerId);
-              return p && canReloadNow(p);
-            })() && (
-              <button className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+            {canReloadNow() && (
+              <button
+                className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
                 onClick={()=>setShowReloadModal(true)}
                 title="Recargar arma"
               >
