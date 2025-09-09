@@ -38,6 +38,7 @@ import DayEndModal from "./components/overlays/DayEndModal";
 import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
 import NoAmmoModal from "./components/overlays/NoAmmoModal";
+import OverlayRoot from "./components/overlays/OverlayRoot";
 import { registerLogger, gameLog } from "./utils/logger";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
@@ -636,6 +637,18 @@ export default function App(){
   useEffect(()=>{ enemiesRef.current = enemies; }, [enemies]);
 
   const tw = useTypewriterQueue();
+  const proceed = useCallback(() => {
+    if (tw.typing) {
+      tw.skipTyping();
+    } else {
+      tw.continueNext();
+      const fn = postActionContinueRef.current;
+      postActionContinueRef.current = null;
+      setControlsLocked(false);
+      if (typeof fn === "function") fn();
+    }
+  }, [tw.typing, tw.skipTyping, tw.continueNext]);
+  const overlayOpen = tw.hasPending;
   // helper para pushear mensajes al panel
   function pushBattle(text: string, onDone?: () => void){
     const clean = text
@@ -689,6 +702,11 @@ export default function App(){
 
   const [foundNotes, setFoundNotes] = useState<GameNote[]>([]);
   const [explorationActive, setExplorationActive] = useState<boolean>(false);
+
+  const handleCloseCard = useCallback(() => {
+    setCurrentCard(null);
+    setExplorationActive(false);
+  }, []);
 
   // Evento con cuenta regresiva
   const [timedEvent, setTimedEvent] = useState<TimedEvent|null>(null);
@@ -1045,7 +1063,7 @@ export default function App(){
       } else {
         if (currentCard.type === "decision") setDiscardDecision(d => [currentCard, ...d]);
         else setDiscardCombat(d => [currentCard, ...d]);
-        setCurrentCard(null);
+        handleCloseCard();
       }
     }
     if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
@@ -1500,7 +1518,7 @@ function finishEnemyPhase() {
       pushLog("🏃 Huyen por pasillos colapsados. ¡Escape exitoso!");
       pushBattle(`${actor.name} ha escapado.`);
       setEnemies([]);
-      setCurrentCard(null);
+      handleCloseCard();
       setMorale(m=>clamp(m-3,0,100));
     } else {
       pushLog("⚠️ El escape falla, te rodean por un momento.");
@@ -2142,7 +2160,7 @@ function advanceTurn() {
             onClose={()=>{
               if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
               else setDiscardCombat(d=>[currentCard, ...d]);
-              setCurrentCard(null);
+              handleCloseCard();
             }}
           />
         ) : (
@@ -2167,16 +2185,10 @@ function advanceTurn() {
         <CombatLogPanel
           text={tw.text}
           typing={tw.typing}
-          onEnter={() => tw.typing ? tw.skipTyping() : tw.continueNext()}
+          onEnter={proceed}
           onTypingChange={(typing) => {
             // Si hay una postAcción pendiente, el lock se mantiene, sino depende del typing
             setControlsLocked(!!postActionContinueRef.current || typing);
-          }}
-          onContinue={() => {
-            const fn = postActionContinueRef.current;
-            postActionContinueRef.current = null;
-            setControlsLocked(false);
-            if (typeof fn === "function") fn();
           }}
           currentActor={activePlayer?.name ?? (isEnemyPhase ? enemies[enemyIdx]?.name : undefined)}
         />
@@ -2305,7 +2317,7 @@ function advanceTurn() {
 
           if (currentCard?.type === "combat") {
             setDiscardCombat(d => currentCard ? [currentCard, ...d] : d);
-            setCurrentCard(null);
+            handleCloseCard();
           }
 
           if (isEnemyPhase) {
@@ -2364,6 +2376,7 @@ function advanceTurn() {
         enemyName={noAmmo.enemyName}
         onClose={() => setNoAmmo({ open:false })}
       />
+      <OverlayRoot overlayOpen={overlayOpen} proceed={proceed} />
       <WelcomeOverlay />
     </div>
   );
