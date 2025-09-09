@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from "react";
+import { ContinueHint } from "./Combat/ContinueHint";
 
 export default function CombatLogPanel({
   text,
@@ -25,14 +26,6 @@ export default function CombatLogPanel({
   }
 
   useEffect(() => {
-    function handle(e: KeyboardEvent) {
-      if (e.key === "Enter") handleContinue();
-    }
-    window.addEventListener("keydown", handle);
-    return () => window.removeEventListener("keydown", handle);
-  }, [handleContinue]);
-
-  useEffect(() => {
     onTypingChange?.(typing);
   }, [typing, onTypingChange]);
 
@@ -46,17 +39,6 @@ export default function CombatLogPanel({
 
   return (
     <div className="my-3 rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 shadow-inner" onClick={handleContinue}>
-      {/* Efecto 'breath' definido localmente */}
-      <style>{`
-        @keyframes breath {
-          0%, 100% { opacity: 0.35; }
-          50% { opacity: 1; }
-        }
-        .breath {
-          animation: breath 1.8s ease-in-out infinite;
-        }
-      `}</style>
-
       <div className="flex items-center gap-3">
         {currentActor && (
           <div className="text-xs px-2 py-1 rounded bg-emerald-700/30 border border-emerald-600/40 whitespace-nowrap">
@@ -73,10 +55,7 @@ export default function CombatLogPanel({
         </div>
       </div>
 
-      {/* Aviso inferior con parpadeo lento (breath) */}
-      <div className="mt-1 text-center text-xs text-neutral-400 breath select-none">
-        Presiona Enter para continuar
-      </div>
+      {!typing && <ContinueHint onContinue={handleContinue} />}
     </div>
   );
 }
