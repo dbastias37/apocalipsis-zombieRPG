@@ -6,9 +6,10 @@ export type WeaponOpt = { id: string; label: string; usable: boolean; reason?: s
 type Player = { inventory?: any[] };
 type Resources = { ammo?: number };
 
+/** Comprueba si el jugador porta un item de cierto tipo */
 function hasItem(p: Player, type: string): boolean {
   return Array.isArray(p.inventory) && p.inventory.some((i: any) => {
-    if (typeof i === 'string') return i === type;
+    if (typeof i === "string") return i === type;
     return i?.type === type || i?.id === type || i?.name === type;
   });
 }
