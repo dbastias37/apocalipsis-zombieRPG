@@ -1,51 +1,40 @@
-import { useCallback } from "react";
-import { getAvailableWeapons, WeaponOpt } from "../../systems/combat/getAvailableWeapons";
-
-export interface AttackFlowResultChoose {
-  needChooser: true;
-  weapons: WeaponOpt[];
-}
-
-export interface AttackFlowResultDirect {
-  needChooser: false;
-  chosen: string | null;
-  weapons: WeaponOpt[];
-}
-
-export type AttackFlowResult = AttackFlowResultChoose | AttackFlowResultDirect;
+import { getSelectedWeapon, getAmmoFor, isRangedWeapon } from "../../systems/weapons";
+import resolveAttack from "../../systems/combat/resolveAttack";
+import { nextTurn, TurnState } from "../../systems/turns";
 
 /**
- * Hook que gestiona la lógica de selección de arma antes de atacar.
+ * Ejecuta el ataque del jugador activo y avanza el turno.
  *
- * No ejecuta el ataque directamente. En su lugar, devuelve información
- * para que el componente decida si mostrar un selector o atacar de inmediato.
+ * - Si el arma seleccionada es de fuego y no hay munición, el ataque falla
+ *   automáticamente pero consume el turno y la energía.
+ * - En caso contrario, delega el cálculo al resolver del sistema de combate.
  */
-export function useAttackFlow(
-  player: any,
-  _doAttack: (weaponId: string) => void
+export function performAttack(
+  state: any,
+  turn: TurnState,
+  playersLen: number,
+  enemiesLen: number,
+  log: (msg: string) => void
 ) {
-  // _doAttack no se usa aquí directamente pero se admite por diseño
-  void _doAttack;
+  const player = state?.players?.[turn.activeIndex];
+  if (!player) return state;
 
-  const startAttack = useCallback((): AttackFlowResult => {
-    const weapons = getAvailableWeapons(player);
-    const usable = weapons.filter((w) => w.usable);
+  const weapon = getSelectedWeapon(player);
+  const ammo = getAmmoFor(player, weapon.id);
 
-    if (usable.length === 0) {
-      if (typeof window !== "undefined") {
-        window.alert("No tienes armas utilizables");
-      }
-      return { needChooser: false, chosen: null, weapons };
+  if (isRangedWeapon(weapon) && ammo === 0) {
+    const name = player.name || "Alguien";
+    log(`[${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}] ${name} intenta disparar la ${weapon.name}, pero no revisó la recámara. No había balas. Turno perdido.`);
+    if (typeof player.energy === "number") {
+      player.energy = Math.max(0, player.energy - (weapon.energyCost ?? 1));
     }
+    nextTurn(turn, playersLen, enemiesLen);
+    return state;
+  }
 
-    if (usable.length === 1) {
-      return { needChooser: false, chosen: usable[0].id, weapons };
-    }
-
-    return { needChooser: true, weapons };
-  }, [player]);
-
-  return { startAttack };
+  const next = resolveAttack(state, weapon.id, { name: player.name || "Alguien" });
+  nextTurn(turn, playersLen, enemiesLen);
+  return next;
 }
 
-export default useAttackFlow;
+export default performAttack;
