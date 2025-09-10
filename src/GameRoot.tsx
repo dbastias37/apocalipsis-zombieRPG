@@ -110,6 +110,8 @@ type TimedEvent = {
   onResolvePositive?: () => void;
 };
 
+type WeaponOpt = { id:'fists'|'knife'|'pistol'|'rifle'; label:string; usable:boolean; reason?:string };
+
 // === Utilidades ===
 const DAY_LENGTH_MIN = 35;
 const DAY_LENGTH_MS = DAY_LENGTH_MIN * 60 * 1000;
@@ -128,7 +130,7 @@ function mod(score:number){ return Math.floor((score-10)/2); }
 function clsx(...classes: (string | false | null | undefined)[]){
   return classes.filter(Boolean).join(' ');
 }
-
+let startAttack = (enemyId: string) => {};
 
 const professions = [
   { id: 'medic', name: 'Médica' },
@@ -264,6 +266,9 @@ export default function GameRoot(){
 
   // Evento con cuenta regresiva
   const [timedEvent, setTimedEvent] = useState<TimedEvent|null>(null);
+
+  const [weaponChoices, setWeaponChoices] = useState<WeaponOpt[]|null>(null);
+  const [pendingEnemyId, setPendingEnemyId] = useState<string|null>(null);
 
   useEffect(() => {
     const noDecision = decisionDeck.length === 0 && decisionDiscard.length === 0;
@@ -678,45 +683,92 @@ export default function GameRoot(){
     const spawned = Array.from({length: count}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
     setEnemies(spawned);
   }
-  function performAttack(enemyId: string){
+  function hasItem(actor:any, q:string){
+    const norm = (s:string)=>s.normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
+    const QQ = norm(q);
+    return Array.isArray(actor?.inventory) && actor.inventory.some((it:string)=> norm(String(it)) === QQ);
+  }
+
+  function listWeaponOptions(actor:any): WeaponOpt[] {
+    const out: WeaponOpt[] = [
+      { id:'fists', label:'Puños (1–2)', usable:true },
+    ];
+    if (hasItem(actor, 'Navaja')) out.push({ id:'knife', label:'Navaja (1–6)', usable:true });
+
+    const ammo = Math.max(0, Number(actor?.ammo ?? 0));
+    if (hasItem(actor, 'Pistola')) out.push({
+      id:'pistol', label:`Pistola (2–8) — Munición: ${ammo}`, usable: ammo>0, reason: ammo>0?undefined:'Sin munición'
+    });
+    if (hasItem(actor, 'Rifle')) out.push({
+      id:'rifle', label:`Rifle (3–10) — Munición: ${ammo}`, usable: ammo>0, reason: ammo>0?undefined:'Sin munición'
+    });
+
+    return out;
+  }
+
+  startAttack = function(enemyId:string){
+    const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
+    if (!actor) return;
+
+    const opts = listWeaponOptions(actor);
+    const usable = opts.filter(o=>o.usable);
+
+    if (usable.length === 0) {
+      gameLog("No tienes armas utilizables (falta munición o arma).");
+      return;
+    }
+    if (usable.length === 1) {
+      applyAttack(enemyId, usable[0].id);
+      return;
+    }
+    setWeaponChoices(opts);
+    setPendingEnemyId(enemyId);
+  };
+
+  function applyAttack(enemyId:string, weaponId:'fists'|'knife'|'pistol'|'rifle'){
     const actor = alivePlayers[turn % Math.max(1, alivePlayers.length)];
     if(!actor) return;
     const enemy = enemies.find(e=>e.id===enemyId);
     if(!enemy) return;
-    const hasGun = actor.inventory.includes("Pistola") || actor.inventory.includes("Rifle");
-    const atkRoll = roll(1,20, mod(actor.attrs.Fuerza) + (hasGun?4:0));
+
+    let label = 'Puños', dmgMin=1, dmgMax=2, hitMod = mod(actor.attrs.Fuerza);
+    if (weaponId==='knife') { label='Navaja'; dmgMin=1; dmgMax=6; hitMod = mod(actor.attrs.Fuerza)+1; }
+    if (weaponId==='pistol') { label='Pistola'; dmgMin=2; dmgMax=8; hitMod = mod(actor.attrs.Destreza)+4; }
+    if (weaponId==='rifle')  { label='Rifle';  dmgMin=3; dmgMax=10; hitMod = mod(actor.attrs.Destreza)+5; }
+
+    const isFirearm = weaponId==='pistol' || weaponId==='rifle';
+    if (isFirearm) {
+      if (actor.ammo <= 0) { gameLog(`${actor.name} intenta disparar, pero no tiene munición.`); return; }
+      updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
+      gameLog(`🔫 ${actor.name} dispara ${label} (munición restante: ${Math.max(0, actor.ammo-1)}).`);
+    }
+
+    const atkRoll = roll(1,20, hitMod);
     const hit = atkRoll.total >= enemy.def || atkRoll.natural===20;
     const scene = currentCard?.scene ?? "callejon";
+
     if(hit){
-      const dmg = roll(1,6, hasGun?4:mod(actor.attrs.Fuerza)).total;
+      const dmg = roll(1, dmgMax - dmgMin + 1, dmgMin-1).total; // uniforme entre min–max
       const newHp = enemy.hp - dmg;
       setEnemies(es=> es.map(e=> e.id===enemyId ? {...e, hp: newHp} : e).filter(e=> e.hp>0));
-      gameLog(`🗡️ ${actor.name} ataca en el ${scene} y asesta ${dmg} de daño a ${enemy.name}.`);
-      setDayStats(s=>({
-        ...s,
-        damageDealt: s.damageDealt + dmg,
-        shotsFired: s.shotsFired + (hasGun ? 1 : 0),
-      }));
+      gameLog(`🗡️ ${actor.name} ataca en el ${scene} y asesta ${dmg} de daño a ${enemy.name} con ${label}.`);
+      setDayStats(s=>({ ...s, damageDealt: s.damageDealt + dmg, shotsFired: s.shotsFired + (isFirearm?1:0) }));
       if(newHp<=0){
         gameLog(`✅ ${enemy.name} cae hecho trizas.`);
         setThreat(t=>Math.max(0,t-2));
         setDayStats(s=>({ ...s, enemiesKilled: s.enemiesKilled + 1 }));
       }
-      if(hasGun){
-        updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
-      }
-    }else{
-      gameLog(`❌ ${actor.name} falla el golpe; el eco en el ${scene} lo distrae.`);
-      setDayStats(s=>({
-        ...s,
-        misses: s.misses + 1,
-        shotsFired: s.shotsFired + (hasGun ? 1 : 0),
-      }));
+    } else {
+      gameLog(`❌ ${actor.name} falla el golpe con ${label}.`);
+      setDayStats(s=>({ ...s, misses: s.misses + 1, shotsFired: s.shotsFired + (isFirearm?1:0) }));
     }
-    // Enemigos contraatacan brevemente
-    setTimeout(enemyTurn, 400);
-    timePenalty(20);
+
+    timePenalty(10); // o el coste que uses
     advanceTurn();
+  }
+
+  function performAttack(enemyId: string){
+    applyAttack(enemyId, 'fists');
   }
 
   function enemyTurn(){
@@ -1133,7 +1185,6 @@ export default function GameRoot(){
                 card={currentCard}
                 onResolveChoice={resolveDecisionChoice}
                 enemies={enemies}
-                onAttack={performAttack}
                 onDefend={defend}
                 onHeal={healSelf}
                 onFlee={flee}
@@ -1197,6 +1248,28 @@ export default function GameRoot(){
             gameLog(`📅 Día ${day+1} comienza. El grupo descansa y hace balance de la jornada.`);
           }}
         />
+      )}
+      {weaponChoices && pendingEnemyId && (
+        <div className="fixed inset-0 grid place-items-center bg-black/60 z-50">
+          <div className="w-[480px] rounded-lg bg-neutral-900 p-4 border border-neutral-700">
+            <h3 className="text-lg font-bold mb-3">Elegir arma</h3>
+            <div className="space-y-2">
+              {weaponChoices.map(w=>(
+                <button key={w.id}
+                  disabled={!w.usable}
+                  title={!w.usable ? w.reason : undefined}
+                  onClick={()=>{ setWeaponChoices(null); const eid = pendingEnemyId; setPendingEnemyId(null); if (w.usable && eid) applyAttack(eid, w.id); }}
+                  className={`w-full text-left px-3 py-2 rounded border ${w.usable ? 'border-slate-500 hover:bg-slate-800' : 'border-slate-700 opacity-50 cursor-not-allowed'}`}
+                >
+                  {w.label} {!w.usable && w.reason ? `— ${w.reason}` : ''}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 text-right">
+              <button className="px-3 py-1 rounded bg-slate-700" onClick={()=>{ setWeaponChoices(null); setPendingEnemyId(null); }}>Cancelar</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {state==="paused" && (
@@ -1275,7 +1348,6 @@ function CardView(props:{
   onResolveChoice: (choice: NonNullable<Card["choices"]>[number])=>void;
   onClose: ()=>void;
   enemies: Enemy[];
-  onAttack: (id:string)=>void;
   onDefend: ()=>void;
   onHeal: ()=>void;
   onFlee: ()=>void;
@@ -1317,7 +1389,7 @@ function CardView(props:{
                       <h4 className="font-bold">{e.name}</h4>
                       <p className="text-sm text-neutral-400">DEF {e.def} • ATK {e.atk}</p>
                     </div>
-                    <button className="btn btn-red text-white" onClick={()=>props.onAttack(e.id)}>🗡️ Atacar</button>
+                    <button className="btn btn-red text-white" onClick={()=> startAttack(e.id)}>🗡️ Atacar</button>
                   </div>
                   <div className="mt-2 h-2 bg-neutral-800 rounded-full overflow-hidden">
                     <div className={clsx("h-full", e.hp/e.hpMax>0.6?"bg-green-600":e.hp/e.hpMax>0.3?"bg-yellow-500":"bg-red-600")} style={{width:`${(e.hp/e.hpMax)*100}%`}}/>
