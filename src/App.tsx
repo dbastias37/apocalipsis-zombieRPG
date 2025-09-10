@@ -1741,12 +1741,6 @@ function advanceTurn() {
   function setPlayerSelectedWeapon(playerId: string, weaponId: string) {
     updatePlayer(playerId, { selectedWeaponId: weaponId });
   }
-  function backpackWeapons(p: Player) {
-    return p.inventory
-      .map(name => WEAPONS.find(w => w.name === name || w.id === name))
-      .filter((w): w is any => !!w);
-  }
-
   function getItemById(id?: string) {
     return ITEMS_CATALOG.find(it => it.id === id);
   }
@@ -2178,7 +2172,7 @@ function advanceTurn() {
         {activePlayer && (
           <WeaponPicker
             player={activePlayer}
-            backpack={backpackWeapons(activePlayer)}
+            resources={resources}
             onSelect={(wid) => setPlayerSelectedWeapon(activePlayer.id, wid)}
           />
         )}
