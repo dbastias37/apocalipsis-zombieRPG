@@ -5,11 +5,11 @@ export type RangedWeapon = {
   name: string;
   type: 'ranged';
   damage: DiceSpec;
-  hitBonus?: number;
-  ammoType: '9mm' | 'rifle' | 'shell' | string;
-  ammoCost?: number;
+  ammoType: string;
   magCapacity: number;
   magAmmo?: number;
+  ammoCost?: number;
+  hitBonus?: number;
 };
 
 export type MeleeWeapon = {
@@ -26,11 +26,25 @@ export type Actor = {
   id: string;
   name: string;
   hp: number;
+  maxHp: number;
   alive: boolean;
   status?: 'ok' | 'infected' | 'down';
   inventory: {
     ammo: Record<string, number>;
-    items: string[];
+    weapons: Weapon[];
   };
   equipped?: Weapon;
+};
+
+export type CombatState = {
+  status: 'idle' | 'ongoing' | 'finished';
+  activeId?: string;
+  rounds: any[];
+  log: string[];
+  result: null | { victory: boolean; loot: any[] };
+};
+
+export type RootState = {
+  actors: Actor[];
+  combat: CombatState;
 };
