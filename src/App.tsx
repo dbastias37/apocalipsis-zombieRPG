@@ -380,6 +380,18 @@ export default function App(){
   // Cuando una acción del jugador requiere terminar con Enter, guardamos el "qué hacer después"
   const postActionContinueRef = useRef<null | (() => void)>(null);
 
+  // DEBUG: abrir resumen con líneas fake
+  useEffect(() => {
+    setCombatEndLines([
+      "— RESUMEN DEL ENFRENTAMIENTO —",
+      "Golpes directos: 2",
+      "Golpes fallidos: 1",
+      "Botín: —",
+    ]);
+    setShowCombatEnd(true);
+    setControlsLocked(true);
+  }, []);
+
   function touchPlayerStats(playerId: string) {
     setBattleStats(prev => {
       const bp = prev.byPlayer[playerId] ?? { meleeHits:0, meleeMisses:0, rangedHits:0, rangedMisses:0, heals:0, points:0 };
