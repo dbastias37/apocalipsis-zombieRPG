@@ -1,71 +1,107 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 type Props = {
   open: boolean;
-  lines: string[];            // líneas del resumen (una por ítem)
-  onFinish: () => void;       // al terminar y pulsar el botón
+  lines: string[];            // una línea por ítem
+  onFinish: () => void;       // llamado al cerrar
+  autoCloseMs?: number;       // default 4000
 };
 
-export default function CombatEndSummary({ open, lines, onFinish }: Props) {
-  const [idx, setIdx] = useState(0);
+export default function CombatEndSummary({ open, lines, onFinish, autoCloseMs = 4000 }: Props) {
+  const [idx, setIdx] = useState(0);      // índice de línea actual
+  const [typed, setTyped] = useState(""); // texto tipeado de la línea actual
   const [typing, setTyping] = useState(false);
-  const [shown, setShown] = useState("");
 
-  const current = lines[idx] ?? "";
+  const typeTimer = useRef<number | null>(null);
+  const finishTimer = useRef<number | null>(null);
 
+  // Sanea entradas: quita falsys/undefined/strings vacías
+  const safeLines = useMemo(
+    () => (Array.isArray(lines) ? lines.filter((s): s is string => typeof s === "string" && s.trim().length > 0) : []),
+    [lines]
+  );
+  const current = safeLines[idx] ?? "";
+  const finished = !typing && idx >= safeLines.length - 1;
+
+  // Reset al abrir
   useEffect(() => {
     if (!open) return;
-    setShown("");
-    setTyping(true);
-    let i = 0;
-    const tick = () => {
-      if (i >= current.length) { setTyping(false); return; }
-      setShown(prev => prev + current[i]);
-      i++;
-      setTimeout(tick, 12);
-    };
-    tick();
-  }, [open, idx, current]);
+    setIdx(0);
+    setTyped("");
+    setTyping(false);
+  }, [open]);
 
+  // Tipeo de la línea actual (máquina de escribir)
+  useEffect(() => {
+    if (!open || !current) return;
+    setTyping(true);
+    setTyped("");
+    let i = 0;
+    if (typeTimer.current) window.clearInterval(typeTimer.current);
+    typeTimer.current = window.setInterval(() => {
+      i++;
+      setTyped(current.slice(0, i));
+      if (i >= current.length) {
+        setTyping(false);
+        if (typeTimer.current) window.clearInterval(typeTimer.current);
+      }
+    }, 18) as unknown as number; // velocidad del tipeo
+    return () => { if (typeTimer.current) window.clearInterval(typeTimer.current); };
+  }, [open, current]);
+
+  // Enter/Space: avanzar línea o finalizar
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Enter") return;
-      if (typing) {
-        setTyping(false);
-        setShown(current);
-      } else {
-        if (idx < lines.length - 1) setIdx(x => x + 1);
-        // Si ya no hay más líneas, no cerramos: mostramos botón "Continuar"
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (typing) {
+          // fast-forward de la línea actual
+          setTyped(current);
+          setTyping(false);
+          return;
+        }
+        if (finished) onFinish();
+        else setIdx(i => Math.min(i + 1, safeLines.length - 1));
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, typing, idx, lines.length, current]);
+  }, [open, typing, finished, current, safeLines.length, onFinish]);
+
+  // Autocierre tras X ms cuando ya terminó de mostrarse todo
+  useEffect(() => {
+    if (!open) return;
+    if (finished) {
+      if (finishTimer.current) window.clearTimeout(finishTimer.current);
+      finishTimer.current = window.setTimeout(() => onFinish(), autoCloseMs) as unknown as number;
+      return () => { if (finishTimer.current) window.clearTimeout(finishTimer.current); };
+    }
+  }, [open, finished, onFinish, autoCloseMs]);
+
+  // Cuerpo a mostrar = líneas completas previas + línea tipeándose
+  const body = useMemo(() => {
+    const prev = safeLines.slice(0, idx).join("\n");
+    return prev + (prev ? "\n" : "") + typed;
+  }, [safeLines, idx, typed]);
 
   if (!open) return null;
 
-  const finished = !typing && idx >= lines.length - 1;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" data-enter-scope="summary" data-no-enter-tap="true">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div className="relative z-10 w-full max-w-xl mx-4 rounded-2xl p-6 bg-zinc-900/95 border border-white/10 shadow-xl">
         <h2 className="text-lg font-bold text-emerald-400 mb-3">Fin del enfrentamiento</h2>
-        <div className="text-sm whitespace-pre-wrap font-mono bg-black/30 rounded-lg p-3 min-h-[120px] border border-white/5">
-          {shown}
+
+        <div className="text-sm whitespace-pre-wrap font-mono bg-black/30 rounded-lg p-3 min-h-[140px] border border-white/5">
+          {body}
         </div>
-        {!finished && (
-          <div className="mt-3 text-xs text-center opacity-80 animate-pulse">
-            Presiona Enter para continuar
-          </div>
-        )}
+
+        <div className="mt-2 text-xs opacity-70">Presiona Enter para continuar</div>
+
         {finished && (
           <div className="mt-4 flex justify-end">
-            <button
-              className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500"
-              onClick={onFinish}
-            >
+            <button className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500" onClick={onFinish}>
               Continuar
             </button>
           </div>
