@@ -3,7 +3,8 @@
 
 export type WeaponOpt = { id: string; label: string; usable: boolean; reason?: string };
 
-import { getAmmoFor } from "../weapons";
+import { getAmmoFor } from "../weapons.js";
+import { findWeaponById, damageRange } from "../../game/items/weapons.js";
 
 type Player = { inventory?: any[]; weaponState?: Record<string, { ammoInMag: number }> };
 
@@ -37,32 +38,46 @@ function hasAny(p: Player, keys: string[]): boolean {
 }
 
 export function getAvailableWeapons(player: Player): WeaponOpt[] {
-  const list: WeaponOpt[] = [{ id: "fists", label: "Puños (1–2)", usable: true }];
+  const fists = findWeaponById("fists")!;
+  const fistsRange = damageRange(fists.damage);
+  const list: WeaponOpt[] = [{ id: "fists", label: `Puños (${fistsRange.min}-${fistsRange.max})`, usable: true }];
 
   if (hasAny(player, ALIAS.knife)) {
-    list.push({ id: "knife", label: "Navaja (1–6)", usable: true });
+    const knife = findWeaponById("knife");
+    if (knife) {
+      const r = damageRange(knife.damage);
+      list.push({ id: "knife", label: `${knife.name} (${r.min}-${r.max})`, usable: true });
+    }
   }
 
   if (hasAny(player, ALIAS.pistol)) {
-    const ammo = getAmmoFor(player, "pistol");
-    const cap = 15;
-    list.push({
-      id: "pistol",
-      label: `Pistola (2–8) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
-      usable: true,
-      reason: ammo > 0 ? undefined : "Sin munición",
-    });
+    const w = findWeaponById("pistol");
+    if (w) {
+      const r = damageRange(w.damage);
+      const ammo = getAmmoFor(player, "pistol");
+      const cap = w.magCapacity ?? 0;
+      list.push({
+        id: w.id,
+        label: `${w.name} (${r.min}-${r.max}) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
+        usable: ammo > 0,
+        reason: ammo > 0 ? undefined : "Sin munición",
+      });
+    }
   }
 
   if (hasAny(player, ALIAS.rifle)) {
-    const ammo = getAmmoFor(player, "rifle");
-    const cap = 10;
-    list.push({
-      id: "rifle",
-      label: `Rifle (4–12) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
-      usable: true,
-      reason: ammo > 0 ? undefined : "Sin munición",
-    });
+    const w = findWeaponById("rifle");
+    if (w) {
+      const r = damageRange(w.damage);
+      const ammo = getAmmoFor(player, "rifle");
+      const cap = w.magCapacity ?? 0;
+      list.push({
+        id: w.id,
+        label: `${w.name} (${r.min}-${r.max}) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
+        usable: ammo > 0,
+        reason: ammo > 0 ? undefined : "Sin munición",
+      });
+    }
   }
 
   // Opcionales si tu UI los usa:

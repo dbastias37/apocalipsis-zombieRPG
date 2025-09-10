@@ -18,6 +18,12 @@
 npm i
 npm run dev
 ```
+
+### Pruebas
+
+```
+npm run test:game
+```
 ## Build estático (para Render)
 ```bash
 npm run build

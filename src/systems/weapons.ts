@@ -1,14 +1,15 @@
-import { findWeaponById } from "../data/weapons";
-import { takeAmmo, InventoryItem } from "./ammo";
+import { findWeaponById, damageRange, Weapon } from "../game/items/weapons.js";
 
 // Pseudo-arma por defecto (puños), por si no hay selección válida.
+const fists = findWeaponById("fists")!;
+const fistsRange = damageRange(fists.damage);
 export const FISTS_WEAPON = {
-  id: "fists",
-  name: "Puños",
-  type: "melee",
-  damageMin: 1,
-  damageMax: 2,
-  damage: { times: 1, faces: 2, mod: 0 },
+  id: fists.id,
+  name: fists.name,
+  type: fists.type,
+  damageMin: fistsRange.min,
+  damageMax: fistsRange.max,
+  damage: fists.damage,
 };
 
 /**
@@ -23,10 +24,8 @@ export function getSelectedWeapon(player: any) {
     if (selId) {
       const w = findWeaponById(selId);
       if (w) {
-        const times = w.damage?.times ?? 0;
-        const faces = w.damage?.faces ?? 0;
-        const mod = w.damage?.mod ?? 0;
-        return { ...w, damageMin: times + mod, damageMax: times * faces + mod };
+        const range = damageRange(w.damage);
+        return { ...w, damageMin: range.min, damageMax: range.max } as Weapon & {damageMin:number;damageMax:number};
       }
     }
   } catch (_) {}
@@ -63,37 +62,5 @@ export function ensureWeaponState(player: any, weaponId: string) {
 /** Busca un arma en el catálogo */
 export function lookupWeapon(id: string) {
   return findWeaponById(id);
-}
-
-/**
- * Recarga un arma consumiendo munición del inventario.
- */
-export function reloadWeapon(p: any, weaponId: string): { updated: any; log: string[] } {
-  const w = lookupWeapon(weaponId);
-  if (!w || w.type !== "ranged" || !w.magCapacity)
-    return { updated: p, log: ["Esta arma no usa munición."] };
-
-  const { table, state } = ensureWeaponState(p, weaponId);
-  const missing = Math.max(0, w.magCapacity - state.ammoInMag);
-  if (missing === 0) return { updated: p, log: ["El cargador ya está completo."] };
-
-  const { taken, newInv, from } = takeAmmo(p.inventory ?? [], missing);
-  const newAmmo = state.ammoInMag + taken;
-  const newPlayer = {
-    ...p,
-    inventory: newInv as InventoryItem[],
-    weaponState: { ...table, [weaponId]: { ammoInMag: newAmmo } },
-  };
-
-  if (taken === 0) {
-    return { updated: newPlayer, log: ["Intentó recargar, pero no tenía munición compatible."] };
-  }
-
-  const tag = `[${w.name}: ${newAmmo}/${w.magCapacity}]`;
-  if (from === "loose")
-    return { updated: newPlayer, log: [`Recarga ${taken} bala(s) suelta(s). ${tag}`] };
-  if (from === "box")
-    return { updated: newPlayer, log: [`Recarga ${taken} bala(s) desde caja. ${tag}`] };
-  return { updated: newPlayer, log: [`Recarga ${taken} bala(s) (mixto). ${tag}`] };
 }
 
