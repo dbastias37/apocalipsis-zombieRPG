@@ -6,6 +6,8 @@ export type Weapon = {
   damage: { times: number; faces: number; mod: number };
   usesAttr: 'Fuerza'|'Destreza';
   ammoCost?: number;
+  magCapacity?: number;
+  ammoType?: '9mm'|'rifle'|'12g'|'smg'|null;
 };
 
 export const WEAPONS: Weapon[] = [
@@ -36,10 +38,10 @@ export const WEAPONS: Weapon[] = [
 
   { id:'sling',  name:'Hondita',           type:'ranged', hitBonus:1, damage:{times:1,faces:4,mod:1},  usesAttr:'Destreza', ammoCost:0 },
   { id:'xbow',   name:'Ballesta',          type:'ranged', hitBonus:3, damage:{times:1,faces:8,mod:2},  usesAttr:'Destreza', ammoCost:1 },
-  { id:'pistol', name:'Pistola',           type:'ranged', hitBonus:4, damage:{times:1,faces:6,mod:4},  usesAttr:'Destreza', ammoCost:1 },
-  { id:'rifle',  name:'Rifle',             type:'ranged', hitBonus:5, damage:{times:1,faces:8,mod:4},  usesAttr:'Destreza', ammoCost:1 },
-  { id:'shotgun',name:'Escopeta',          type:'ranged', hitBonus:3, damage:{times:2,faces:4,mod:3},  usesAttr:'Destreza', ammoCost:1 },
-  { id:'smg',    name:'Subfusil (SMG)',    type:'ranged', hitBonus:5, damage:{times:1,faces:6,mod:3},  usesAttr:'Destreza', ammoCost:1 },
+  { id:'pistol', name:'Pistola',           type:'ranged', hitBonus:4, damage:{times:1,faces:6,mod:4},  usesAttr:'Destreza', ammoCost:1, magCapacity:15, ammoType:'9mm' },
+  { id:'rifle',  name:'Rifle',             type:'ranged', hitBonus:5, damage:{times:1,faces:8,mod:4},  usesAttr:'Destreza', ammoCost:1, magCapacity:10, ammoType:'rifle' },
+  { id:'shotgun',name:'Escopeta',          type:'ranged', hitBonus:3, damage:{times:2,faces:4,mod:3},  usesAttr:'Destreza', ammoCost:1, magCapacity:6, ammoType:'12g' },
+  { id:'smg',    name:'Subfusil (SMG)',    type:'ranged', hitBonus:5, damage:{times:1,faces:6,mod:3},  usesAttr:'Destreza', ammoCost:1, magCapacity:30, ammoType:'smg' },
 ];
 
 export function findWeaponById(id?: string) {

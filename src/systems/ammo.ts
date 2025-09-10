@@ -1,94 +1,128 @@
-// src/systems/ammo.ts
-import { getSelectedWeapon, isRangedWeapon } from "./weapons";
-import { gameLog } from "../utils/logger";
+export type AmmoPack = { type: 'loose'; count: number } | { type: 'box'; count: number };
+export type InventoryItem =
+  | string
+  | { id?: string; name?: string; type?: string; ammo?: AmmoPack; [k: string]: any };
 
-/** Detecta si un item del inventario es una caja de munición. */
-export function isAmmoBox(item: any): boolean {
-  if (!item) return false;
-  if (item.type === "ammo" || item.kind === "ammoBox") return true;
-  const name: string = String(item.name ?? item.title ?? "").toLowerCase();
-  return /caja\s+de\s+munici(o|ó)n/.test(name);
+function isLoose(it: InventoryItem): it is { ammo: AmmoPack } {
+  return typeof it === 'object' && !!it && it.ammo?.type === 'loose';
 }
 
-/** Extrae cantidad de balas de un item. Busca amount, qty o "(N)" en el nombre. */
-export function parseAmmoCount(item: any): number {
-  if (!item) return 0;
-  const n = Number(item.amount ?? item.qty ?? item.count ?? 0);
-  if (!Number.isNaN(n) && n > 0) return n;
-  const m = String(item.name ?? item.title ?? "").match(/\((\d+)\)\s*$/);
-  return m ? Number(m[1]) : 0;
+function isBox(it: InventoryItem): it is { ammo: AmmoPack } {
+  return typeof it === 'object' && !!it && it.ammo?.type === 'box';
 }
 
-/** Lista de cajas en inventario con índice y balas. */
-export function listAmmoBoxes(inventory: any[] | undefined | null) {
-  const inv = Array.isArray(inventory) ? inventory : [];
-  return inv
-    .map((it, idx) => ({ idx, item: it, bullets: parseAmmoCount(it) }))
-    .filter(row => isAmmoBox(row.item) && row.bullets > 0);
+/**
+ * Normaliza la munición en el inventario:
+ *  - agrupa todas las balas sueltas en una sola entrada
+ *  - convierte cada 15 balas sueltas en una caja
+ *  - elimina cajas con conteo 0
+ */
+export function normalizeAmmo(inv: InventoryItem[]): InventoryItem[] {
+  const out: InventoryItem[] = [];
+  let loose = 0;
+  const boxes: InventoryItem[] = [];
+
+  for (const it of Array.isArray(inv) ? inv : []) {
+    if (isLoose(it)) {
+      loose += Math.max(0, Math.floor(it.ammo.count));
+      continue;
+    }
+    if (isBox(it)) {
+      const cnt = Math.max(0, Math.floor(it.ammo.count));
+      if (cnt > 0) {
+        boxes.push({ ...it, ammo: { type: 'box', count: Math.min(15, cnt) } });
+      }
+      continue;
+    }
+    out.push(it);
+  }
+
+  // convertir lo suelto en cajas de 15
+  while (loose >= 15) {
+    boxes.push({ name: 'Caja de munición', ammo: { type: 'box', count: 15 } });
+    loose -= 15;
+  }
+  if (loose > 0) {
+    out.push({ name: 'Munición', ammo: { type: 'loose', count: loose } });
+  }
+  return [...out, ...boxes];
 }
 
-// Alias tolerante por si en el código quedó con otra capitalización.
-export const listAmmoboxes = listAmmoBoxes;
-
-/** Total de balas en cajas del inventario. */
-export function totalAmmoInInventory(inventory: any[] | undefined | null): number {
-  return listAmmoBoxes(inventory).reduce((acc, r) => acc + r.bullets, 0);
+/** Total de balas disponibles en el inventario */
+export function ammoAvailable(inv: InventoryItem[]): number {
+  return normalizeAmmo(inv).reduce((acc, it) => {
+    if (isLoose(it) || isBox(it)) return acc + it.ammo.count;
+    return acc;
+  }, 0);
 }
 
-/** Consume UNA caja (la primera) y devuelve { bullets, newInventory }. Si no hay, bullets=0. */
-export function consumeOneAmmoBox(inventory: any[] | undefined | null) {
-  const inv = Array.isArray(inventory) ? [...inventory] : [];
-  const list = listAmmoBoxes(inv);
-  if (list.length === 0) return { bullets: 0, newInventory: inv };
-  const first = list[0];
-  inv.splice(first.idx, 1);
-  return { bullets: first.bullets, newInventory: inv };
-}
+/**
+ * Quita balas del inventario, usando primero balas sueltas y luego cajas.
+ * Devuelve cuántas tomó, el nuevo inventario y de dónde provinieron.
+ */
+export function takeAmmo(
+  inv: InventoryItem[],
+  needed: number
+): { taken: number; newInv: InventoryItem[]; from: 'loose' | 'box' | 'mixed' } {
+  let need = Math.max(0, Math.floor(needed));
+  const norm = normalizeAmmo(inv);
+  const others: InventoryItem[] = [];
+  const boxes: InventoryItem[] = [];
+  let taken = 0;
+  let fromLoose = false;
+  let fromBox = false;
 
-/** Lee la munición cargada actualmente para un arma del jugador. */
-export function getLoadedAmmo(player: any, weaponId: string): number {
-  const table = player?.ammoByWeapon ?? {};
-  const n = Number(table[weaponId] ?? 0);
-  return Number.isFinite(n) ? n : 0;
-}
+  for (const it of norm) {
+    if (isLoose(it)) {
+      const use = Math.min(it.ammo.count, need);
+      taken += use;
+      need -= use;
+      const remain = it.ammo.count - use;
+      if (use > 0) fromLoose = true;
+      if (remain > 0) others.push({ ...it, ammo: { type: 'loose', count: remain } });
+      continue;
+    }
+    if (isBox(it)) {
+      boxes.push(it);
+      continue;
+    }
+    others.push(it);
+  }
 
-/** Establece nueva munición para un arma del jugador. */
-export function setLoadedAmmo(player: any, weaponId: string, value: number) {
-  const next = Math.max(0, Math.floor(value));
-  const table = { ...(player?.ammoByWeapon ?? {}) };
-  table[weaponId] = next;
-  return { ...player, ammoByWeapon: table };
-}
+  for (const box of boxes) {
+    if (need <= 0) {
+      others.push(box);
+      continue;
+    }
+    const use = Math.min(box.ammo.count, need);
+    taken += use;
+    need -= use;
+    const remain = box.ammo.count - use;
+    if (use > 0) fromBox = true;
+    if (remain > 0) others.push({ ...box, ammo: { type: 'box', count: remain } });
+  }
 
-/** Gasta munición (por disparo). Devuelve { player:newPlayer, ok:boolean }. */
-export function spendAmmo(player: any, weaponId: string, amount = 1) {
-  const cur = getLoadedAmmo(player, weaponId);
-  if (cur < amount) return { player, ok: false };
-  return { player: setLoadedAmmo(player, weaponId, cur - amount), ok: true };
-}
-
-/** Recarga el arma seleccionada del jugador consumiendo UNA caja del inventario. */
-export function reloadSelectedWeapon(player: any, onBattleLog?: (s: string) => void) {
-  if (!player) return player;
-  const w = getSelectedWeapon(player);
-  const log = (msg: string) => {
-    onBattleLog?.(msg);
-    gameLog(msg);
+  return {
+    taken,
+    newInv: normalizeAmmo(others),
+    from: fromLoose && fromBox ? 'mixed' : fromLoose ? 'loose' : 'box',
   };
-  if (!isRangedWeapon(w)) {
-    log(`${player.name} intenta recargar, pero ${w.name} no usa munición.`);
-    return player;
-  }
-  const { bullets, newInventory } = consumeOneAmmoBox(player.inventory);
-  if (bullets <= 0) {
-    log(`${player.name} no tiene cajas de munición disponibles.`);
-    return player;
-  }
-  const cur = getLoadedAmmo(player, w.id);
-  const nextCount = cur + bullets;
-  const updated = setLoadedAmmo({ ...player, inventory: newInventory }, w.id, nextCount);
-  log(`${player.name} recarga ${w.name}: +${bullets} balas (munición: ${nextCount}).`);
-  return updated;
 }
 
-// Nota: no imponemos cargador máximo; si tienes w.magSize, puedes limitar con Math.min(nextCount, w.magSize).
+/**
+ * Añade balas al inventario (como sueltas) y normaliza el resultado.
+ */
+export function addAmmo(inv: InventoryItem[], amount: number): InventoryItem[] {
+  if (amount <= 0) return normalizeAmmo(inv);
+  const norm = normalizeAmmo(inv);
+  const out = norm.map((it) => (isLoose(it) ? { ...it } : it));
+  const looseIdx = out.findIndex(isLoose);
+  if (looseIdx >= 0) {
+    const loose = out[looseIdx] as any;
+    loose.ammo.count += amount;
+  } else {
+    out.push({ name: 'Munición', ammo: { type: 'loose', count: amount } });
+  }
+  return normalizeAmmo(out);
+}
+

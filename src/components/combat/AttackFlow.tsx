@@ -33,6 +33,13 @@ export function performAttack(
   }
 
   const next = resolveAttack(state, weapon.id, { name: player.name || "Alguien" });
+  const nextPlayer = next.players?.[turn.activeIndex];
+  if (isRangedWeapon(weapon) && nextPlayer) {
+    const ws = { ...(nextPlayer.weaponState ?? {}) };
+    const cur = ws[weapon.id]?.ammoInMag ?? ammo;
+    ws[weapon.id] = { ammoInMag: Math.max(0, cur - 1) };
+    nextPlayer.weaponState = ws;
+  }
   nextTurn(turn, playersLen, enemiesLen);
   return next;
 }
