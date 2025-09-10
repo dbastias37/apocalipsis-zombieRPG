@@ -9,6 +9,7 @@ interface Props {
   flee: () => void;
   selfHeal: () => void;
   doAttack: (weaponId: string) => void;
+  reload: () => void;
 }
 
 export default function ActionBar({
@@ -17,6 +18,7 @@ export default function ActionBar({
   flee,
   selfHeal,
   doAttack,
+  reload,
 }: Props) {
   const canFlee = useMemo(() => {
     if (player.isGrappled) return { ok: false, reason: "Estás atrapado" };
@@ -50,6 +52,12 @@ export default function ActionBar({
           onClick={() => doAttack(selected)}
         >
           Atacar
+        </button>
+        <button
+          className="mt-1 px-3 py-1 rounded bg-neutral-700 text-white"
+          onClick={() => reload()}
+        >
+          Recargar
         </button>
       </div>
 

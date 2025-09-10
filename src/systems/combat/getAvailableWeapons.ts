@@ -3,7 +3,9 @@
 
 export type WeaponOpt = { id: string; label: string; usable: boolean; reason?: string };
 
-type Player = { inventory?: any[]; ammo?: number };
+import { getAmmoFor } from "../weapons";
+
+type Player = { inventory?: any[]; weaponState?: Record<string, { ammoInMag: number }> };
 
 /** Normaliza a minúsculas, sin tildes y con espacios colapsados */
 function norm(s?: string) {
@@ -41,21 +43,23 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
     list.push({ id: "knife", label: "Navaja (1–6)", usable: true });
   }
 
-  const ammo = player.ammo ?? 0;
-
   if (hasAny(player, ALIAS.pistol)) {
+    const ammo = getAmmoFor(player, "pistol");
+    const cap = 15;
     list.push({
       id: "pistol",
-      label: `Pistola (2–8) — Munición: ${ammo}${ammo > 0 ? "" : " (Sin munición)"}`,
+      label: `Pistola (2–8) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
       usable: true,
       reason: ammo > 0 ? undefined : "Sin munición",
     });
   }
 
   if (hasAny(player, ALIAS.rifle)) {
+    const ammo = getAmmoFor(player, "rifle");
+    const cap = 10;
     list.push({
       id: "rifle",
-      label: `Rifle (4–12) — Munición: ${ammo}${ammo > 0 ? "" : " (Sin munición)"}`,
+      label: `Rifle (4–12) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
       usable: true,
       reason: ammo > 0 ? undefined : "Sin munición",
     });
@@ -63,18 +67,22 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
 
   // Opcionales si tu UI los usa:
   if (hasAny(player, ALIAS.shotgun)) {
+    const ammo = getAmmoFor(player, "shotgun");
+    const cap = 6;
     list.push({
       id: "shotgun",
-      label: `Escopeta (2d4+3) — Munición: ${ammo}${ammo > 0 ? "" : " (Sin munición)"}`,
+      label: `Escopeta (2d4+3) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
       usable: true,
       reason: ammo > 0 ? undefined : "Sin munición",
     });
   }
 
   if (hasAny(player, ALIAS.smg)) {
+    const ammo = getAmmoFor(player, "smg");
+    const cap = 30;
     list.push({
       id: "smg",
-      label: `SMG (1d6+3) — Munición: ${ammo}${ammo > 0 ? "" : " (Sin munición)"}`,
+      label: `SMG (1d6+3) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
       usable: true,
       reason: ammo > 0 ? undefined : "Sin munición",
     });
