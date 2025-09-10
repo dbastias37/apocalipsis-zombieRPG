@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "tsc src/engine/turns.ts src/systems/combat.ts --module node16 --target ES2020 --moduleResolution node16 --skipLibCheck --outDir build && node --test tests/turns.test.mjs",
+    "test": "tsc src/engine/turns.ts src/systems/combat.ts src/types/combat.ts src/logic/combatUtils.ts src/ui/BattleSummaryModal.tsx --module node16 --target ES2020 --moduleResolution node16 --jsx react --skipLibCheck --outDir build && node --test tests/turns.test.mjs tests/combatUtils.test.mjs tests/battleSummaryModal.test.mjs",
     "test:game": "tsc src/game/items/weapons.ts src/engine/combat.ts src/engine/turn-manager.ts src/systems/weapons.ts src/systems/combat/getAvailableWeapons.ts src/ui/log.ts --module node16 --target ES2020 --moduleResolution node16 --skipLibCheck --outDir build && node --test tests/game.test.mjs"
   },
   "dependencies": {
