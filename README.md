@@ -11,6 +11,7 @@
 - Pasar la noche resuelve amenazas y avanza el día.
 - Narrativa contextual en el registro.
 - Citas de filósofos en el HUD.
+- Combate por rondas: Sarah → Marcus → Elena seguidos por turnos enemigos determinados por tirada.
 
 ## Dev
 ```bash

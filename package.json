@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "tsc src/engine/turns.ts src/systems/combat.ts --module node16 --target ES2020 --moduleResolution node16 --skipLibCheck --outDir build && node --test tests/turns.test.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",
