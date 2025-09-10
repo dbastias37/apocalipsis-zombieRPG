@@ -18,7 +18,7 @@ export const FISTS_WEAPON = {
  */
 export function getSelectedWeapon(player: any) {
   try {
-    const selId = player?.selectedWeaponId;
+    const selId = player?.currentWeaponId ?? player?.selectedWeaponId;
     if (selId) {
       const w = findWeaponById(selId);
       if (w) {

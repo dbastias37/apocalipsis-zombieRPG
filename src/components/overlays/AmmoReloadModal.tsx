@@ -60,7 +60,7 @@ function listReloadableWeapons(player:any): Weapon[] {
   const list: Weapon[] = [];
   const add = (id:string, name:string) => { if(!list.find(w=>w.id===id)) list.push({id,name}); };
 
-  const selId = (player as any)?.selectedWeaponId;
+  const selId = (player as any)?.currentWeaponId ?? (player as any)?.selectedWeaponId;
   const byId = selId ? WEAPONS.find(w => w.id === selId) : null;
   if (byId && byId.type === "ranged") add(byId.id, byId.name);
 

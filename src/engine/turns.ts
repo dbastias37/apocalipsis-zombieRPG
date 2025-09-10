@@ -29,6 +29,8 @@ export const POST_COMBAT_MIN_ENERGY = 1;
 
 export async function runBattleRound(ctx: CombatContext) {
   await runAlliesPhase(ctx);
+  if (allEnemiesDead(ctx) || allAlliesDown(ctx)) return;
+  ctx.log(`[${ctx.now()}] Terminan los turnos de tu equipo: Sarah → Marcus → Elena. Ahora atacan los enemigos…`);
   const nEnemyTurns = rollEnemyTurns(ctx);
   await runEnemiesPhase(ctx, nEnemyTurns);
   ctx.applyTimeCost?.(ACTION_TIME_COSTS.battle);
@@ -40,7 +42,6 @@ export async function runFullBattle(ctx: CombatContext) {
   while (!allEnemiesDead(ctx) && !allAlliesDown(ctx)) {
     await runBattleRound(ctx);
     if (allEnemiesDead(ctx) || allAlliesDown(ctx)) break;
-    ctx.log(`[${ctx.now()}] Terminan los turnos de tu equipo: Sarah → Marcus → Elena. Ahora atacan los enemigos…`);
     ctx.log(`[${ctx.now()}] Comienza el turno de tu equipo…`);
   }
   showBattleSummary(ctx);
