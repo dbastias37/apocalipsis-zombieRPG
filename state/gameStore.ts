@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+export interface Card { id: string; [key: string]: any }
+
 export type UIMode = "character-creation" | "running" | "paused";
 
 export type Player = {
@@ -18,6 +20,9 @@ export type UIState = {
     profession?: string;
     bio?: string;
   } | null;
+  awaitingContinue?: boolean;
+  currentCard?: Card | null;
+  queuedCard?: Card | null;
 };
 
 export type GameState = {
@@ -26,10 +31,12 @@ export type GameState = {
   tick: (ms: number) => void;
   setMode: (m: UIMode) => void;
   createPlayer: (p: Omit<Player, "id">) => void;
+  openDecisionCard: (card: Card) => void;
+  proceed: () => void;
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
-  ui: { mode: "character-creation", paused: true },
+  ui: { mode: "character-creation", paused: true, awaitingContinue: false, currentCard: null, queuedCard: null },
   players: [],
   tick: (ms) => {
     const { ui } = get();
@@ -48,4 +55,20 @@ export const useGameStore = create<GameState>((set, get) => ({
     set((state) => ({
       players: [...state.players, { id: crypto.randomUUID(), ...p }],
     })),
+  openDecisionCard: (card) =>
+    set((state) => {
+      if (state.ui.awaitingContinue) {
+        return { ui: { ...state.ui, queuedCard: card } };
+      }
+      return { ui: { ...state.ui, currentCard: card } };
+    }),
+  proceed: () =>
+    set((state) => {
+      const ui: UIState = { ...state.ui, awaitingContinue: false };
+      if (state.ui.queuedCard) {
+        ui.currentCard = state.ui.queuedCard;
+        ui.queuedCard = null;
+      }
+      return { ui };
+    }),
 }));
