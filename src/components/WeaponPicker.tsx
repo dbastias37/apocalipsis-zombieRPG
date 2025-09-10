@@ -3,15 +3,11 @@ import { getAvailableWeapons, WeaponOpt } from "../systems/combat/getAvailableWe
 
 type WeaponPickerProps = {
   player: any;
-  resources: { ammo?: number };
   onSelect: (weaponId: string) => void;
 };
 
-export default function WeaponPicker({ player, resources, onSelect }: WeaponPickerProps) {
-  const weapons = useMemo<WeaponOpt[]>(
-    () => getAvailableWeapons(player, resources),
-    [player, resources]
-  );
+export default function WeaponPicker({ player, onSelect }: WeaponPickerProps) {
+  const weapons = useMemo<WeaponOpt[]>(() => getAvailableWeapons(player), [player]);
 
   return (
     <div className="mt-3">

@@ -3,8 +3,7 @@
 
 export type WeaponOpt = { id: string; label: string; usable: boolean; reason?: string };
 
-type Player = { inventory?: any[] };
-type Resources = { ammo?: number };
+type Player = { inventory?: any[]; ammo?: number };
 
 /** Comprueba si el jugador porta un item de cierto tipo */
 function hasItem(p: Player, type: string): boolean {
@@ -14,7 +13,7 @@ function hasItem(p: Player, type: string): boolean {
   });
 }
 
-export function getAvailableWeapons(player: Player, resources: Resources): WeaponOpt[] {
+export function getAvailableWeapons(player: Player): WeaponOpt[] {
   const list: WeaponOpt[] = [
     { id: 'fists', label: 'Puños (1–2)', usable: true },
   ];
@@ -23,12 +22,21 @@ export function getAvailableWeapons(player: Player, resources: Resources): Weapo
     list.push({ id: 'knife', label: 'Navaja (1–6)', usable: true });
   }
 
-  const hasPistol = hasItem(player, 'pistol');
-  if (hasPistol) {
-    const ammo = resources.ammo ?? 0;
+  const ammo = player.ammo ?? 0;
+
+  if (hasItem(player, 'pistol')) {
     list.push({
       id: 'pistol',
       label: `Pistola (2–8) — Munición: ${ammo}`,
+      usable: ammo > 0,
+      reason: ammo > 0 ? undefined : 'Sin munición',
+    });
+  }
+
+  if (hasItem(player, 'rifle')) {
+    list.push({
+      id: 'rifle',
+      label: `Rifle (4–12) — Munición: ${ammo}`,
       usable: ammo > 0,
       reason: ammo > 0 ? undefined : 'Sin munición',
     });

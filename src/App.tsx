@@ -2172,7 +2172,6 @@ function advanceTurn() {
         {activePlayer && (
           <WeaponPicker
             player={activePlayer}
-            resources={resources}
             onSelect={(wid) => setPlayerSelectedWeapon(activePlayer.id, wid)}
           />
         )}

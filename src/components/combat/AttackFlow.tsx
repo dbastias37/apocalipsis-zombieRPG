@@ -22,14 +22,13 @@ export type AttackFlowResult = AttackFlowResultChoose | AttackFlowResultDirect;
  */
 export function useAttackFlow(
   player: any,
-  resources: { ammo?: number },
   _doAttack: (weaponId: string) => void
 ) {
   // _doAttack no se usa aquí directamente pero se admite por diseño
   void _doAttack;
 
   const startAttack = useCallback((): AttackFlowResult => {
-    const weapons = getAvailableWeapons(player, resources);
+    const weapons = getAvailableWeapons(player);
     const usable = weapons.filter((w) => w.usable);
 
     if (usable.length === 0) {
@@ -44,7 +43,7 @@ export function useAttackFlow(
     }
 
     return { needChooser: true, weapons };
-  }, [player, resources]);
+  }, [player]);
 
   return { startAttack };
 }

@@ -7,7 +7,6 @@ type Enemy = { id: string; trait?: string };
 
 interface Props {
   player: { isGrappled?: boolean; status?: { infected?: boolean; bleeding?: boolean } };
-  resources: { ammo?: number };
   enemies: Enemy[];
   flee: () => void;
   selfHeal: () => void;
@@ -16,7 +15,6 @@ interface Props {
 
 export default function ActionBar({
   player,
-  resources,
   enemies,
   flee,
   selfHeal,
@@ -31,12 +29,9 @@ export default function ActionBar({
   }, [player, enemies]);
 
   const [weaponChoices, setWeaponChoices] = useState<WeaponOpt[] | null>(null);
-  const { startAttack } = useAttackFlow(player, resources, doAttack);
+  const { startAttack } = useAttackFlow(player, doAttack);
 
-  const availableWeapons = useMemo(
-    () => getAvailableWeapons(player, resources),
-    [player, resources]
-  );
+  const availableWeapons = useMemo(() => getAvailableWeapons(player), [player]);
   const canAttack = availableWeapons.some((w) => w.usable);
 
   const handleAttack = () => {
