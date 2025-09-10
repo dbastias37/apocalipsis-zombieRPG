@@ -133,9 +133,10 @@ export default function DeckUI({
             </button>
             <button
               onClick={() => shuffle("story")}
-              className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-all"
+              className="relative inline-flex items-center px-3 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-all"
             >
-              🔀 Barajar
+              <span className="inline-block mr-2">🔀</span>
+              <span>Barajar</span>
             </button>
             <button
               onClick={() => reintegrate("story")}
@@ -163,9 +164,10 @@ export default function DeckUI({
             </button>
             <button
               onClick={() => shuffle("combat")}
-              className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-all"
+              className="relative inline-flex items-center px-3 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-all"
             >
-              🔀 Barajar
+              <span className="inline-block mr-2">🔀</span>
+              <span>Barajar</span>
             </button>
             <button
               onClick={() => reintegrate("combat")}
