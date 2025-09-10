@@ -277,6 +277,89 @@ export default function GameRoot(){
   // Registro de narrativa
   const [log, setLog] = useState<string[]>([]);
 
+  // === Autosave ===
+  // Load from localStorage on mount
+  useEffect(() => {
+    const raw = localStorage.getItem('save:v1');
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (typeof data.day === 'number') setDay(data.day);
+      if (typeof data.phase === 'string') setPhase(data.phase as Phase);
+      if (typeof data.clockMs === 'number') setClockMs(data.clockMs);
+      if (typeof data.timeRunning === 'boolean') setTimeRunning(data.timeRunning);
+      if (typeof data.morale === 'number') setMorale(data.morale);
+      if (typeof data.threat === 'number') setThreat(data.threat);
+      if (data.resources) setResources(data.resources);
+      if (data.camp) setCamp(data.camp);
+      if (Array.isArray(data.players)) setPlayers(data.players);
+      if (Array.isArray(data.roster)) setRoster(data.roster);
+      if (typeof data.turn === 'number') setTurn(data.turn);
+      if (Array.isArray(data.decisionDeck)) setDecisionDeck(data.decisionDeck);
+      if (Array.isArray(data.combatDeck)) setCombatDeck(data.combatDeck);
+      if (Array.isArray(data.decisionDiscard)) setDecisionDiscard(data.decisionDiscard);
+      if (Array.isArray(data.discardCombat)) setDiscardCombat(data.discardCombat);
+      if (data.currentCard) setCurrentCard(data.currentCard);
+      if (Array.isArray(data.enemies)) setEnemies(data.enemies);
+      if (Array.isArray(data.foundNotes)) setFoundNotes(data.foundNotes);
+      if (typeof data.explorationActive === 'boolean') setExplorationActive(data.explorationActive);
+      if (data.timedEvent) setTimedEvent(data.timedEvent);
+      if (Array.isArray(data.log)) setLog(data.log);
+    } catch {
+      // ignore malformed save
+    }
+  }, []);
+
+  // Save to localStorage whenever the game state changes
+  useEffect(() => {
+    const payload = JSON.stringify({
+      day,
+      phase,
+      clockMs,
+      timeRunning,
+      morale,
+      threat,
+      resources,
+      camp,
+      players,
+      roster,
+      turn,
+      decisionDeck,
+      combatDeck,
+      decisionDiscard,
+      discardCombat,
+      currentCard,
+      enemies,
+      foundNotes,
+      explorationActive,
+      timedEvent,
+      log,
+    });
+    localStorage.setItem('save:v1', payload);
+  }, [
+    day,
+    phase,
+    clockMs,
+    timeRunning,
+    morale,
+    threat,
+    resources,
+    camp,
+    players,
+    roster,
+    turn,
+    decisionDeck,
+    combatDeck,
+    decisionDiscard,
+    discardCombat,
+    currentCard,
+    enemies,
+    foundNotes,
+    explorationActive,
+    timedEvent,
+    log,
+  ]);
+
   const {
     dayState,
     initDay,
