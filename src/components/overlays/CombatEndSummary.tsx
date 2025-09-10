@@ -99,6 +99,12 @@ export default function CombatEndSummary({ open, lines, onFinish, autoCloseMs = 
 
         <div className="mt-2 text-xs opacity-70">Presiona Enter para continuar</div>
 
+        {!finished && (
+          <div className="mt-3 text-xs text-center opacity-80">
+            Toca aquí para continuar
+          </div>
+        )}
+
         {finished && (
           <div className="mt-4 flex justify-end">
             <button className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500" onClick={onFinish}>
