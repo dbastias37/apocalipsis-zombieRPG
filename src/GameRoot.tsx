@@ -1276,7 +1276,7 @@ export default function GameRoot(){
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="p-8 rounded-2xl border border-neutral-700 bg-neutral-900 max-w-md w-full space-y-4">
             <h2 className="text-2xl font-bold text-red-400">Pausado</h2>
-            <button className="btn btn-red text-white w-full" onClick={()=>setState("playing")}>Continuar</button>
+            <button className="btn btn-red text-white w-full" onClick={()=>setState("playing")}>Reanudar</button>
           </div>
         </div>
       )}

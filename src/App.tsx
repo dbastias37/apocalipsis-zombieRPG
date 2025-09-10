@@ -2262,7 +2262,7 @@ function advanceTurn() {
             <button className="btn btn-red text-white w-full" onClick={()=>{
               setState("playing");
               // reanudar queda en control del botón de play/pausa del HUD, no forzamos timeRunning
-            }}>Continuar</button>
+            }}>Reanudar</button>
           </div>
         </div>
       )}
