@@ -126,3 +126,83 @@ export function addAmmo(inv: InventoryItem[], amount: number): InventoryItem[] {
   return normalizeAmmo(out);
 }
 
+// ---------- Tipos mínimos de compatibilidad (si no existen en el módulo) ----------
+type PlayerLike = {
+  ammoByWeapon?: Record<string, number>;
+  // ...otros campos del jugador que ya tengas
+};
+
+// ---------- totalAmmoInInventory ----------
+/**
+ * Si este archivo ya define getTotalAmmoAvailable, expórtalo con el nombre esperado por App.tsx.
+ * De lo contrario, intenta importarlo del módulo donde viva en tu repo.
+ * Si no existe en ningún lado, usa el Fallback de abajo.
+ */
+// CASO A: vive en este mismo archivo:
+// declare const getTotalAmmoAvailable: (invOrPlayer: any) => number;
+// (si no existe, comenta la línea de arriba y usa el CASO C)
+
+// CASO B: vive en otro archivo (ajusta la ruta si aplica):
+// import { getTotalAmmoAvailable } from "./ammo-utils"; // <-- ajusta ruta si aplica
+
+// Export preferido (A o B):
+export const totalAmmoInInventory = (function totalAmmoInInventoryFallback(
+  invOrPlayer: any
+): number {
+  // Intenta aceptar player o directamente un array de items
+  const inv = Array.isArray(invOrPlayer)
+    ? invOrPlayer
+    : invOrPlayer?.inventory ?? [];
+  if (!Array.isArray(inv)) return 0;
+
+  return inv.reduce((sum, it: any) => {
+    const t = (it?.type || it?.id || it?.name || "")
+      .toString()
+      .toLowerCase();
+    const count = Number(it?.count ?? it?.cantidad ?? 1) || 0;
+
+    // Heurística: soporta términos españoles/ingleses
+    const isBox = t.includes("ammo_box") || t.includes("caja");
+    const isLoose =
+      t.includes("ammo") || t.includes("municion") || t.includes("munición");
+
+    if (isBox) return sum + (count || 15);
+    if (isLoose) return sum + (count || 1);
+    return sum;
+  }, 0);
+}) as any;
+
+// ---------- getLoadedAmmo ----------
+/**
+ * Devuelve las balas actualmente cargadas en el cargador del arma indicada para este jugador.
+ * Fuente de verdad: player.ammoByWeapon[weaponId]
+ */
+export function getLoadedAmmo(
+  player: PlayerLike | null | undefined,
+  weaponId: string
+): number {
+  if (!player || !weaponId) return 0;
+  return Math.max(0, Number(player.ammoByWeapon?.[weaponId] ?? 0));
+}
+
+// ---------- spendAmmo ----------
+/**
+ * Descuenta 'amount' balas del cargador del arma especificada y devuelve un nuevo objeto jugador (inmutable).
+ * No baja de 0, y no altera otras armas.
+ */
+export function spendAmmo<T extends PlayerLike>(
+  player: T,
+  weaponId: string,
+  amount: number = 1
+): T {
+  const cur = getLoadedAmmo(player, weaponId);
+  const next = Math.max(0, cur - Math.max(0, amount | 0));
+  return {
+    ...player,
+    ammoByWeapon: {
+      ...(player.ammoByWeapon ?? {}),
+      [weaponId]: next,
+    },
+  };
+}
+
