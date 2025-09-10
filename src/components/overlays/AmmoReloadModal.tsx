@@ -158,7 +158,7 @@ export default function AmmoReloadModal({ isOpen, player, onClose, onConfirm }: 
             disabled={disabled || count<=0}
             onClick={()=>onConfirm(wid, count)}
           >
-            Continuar
+            Aceptar
           </button>
         </div>
       </div>
