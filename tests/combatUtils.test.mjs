@@ -6,8 +6,9 @@ const sampleActor = () => ({
   id: 'a',
   name: 'Actor',
   hp: 10,
+  maxHp: 10,
   alive: true,
-  inventory: { ammo: { '9mm': 10 }, items: [] }
+  inventory: { ammo: { '9mm': 10 }, weapons: [] }
 });
 
 const sampleWeapon = () => ({
@@ -38,7 +39,7 @@ test('consumeShot reduces magazine only', () => {
   const actor = sampleActor();
   const weapon = sampleWeapon();
   weapon.magAmmo = 3;
-  consumeShot(actor, weapon);
+  consumeShot(weapon);
   assert.equal(weapon.magAmmo, 2);
   assert.equal(actor.inventory.ammo['9mm'], 10);
 });

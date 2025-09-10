@@ -12,3 +12,13 @@ test('shouldShow true when finished with rounds and result', () => {
   assert.equal(shouldShow(state), true);
 });
 
+test('shouldShow false when finished without rounds', () => {
+  const state = { combat: { status: 'finished', rounds: [], result: { winner: 'a' } } };
+  assert.equal(shouldShow(state), false);
+});
+
+test('shouldShow false when finished without result', () => {
+  const state = { combat: { status: 'finished', rounds: [1], result: null } };
+  assert.equal(shouldShow(state), false);
+});
+

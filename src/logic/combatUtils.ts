@@ -12,9 +12,9 @@ export function damageRange(d: DiceSpec) {
 
 export function ensureLoaded(actor: Actor, w: Weapon) {
   if (w.type !== 'ranged') return;
-  const cost = w.ammoCost ?? 1;
+  const cap = w.magCapacity ?? 0;
   const mag = w.magAmmo ?? 0;
-  const need = Math.max(0, (w.magCapacity ?? 0) - mag);
+  const need = Math.max(0, cap - mag);
   const pool = actor.inventory.ammo[w.ammoType] ?? 0;
   const take = Math.min(need, pool);
   if (take > 0) {
@@ -23,7 +23,7 @@ export function ensureLoaded(actor: Actor, w: Weapon) {
   }
 }
 
-export function consumeShot(actor: Actor, w: RangedWeapon) {
+export function consumeShot(w: RangedWeapon) {
   const cost = w.ammoCost ?? 1;
   w.magAmmo = Math.max(0, (w.magAmmo ?? 0) - cost);
 }
