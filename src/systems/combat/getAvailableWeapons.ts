@@ -46,8 +46,8 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
   if (hasAny(player, ALIAS.pistol)) {
     list.push({
       id: "pistol",
-      label: `Pistola (2–8) — Munición: ${ammo}`,
-      usable: ammo > 0,
+      label: `Pistola (2–8) — Munición: ${ammo}${ammo > 0 ? "" : " (Sin munición)"}`,
+      usable: true,
       reason: ammo > 0 ? undefined : "Sin munición",
     });
   }
@@ -55,8 +55,8 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
   if (hasAny(player, ALIAS.rifle)) {
     list.push({
       id: "rifle",
-      label: `Rifle (4–12) — Munición: ${ammo}`,
-      usable: ammo > 0,
+      label: `Rifle (4–12) — Munición: ${ammo}${ammo > 0 ? "" : " (Sin munición)"}`,
+      usable: true,
       reason: ammo > 0 ? undefined : "Sin munición",
     });
   }
@@ -65,8 +65,8 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
   if (hasAny(player, ALIAS.shotgun)) {
     list.push({
       id: "shotgun",
-      label: `Escopeta (2d4+3) — Munición: ${ammo}`,
-      usable: ammo > 0,
+      label: `Escopeta (2d4+3) — Munición: ${ammo}${ammo > 0 ? "" : " (Sin munición)"}`,
+      usable: true,
       reason: ammo > 0 ? undefined : "Sin munición",
     });
   }
@@ -74,8 +74,8 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
   if (hasAny(player, ALIAS.smg)) {
     list.push({
       id: "smg",
-      label: `SMG (1d6+3) — Munición: ${ammo}`,
-      usable: ammo > 0,
+      label: `SMG (1d6+3) — Munición: ${ammo}${ammo > 0 ? "" : " (Sin munición)"}`,
+      usable: true,
       reason: ammo > 0 ? undefined : "Sin munición",
     });
   }

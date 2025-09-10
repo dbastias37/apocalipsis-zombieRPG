@@ -13,12 +13,12 @@ export const DEFAULT_CUPOS: PlayerCupos = {
 export type TurnState = {
   activeIndex: number;
   turnNumber: number;
-  overlay: boolean;
   phase: 'player' | 'enemy';
+  overlay: boolean; // usado solo para efectos visuales, no bloquea interacción
 };
 
 export function createTurnState(): TurnState {
-  return { activeIndex: 0, turnNumber: 1, overlay: true, phase: 'player' };
+  return { activeIndex: 0, turnNumber: 1, overlay: false, phase: 'player' };
 }
 
 /**
@@ -36,7 +36,6 @@ export function nextTurn(turn: TurnState, playersLen: number, enemiesLen: number
     if (pLen === 0) {
       turn.phase = 'enemy';
       turn.activeIndex = 0;
-      turn.overlay = true;
       return;
     }
     turn.activeIndex++;
@@ -44,7 +43,6 @@ export function nextTurn(turn: TurnState, playersLen: number, enemiesLen: number
       turn.phase = 'enemy';
       turn.activeIndex = 0;
     }
-    turn.overlay = true;
     return;
   }
 
@@ -54,7 +52,6 @@ export function nextTurn(turn: TurnState, playersLen: number, enemiesLen: number
     turn.phase = 'player';
     turn.activeIndex = 0;
     turn.turnNumber += 1;
-    turn.overlay = true;
     return;
   }
 
@@ -64,7 +61,6 @@ export function nextTurn(turn: TurnState, playersLen: number, enemiesLen: number
     turn.activeIndex = 0;
     turn.turnNumber += 1;
   }
-  turn.overlay = true;
 }
 
 /** Opcional: wrapper deprecado para compatibilidad; usar nextTurn en adelante */
@@ -77,7 +73,6 @@ export function nextPlayer(turn: TurnState, playersLen: number) {
   if (turn.activeIndex === 0) {
     turn.phase = 'enemy';
   }
-  turn.overlay = true;
 }
 
 export function resetCupos(): PlayerCupos {
