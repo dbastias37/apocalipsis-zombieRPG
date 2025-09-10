@@ -97,6 +97,7 @@ type Player = {
   attrs: Attributes;
   conditions?: Conditions;
   selectedWeaponId?: string;
+  currentWeaponId?: string;
   ammoByWeapon?: Record<string, number>;
   backpackCapacity?: number;
 };
@@ -310,6 +311,7 @@ export default function App(){
       energy: p.energy ?? 100,
       energyMax: p.energyMax ?? 100,
       selectedWeaponId: p.selectedWeaponId ?? "fists",
+      currentWeaponId: p.currentWeaponId ?? p.selectedWeaponId ?? "fists",
       ammoByWeapon: table,
       backpack: Array.isArray((p as any).backpack) ? (p as any).backpack : [],
       inventory: Array.isArray((p as any).inventory) ? (p as any).inventory : [],
@@ -508,7 +510,7 @@ export default function App(){
     const list: {id:string; name:string}[] = [];
     const add = (id:string, name:string) => { if(!list.find(w=>w.id===id)) list.push({id,name}); };
 
-    const selId = (player as any)?.selectedWeaponId;
+    const selId = (player as any)?.currentWeaponId ?? (player as any)?.selectedWeaponId;
     const byId = selId ? WEAPONS.find(w => w.id === selId) : null;
     if (byId && byId.type === "ranged") add(byId.id, byId.name);
 
@@ -622,7 +624,7 @@ export default function App(){
       table[weaponId] = Math.max(0, Number(table[weaponId] ?? 0)) + taken;
 
       pushLog?.(`🔧 Recargas ${taken} munición(es) en ${weaponId}.`);
-      return { ...p, inventory: a.out, backpack: b.out, ammoByWeapon: table, selectedWeaponId: weaponId };
+      return { ...p, inventory: a.out, backpack: b.out, ammoByWeapon: table, selectedWeaponId: weaponId, currentWeaponId: weaponId };
     }));
     setShowReloadModal(false);
 
@@ -846,6 +848,7 @@ export default function App(){
       conditions: {},
       attrs,
       selectedWeaponId: 'fists',
+      currentWeaponId: 'fists',
       ammoByWeapon: {},
       backpackCapacity: 8,
     };
@@ -1157,7 +1160,7 @@ export default function App(){
   function performAttack(enemyId: string){
     if (controlsLocked || isEnemyPhase) return;
     const player = players.find(pl => pl.id === activePlayerId);
-    const wid = player?.selectedWeaponId;
+    const wid = player?.currentWeaponId ?? player?.selectedWeaponId;
     const ammoLoaded = Number(player?.ammoByWeapon?.[wid ?? ""] ?? 0);
     const ranged = WEAPONS.find(x => x.id === wid)?.type === "ranged";
     const targetName = enemies.find(e=>e.id===enemyId)?.name ?? (enemies && enemies.length ? (enemies[0].name ?? "el enemigo") : "el enemigo");
@@ -1770,8 +1773,8 @@ function advanceTurn() {
     }
   }
 
-  function setPlayerSelectedWeapon(playerId: string, weaponId: string) {
-    updatePlayer(playerId, { selectedWeaponId: weaponId });
+  function equipWeapon(playerId: string, weaponId: string) {
+    updatePlayer(playerId, { selectedWeaponId: weaponId, currentWeaponId: weaponId });
   }
   function getItemById(id?: string) {
     return ITEMS_CATALOG.find(it => it.id === id);
@@ -2208,7 +2211,7 @@ function advanceTurn() {
         {activePlayer && (
           <WeaponPicker
             player={activePlayer}
-            onSelect={(wid) => setPlayerSelectedWeapon(activePlayer.id, wid)}
+            onSelect={(wid) => equipWeapon(activePlayer.id, wid)}
           />
         )}
         <CombatLogPanel
@@ -2746,7 +2749,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
               const weaponsFound: {id:string; name:string}[] = [];
               const addW = (id:string, name:string) => { if(!weaponsFound.find(w=>w.id===id)) weaponsFound.push({id,name}); };
 
-              const selId = (p as any)?.selectedWeaponId;
+              const selId = (p as any)?.currentWeaponId ?? (p as any)?.selectedWeaponId;
               const sel = selId ? WEAPONS.find(w => w.id === selId) : null;
               if (sel && sel.type === "ranged") addW(sel.id, sel.name);
 

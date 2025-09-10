@@ -41,12 +41,14 @@ export default function WeaponPicker({ player, backpack, onSelect }: WeaponPicke
           return (
             <button
               key={w.id}
+              disabled={noAmmo}
               onClick={() => onSelect(w.id)}
               className={[
                 "relative text-left p-2 rounded-xl border transition",
                 selected ? "border-indigo-400 bg-indigo-500/10" : "border-white/10 hover:border-white/20",
-                noAmmo ? "opacity-60" : ""
+                noAmmo ? "opacity-60 cursor-not-allowed" : ""
               ].join(" ")}
+              title={noAmmo ? "Sin munición" : undefined}
             >
               <div className="font-medium">
                 {w.name}

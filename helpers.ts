@@ -126,7 +126,7 @@ export function listReloadableWeapons(player:any): {id:string; name:string}[] {
   const normalize = (s?:string)=>String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
 
   // 1) arma seleccionada si es de fuego (por id del catálogo o por getter)
-  const selId = (player as any)?.selectedWeaponId;
+  const selId = (player as any)?.currentWeaponId ?? (player as any)?.selectedWeaponId;
   const byId = selId ? WEAPONS.find(w => w.id === selId) : null;
   const fromGetter = typeof getSelectedWeapon === "function" ? getSelectedWeapon(player) : null;
   const selectedRanged = byId?.type === "ranged" ? byId
