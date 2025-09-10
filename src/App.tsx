@@ -39,7 +39,8 @@ import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
 import NoAmmoModal from "./components/overlays/NoAmmoModal";
 import OverlayRoot from "./components/overlays/OverlayRoot";
-import { registerLogger, gameLog } from "./utils/logger";
+import { registerLogger, gameLog, registerTimeProvider } from "./utils/logger";
+import { DAY_LENGTH_MS, ACTION_TIME_COSTS } from "./config/time";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
 import { day3DecisionCards } from "./data/days/day3/decisionCards.day3";
@@ -147,8 +148,6 @@ type TimedEvent = {
 };
 
 // === Utilidades ===
-const DAY_LENGTH_MIN = 35;
-const DAY_LENGTH_MS = DAY_LENGTH_MIN * 60 * 1000;
 
 // Activa el modo de contraataque (sin fase de turnos de enemigos)
 const USE_COUNTERATTACK_MODE = true;
@@ -291,6 +290,7 @@ export default function App(){
   React.useEffect(()=>{ (globalThis as any).__DAY = day; }, [day]);
   const [phase, setPhase] = useState<Phase>("dawn");
   const [clockMs, setClockMs] = useState<number>(DAY_LENGTH_MS);
+  const clockMsRef = useRef(DAY_LENGTH_MS);
   const [timeRunning, setTimeRunning] = useState(true);
 
   const [morale, setMorale] = useState(60);
@@ -733,7 +733,12 @@ export default function App(){
   // Registrar logger global
   useEffect(() => {
     registerLogger(pushLog);
+    registerTimeProvider(() => formatTime(clockMsRef.current));
   }, [pushLog]);
+
+  useEffect(() => {
+    clockMsRef.current = clockMs;
+  }, [clockMs]);
 
   // Cita visible
 
@@ -863,8 +868,7 @@ export default function App(){
     const h = (total/3600|0).toString().padStart(2,"0");
     total %= 3600;
     const m = (total/60|0).toString().padStart(2,"0");
-    const s = (total%60).toString().padStart(2,"0");
-    return `${h}:${m}:${s}`;
+    return `${h}:${m}`;
   }
 
   function progressPercent(ms:number){
@@ -1082,7 +1086,7 @@ export default function App(){
       setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
     }
     finalizeTurnWithEndConditions(() => {
-      timePenalty(45);
+      timePenalty(ACTION_TIME_COSTS.decision);
       advanceTurn();
     });
   }
@@ -1221,7 +1225,7 @@ export default function App(){
       if (hasCondition(enemy.conditions, 'stunned')) {
         pushBattle(`${enemy.name} intenta reaccionar, pero está aturdido y no contraataca.`);
         endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-          timePenalty(45);
+          timePenalty(ACTION_TIME_COSTS.battle);
           advanceTurn();
         }));
         return;
@@ -1262,7 +1266,7 @@ export default function App(){
 
         // Enter final → fin de turno + registro de sangrado
         postActionContinueRef.current = () => finalizeTurnWithEndConditions(() => {
-          timePenalty(45);
+          timePenalty(ACTION_TIME_COSTS.battle);
           advanceTurn();
         });
       });
@@ -1287,7 +1291,7 @@ export default function App(){
         pushBattle(`⚡ ${actor.name} gasta ${cost} de energía.`);
         setDayStats(s=>({ ...s, damageDealt: s.damageDealt + stunDmg, shotsFired: s.shotsFired + (isRanged ? 1 : 0) }));
         endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-          timePenalty(45);
+          timePenalty(ACTION_TIME_COSTS.battle);
           advanceTurn();
         }));
         return;
@@ -1317,7 +1321,7 @@ export default function App(){
     }));
 
     endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-      timePenalty(45);
+      timePenalty(ACTION_TIME_COSTS.defend);
       advanceTurn();
     }));
   }
@@ -1456,7 +1460,7 @@ function finishEnemyPhase() {
     pushLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
     pushBattle(`${actor.name} se cubre entre los escombros (+DEF temporal).`);
     endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-      timePenalty(45);
+      timePenalty(ACTION_TIME_COSTS.defend);
       advanceTurn();
     }));
   }
@@ -1470,6 +1474,12 @@ function finishEnemyPhase() {
     const isInf = hasCondition(p.conditions,'infected');
     const isBle = hasCondition(p.conditions,'bleeding');
 
+    if (actor.hp >= actor.hpMax && !isInf && !isBle) {
+      pushBattle("PV al máximo");
+      endPlayerActionAwaitEnter(()=>{});
+      return;
+    }
+
     if (isInf) {
       if ((resources.medicine ?? 0) <= 0) {
         pushBattle(`${p.name} necesita medicina para curar la infección.`);
@@ -1480,7 +1490,7 @@ function finishEnemyPhase() {
       updatePlayer(p.id, { conditions: removeCondition(p.conditions,'infected') });
       pushBattle(`${p.name} usa medicina y supera la infección.`);
       endPlayerActionAwaitEnter(()=> finalizeTurnWithEndConditions(() => {
-        timePenalty(30);
+        timePenalty(ACTION_TIME_COSTS.heal);
         advanceTurn();
       }));
       return;
@@ -1490,7 +1500,7 @@ function finishEnemyPhase() {
       updatePlayer(p.id, { conditions: removeCondition(p.conditions,'bleeding') });
       pushBattle(`${p.name} detiene la hemorragia y se estabiliza.`);
       endPlayerActionAwaitEnter(()=> finalizeTurnWithEndConditions(() => {
-        timePenalty(20);
+        timePenalty(ACTION_TIME_COSTS.heal);
         advanceTurn();
       }));
       return;
@@ -1513,7 +1523,7 @@ function finishEnemyPhase() {
       return { ...prev, byPlayer: { ...prev.byPlayer, [actor.id]: next } };
     });
     endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-      timePenalty(45);
+      timePenalty(ACTION_TIME_COSTS.heal);
       advanceTurn();
     }));
   }
@@ -1526,6 +1536,7 @@ function finishEnemyPhase() {
     if (!startPlayerActionOrBlock()) return;
     const fr = roll(1,20, mod(actor.attrs.Destreza));
     pushBattle(render(pick(FLEE_LINES), { P: actor.name }));
+    const tookHit = Math.random() < 0.3;
     if(fr.total>=15){
       pushLog("🏃 Huyen por pasillos colapsados. ¡Escape exitoso!");
       pushBattle(`${actor.name} ha escapado.`);
@@ -1536,8 +1547,12 @@ function finishEnemyPhase() {
       pushLog("⚠️ El escape falla, te rodean por un momento.");
       pushBattle(`${actor.name} no logra escapar.`);
     }
+    if(tookHit){
+      updatePlayer(actor.id, { hp: Math.max(0, actor.hp - 5) });
+      pushLog(`💥 ${actor.name} sufre rasguños al huir (-5 PV).`);
+    }
     endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-      timePenalty(45);
+      timePenalty(ACTION_TIME_COSTS.flee);
       advanceTurn();
     }));
   }
@@ -1830,6 +1845,7 @@ function advanceTurn() {
       const [card, ...rest] = explorationDeck;
       setExplorationDeck(rest);
       if(card.advanceMs) timePenalty(card.advanceMs/1000);
+      else timePenalty(ACTION_TIME_COSTS.explore);
       if(card.loot){
         const r = card.loot;
         setResources(prev => ({
@@ -1986,7 +2002,9 @@ function advanceTurn() {
   }
 
   function timePenalty(seconds:number){
-    setClockMs(ms=> Math.max(0, ms - seconds*1000));
+    const ms = seconds*1000;
+    clockMsRef.current = Math.max(0, clockMsRef.current - ms);
+    setClockMs(prev=> Math.max(0, prev - ms));
   }
 
   useEffect(()=>{
@@ -2168,6 +2186,7 @@ function advanceTurn() {
             isEnemyPhase={isEnemyPhase}
             canAttackWithSelected={canAttackWithSelected}
             activeDown={activeDown}
+            canHeal={!!activePlayer && activePlayer.hp < activePlayer.hpMax && resources.medicine>0}
             onClose={()=>{
               if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
               else setDiscardCombat(d=>[currentCard, ...d]);
@@ -2452,6 +2471,7 @@ function CardView(props:{
   isEnemyPhase: boolean;
   canAttackWithSelected: boolean;
   activeDown: boolean;
+  canHeal: boolean;
 }){
   const isDecision = props.card.type==="decision";
   return (
@@ -2461,7 +2481,7 @@ function CardView(props:{
           <h3 className="text-2xl font-bold">{props.card.title}</h3>
           <p className="text-neutral-300 mt-1">{props.card.text}</p>
         </div>
-        <button className="btn btn-ghost" onClick={props.onClose}>✖</button>
+        <button className="btn btn-ghost" onClick={props.card.type==='combat'?props.onFlee:props.onClose}>✖</button>
       </div>
 
       {isDecision && props.card.choices && (
@@ -2530,8 +2550,9 @@ function CardView(props:{
             </button>
             <button
               className="btn btn-ghost w-full"
-              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onHeal(); }}
-              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
+              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canHeal) return; props.onHeal(); }}
+              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canHeal}
+              title={!props.canHeal ? "PV al máximo" : undefined}
             >
               💊 Curarse
             </button>
