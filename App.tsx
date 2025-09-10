@@ -1491,33 +1491,65 @@ function finishEnemyPhase() {
   }
 
   function computeCombatSummaryLines(): string[] {
-    let mh=0, mm=0, rh=0, rm=0, heals=0, bestId:string|null=null, bestPts=-1;
-    const nameById: Record<string,string> = {}; players.forEach(p=>nameById[p.id]=p.name);
-
-    Object.entries(battleStats.byPlayer).forEach(([pid, st])=>{
-      mh+=st.meleeHits; mm+=st.meleeMisses; rh+=st.rangedHits; rm+=st.rangedMisses; heals+=st.heals;
-      if (st.points>bestPts){ bestPts=st.points; bestId=pid; }
-    });
-    const bestName = bestId ? (nameById[bestId] || "Jugador") : "Nadie";
-    const loot = battleStats.lootNames ?? [];
     const lines: string[] = [];
+    const safeStats = battleStats?.byPlayer
+      ? battleStats
+      : { byPlayer: {}, lootNames: [] as string[] };
+
+    let mh = 0,
+      mm = 0,
+      rh = 0,
+      rm = 0,
+      heals = 0,
+      bestId: string | null = null,
+      bestPts = -1;
+    const nameById: Record<string, string> = {};
+    players.forEach(p => (nameById[p.id] = p.name));
+
+    Object.entries(safeStats.byPlayer).forEach(([pid, st]: any) => {
+      const S = st || {
+        meleeHits: 0,
+        meleeMisses: 0,
+        rangedHits: 0,
+        rangedMisses: 0,
+        heals: 0,
+        points: 0,
+      };
+      mh += S.meleeHits | 0;
+      mm += S.meleeMisses | 0;
+      rh += S.rangedHits | 0;
+      rm += S.rangedMisses | 0;
+      heals += S.heals | 0;
+      if ((S.points | 0) > bestPts) {
+        bestPts = S.points | 0;
+        bestId = pid;
+      }
+    });
+
+    const bestName = bestId ? nameById[bestId] || "Jugador" : "Nadie";
+    const loot = Array.isArray(safeStats.lootNames) ? safeStats.lootNames : [];
+
     lines.push("— RESUMEN DEL ENFRENTAMIENTO —");
     lines.push(`Golpes directos: ${mh}`);
     lines.push(`Golpes fallidos: ${mm}`);
     lines.push(`Curaciones: ${heals}`);
     lines.push(`Disparos efectivos: ${rh}`);
     lines.push(`Disparos fallidos: ${rm}`);
-    lines.push(`Mejor jugador de la batalla: ${bestName} (${Math.max(0,bestPts) || 0} pts)`);
-    if (loot.length){
-      const map: Record<string,number> = {};
-      loot.forEach(n => map[n] = (map[n]||0)+1);
+    lines.push(
+      `Mejor jugador de la batalla: ${bestName} (${Math.max(0, bestPts) || 0} pts)`
+    );
+    if (loot.length) {
+      const map: Record<string, number> = {};
+      loot.forEach(n => (map[n] = (map[n] || 0) + 1));
       lines.push("Botín:");
-      Object.entries(map).forEach(([n,c]) => lines.push(`  • ${n} x${c}`));
+      Object.entries(map).forEach(([n, c]) => lines.push(`  • ${n} x${c}`));
     } else {
       lines.push("Botín: —");
     }
-    lines.push("Recompensas: +1 Comida, +1 Agua, +1 Medicina, +1 Fuel, +1 Munición, +1 Materiales.");
-    const total = mh*2 + rh*2 + heals;
+    lines.push(
+      "Recompensas: +1 Comida, +1 Agua, +1 Medicina, +1 Fuel, +1 Munición, +1 Materiales."
+    );
+    const total = mh * 2 + rh * 2 + heals;
     lines.push(`Total de puntos del grupo: ${total}`);
     return lines;
   }
