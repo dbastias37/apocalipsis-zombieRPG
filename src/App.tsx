@@ -343,6 +343,7 @@ export default function App(){
   const [showReloadModal, setShowReloadModal] = useState(false);
   const [dayEndLines, setDayEndLines] = useState<string[]>([]);
   const [noAmmo, setNoAmmo] = useState<{open:boolean; enemyName?:string}>({ open:false });
+  const combatStartedRef = useRef(false);
 
   const isSummaryOpen = showDayEnd || showCombatEnd;
   // Turnos
@@ -1073,6 +1074,7 @@ export default function App(){
     const spawned = Array.from({length: count}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
     setEnemies(spawned);
     setStats(s => ({ ...s, battles: s.battles + 1 }));
+    combatStartedRef.current = true;
   }
 
   type CounterEffect = 'hit'|'bleeding'|'stunned'|'infected';
@@ -1579,6 +1581,8 @@ function finishEnemyPhase() {
   }
 
   function openCombatEndIfCleared() {
+    // Evita falso positivo al iniciar el juego (sin combate real)
+    if (!combatStartedRef.current) return;
     const aliveEnemies = (enemiesRef.current ?? []).filter(e=>e.hp>0);
     const inCombat = currentCard?.type === "combat" || isEnemyPhaseRef.current;
     if (!showCombatEnd && inCombat && aliveEnemies.length === 0) {
@@ -2305,6 +2309,7 @@ function advanceTurn() {
         onFinish={() => {
           setShowCombatEnd(false);
           setControlsLocked(false);
+          combatStartedRef.current = false;
           grantCombatRewards();
 
           setBattleStats({ byPlayer: {}, lootNames: [] });
