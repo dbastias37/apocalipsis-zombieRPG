@@ -101,3 +101,31 @@ export function reloadSelectedWeapon(state:any){
   const players = [...state.players]; players[pIdx] = newPlayer;
   return { ...state, players };
 }
+
+// --- Compatibilidad con API anterior ---
+
+// Alias de lectura de balas cargadas
+export function getLoadedAmmo(player: any, weaponId: string): number {
+  return getLoaded(player, weaponId);
+}
+
+// Alias de seteo de balas cargadas
+export function setLoadedAmmo(player: any, weaponId: string, count: number) {
+  return setLoaded(player, weaponId, count);
+}
+
+// Total de balas en cajas dentro de un inventario (array de items)
+export function totalAmmoInInventory(inventory: any[] | null | undefined): number {
+  return (Array.isArray(inventory) ? listAmmoBoxes(inventory) : [])
+    .reduce((acc: number, row: any) => acc + Number(row?.bullets ?? 0), 0);
+}
+
+// Gastar N balas del cargador del arma; mantiene el contrato { player, ok }
+export function spendAmmo(player: any, weaponId: string, amount = 1) {
+  const cur = getLoaded(player, weaponId);
+  if (cur < amount) return { player, ok: false };
+  return { player: setLoaded(player, weaponId, cur - amount), ok: true };
+}
+
+// Alias tolerante (por si existiera código legado que lo usa)
+export const listAmmoboxes = listAmmoBoxes;
