@@ -6,7 +6,7 @@ export type RangedWeapon = {
   type: 'ranged';
   damage: DiceSpec;
   ammoType: string;
-  magCapacity: number;
+  magSize: number;
   magAmmo?: number;
   ammoCost?: number;
   hitBonus?: number;

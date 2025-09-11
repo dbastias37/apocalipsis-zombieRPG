@@ -17,7 +17,7 @@ const sampleWeapon = () => ({
   type: 'ranged',
   damage: { times:1, faces:6, mod:4 },
   ammoType: '9mm',
-  magCapacity: 15,
+  magSize: 15,
   magAmmo: 0,
 });
 

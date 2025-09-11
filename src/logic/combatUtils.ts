@@ -12,7 +12,7 @@ export function damageRange(d: DiceSpec) {
 
 export function ensureLoaded(actor: Actor, w: Weapon) {
   if (w.type !== 'ranged') return;
-  const cap = w.magCapacity ?? 0;
+  const cap = w.magSize ?? 0;
   const mag = w.magAmmo ?? 0;
   const need = Math.max(0, cap - mag);
   const pool = actor.inventory.ammo[w.ammoType] ?? 0;

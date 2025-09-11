@@ -4,7 +4,7 @@
 export type WeaponOpt = { id: string; label: string; usable: boolean; reason?: string };
 
 import { getAmmoFor } from "../weapons.js";
-import { findWeaponById, damageRange } from "../../game/items/weapons.js";
+import { findWeaponById } from "../../data/weapons";
 
 type Player = { inventory?: any[]; weaponState?: Record<string, { ammoInMag: number }> };
 
@@ -16,6 +16,10 @@ function norm(s?: string) {
     .replace(/\p{Diacritic}/gu, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function damageRange(d:{times:number;faces:number;mod:number}){
+  return { min: d.times*1 + d.mod, max: d.times*d.faces + d.mod };
 }
 
 /** Alias ES → categoría canónica que usa el sistema de combate */
@@ -55,7 +59,7 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
     if (w) {
       const r = damageRange(w.damage);
       const ammo = getAmmoFor(player, "pistol");
-      const cap = w.magCapacity ?? 0;
+      const cap = w.magSize ?? 0;
       list.push({
         id: w.id,
         label: `${w.name} (${r.min}-${r.max}) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
@@ -70,7 +74,7 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
     if (w) {
       const r = damageRange(w.damage);
       const ammo = getAmmoFor(player, "rifle");
-      const cap = w.magCapacity ?? 0;
+      const cap = w.magSize ?? 0;
       list.push({
         id: w.id,
         label: `${w.name} (${r.min}-${r.max}) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
@@ -83,7 +87,7 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
   // Opcionales si tu UI los usa:
   if (hasAny(player, ALIAS.shotgun)) {
     const ammo = getAmmoFor(player, "shotgun");
-    const cap = 6;
+    const cap = 5;
     list.push({
       id: "shotgun",
       label: `Escopeta (2d4+3) — Munición: ${ammo}/${cap}${ammo > 0 ? "" : " (Sin munición)"}`,
@@ -105,4 +109,3 @@ export function getAvailableWeapons(player: Player): WeaponOpt[] {
 
   return list;
 }
-
