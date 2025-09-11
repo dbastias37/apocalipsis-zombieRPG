@@ -26,6 +26,7 @@ import { WEAPONS } from "./data/weapons";
 import { getSelectedWeapon, isRangedWeapon } from "./systems/weapons";
 import {
   getLoadedAmmo,
+  setLoadedAmmo,
   spendAmmo,
   totalAmmoInInventory,
 } from "./systems/ammo";
@@ -515,29 +516,30 @@ export default function App(){
 
 
   // confirma recarga desde el modal
-  function confirmReload(weaponId:string, bullets:number){
+  function confirmReload(weaponId: string, bullets: number) {
     const pid = activePlayerId;
-    if(!pid) return;
-    setPlayers(prev => prev.map(p=>{
+    if (!pid) return;
+
+    setPlayers(prev => prev.map(p => {
       if (p.id !== pid) return p;
 
-      // utils locales
-      const norm = (s?:string)=>String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
-      const isBox = (it:any) => {
+      // helpers locales (con los mismos que ya usa tu función: norm, isBox, boxBullets, looseCount, consume)
+      const norm = (s?: string) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+      const isBox = (it: any) => {
         if (!it) return false;
         if (typeof it === "object" && (it.type === "ammo" || it.kind === "ammoBox")) return true;
         const nm = norm((it?.name ?? it) as any);
         return /caja\s+de\s+municion/.test(nm);
       };
-      const boxBullets = (it:any) => {
-        if (!isBox(it)) return 0;
+      const boxBullets = (it: any) => {
+        if (!it) return 0;
         if (typeof it === "object") {
           const n = Number(it.bullets ?? it.count ?? it.qty ?? it.amount ?? 15);
           return Number.isFinite(n) && n > 0 ? Math.floor(n) : 15;
         }
         return 15;
       };
-      const looseCount = (it:any) => {
+      const looseCount = (it: any) => {
         if (!it) return 0;
         if (typeof it === "object") {
           const nm = norm(String(it.name ?? it.title ?? ""));
@@ -549,34 +551,37 @@ export default function App(){
         }
         const s = norm(String(it));
         const m = s.match(/municion\s*\((\d+)\)/);
-        return m ? Math.max(0, parseInt(m[1],10)) : 0;
+        return m ? Math.max(0, parseInt(m[1], 10)) : 0;
       };
 
-      function consume(list:any[], need:number){
-        const out:any[] = [];
+      function consume(list: any[], need: number) {
+        const out: any[] = [];
         let taken = 0;
-        for (const it of list){
-          if (taken >= need){ out.push(it); continue; }
+        for (const it of list) {
+          if (taken >= need) { out.push(it); continue; }
 
           const l = looseCount(it);
-          if (l > 0){
+          if (l > 0) {
             const use = Math.min(l, need - taken);
-            const rem = l - use;
-            taken += use;
-            if (rem > 0){
-              if (typeof it === "string") out.push(`Munición (${rem})`);
-              else out.push({ ...(it||{}), name:"Munición", count: rem });
+            const left = l - use;
+            if (typeof it === "object") {
+              if (left > 0) out.push({ ...it, count: left, qty: left, amount: left });
+            } else {
+              if (left > 0) out.push(`Munición (${left})`);
             }
+            taken += use;
             continue;
           }
 
-          if (isBox(it)){
+          if (isBox(it)) {
             const b = boxBullets(it);
-            const use = Math.min(b, need - taken);
-            const rem = b - use;
-            taken += use;
-            if (rem > 0) out.push({ name:"Caja de munición", bullets: rem, kind:"ammoBox" });
-            continue;
+            if (b > 0 && taken < need) {
+              const use = Math.min(b, need - taken);
+              const left = b - use;
+              if (left > 0) out.push({ ...(typeof it === "object" ? it : { name: String(it) }), bullets: left, count: left, qty: left, amount: left });
+              taken += use;
+              continue;
+            }
           }
 
           out.push(it);
@@ -584,25 +589,38 @@ export default function App(){
         return { out, taken };
       }
 
-      const need = Math.max(0, Math.floor(bullets));
+      // --- lógica de recarga sincronizada con el cargador ---
+      const weapon = WEAPONS.find(w => w.id === weaponId);
+      const magSize = Math.max(0, Number(weapon?.magSize ?? 0));
+      const curLoaded = getLoadedAmmo(p, weaponId);
+      const freeSpace = Math.max(0, magSize - curLoaded);
+
+      const desired = Math.max(0, Math.floor(bullets));
+      const need = Math.min(desired, freeSpace);
       if (need <= 0) return p;
 
       const inv = Array.isArray((p as any).inventory) ? (p as any).inventory : [];
-      const bp  = Array.isArray((p as any).backpack)  ? (p as any).backpack  : [];
+      const bp = Array.isArray((p as any).backpack) ? (p as any).backpack : [];
+
       const a = consume(inv, need);
       const b = a.taken >= need ? { out: bp, taken: 0 } : consume(bp, need - a.taken);
       const taken = a.taken + b.taken;
       if (taken <= 0) return p;
 
-      const table = { ...(p.ammoByWeapon ?? {}) };
-      table[weaponId] = Math.max(0, Number(table[weaponId] ?? 0)) + taken;
+      const nextLoaded = Math.min(magSize, curLoaded + taken);
+      const afterLoad = setLoadedAmmo({ ...p, inventory: a.out, backpack: b.out }, weaponId, nextLoaded);
 
-      pushLog?.(`🔧 Recargas ${taken} munición(es) en ${weaponId}.`);
-      return { ...p, inventory: a.out, backpack: b.out, ammoByWeapon: table, selectedWeaponId: weaponId, currentWeaponId: weaponId };
+      // Mantener compatibilidad con rutas legacy que consultan ammoByWeapon
+      const table = { ...(afterLoad.ammoByWeapon ?? {}) };
+      table[weaponId] = nextLoaded;
+
+      pushLog?.(`🔧 Recargas ${taken} munición(es) en ${weapon?.name ?? weaponId}.`);
+      return { ...afterLoad, ammoByWeapon: table, selectedWeaponId: weaponId, currentWeaponId: weaponId };
     }));
+
     setShowReloadModal(false);
 
-    // marca acción del turno y avanza
+    // marcar acción de turno y avanzar (igual que ahora)
     if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
       setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
     }

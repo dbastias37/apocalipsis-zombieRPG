@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type Weapon = { id:string; name:string };
 
@@ -56,6 +56,7 @@ function getTotalAmmoAvailable(player:any){
 }
 
 import { WEAPONS } from "../../data/weapons";
+import { getLoadedAmmo } from "../../systems/ammo";
 function listReloadableWeapons(player:any): Weapon[] {
   const list: Weapon[] = [];
   const add = (id:string, name:string) => { if(!list.find(w=>w.id===id)) list.push({id,name}); };
@@ -96,8 +97,14 @@ export default function AmmoReloadModal({ isOpen, player, onClose, onConfirm }: 
   const weapons   = useMemo(()=>listReloadableWeapons(player), [player]);
 
   const [wid, setWid] = useState<string>(weapons[0]?.id ?? "");
-  const [count, setCount] = useState<number>(Math.min(5, available.total));
-  const maxBullets = available.total;
+  // calcular límite real
+  const selected = useMemo(()=> WEAPONS.find(w => w.id === wid), [wid]);
+  const curLoaded = useMemo(()=> (player && wid ? getLoadedAmmo(player, wid) : 0), [player, wid]);
+  const freeSpace = Math.max(0, Number(selected?.magSize ?? 0) - curLoaded);
+
+  const maxBullets = Math.min(available.total, freeSpace);
+  const [count, setCount] = useState<number>(Math.min(5, maxBullets));
+  useEffect(() => { setCount(c => Math.min(c, maxBullets)); }, [maxBullets]);
 
   const disabled = maxBullets<=0 || !wid;
 
