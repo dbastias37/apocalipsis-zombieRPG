@@ -1,4 +1,4 @@
-import { findWeaponById, rollDamage, Weapon } from "../game/items/weapons.js";
+import { findWeaponById, Weapon } from "../data/weapons";
 
 export interface Actor {
   id: string;
@@ -15,6 +15,14 @@ export interface AttackResult {
   attacker: Actor;
   defender: Actor;
   log: string[];
+}
+
+function rollDamage(d: { times: number; faces: number; mod: number }, rng: () => number = Math.random): number {
+  let total = 0;
+  for (let i = 0; i < d.times; i++) {
+    total += Math.floor(rng() * d.faces) + 1;
+  }
+  return total + (d.mod ?? 0);
 }
 
 export function attack(attacker: Actor, defender: Actor, weaponId: string, rng: () => number = Math.random, logFn: (m:string)=>void = () => {}): AttackResult {

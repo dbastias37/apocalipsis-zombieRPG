@@ -4,7 +4,6 @@ import { clsx } from "clsx";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
-import CombatLogPanel from "./components/CombatLogPanel";
 import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
 import type { AmmoBox, BackpackItem } from "./types/items";
 import {
@@ -49,7 +48,6 @@ import { day2ExplorationCards } from "./data/days/day2/explorationCards.day2";
 import { day3ExplorationCards } from "./data/days/day3/explorationCards.day3";
 import type { ExplorationCard } from "./data/explorationCards";
 import type { DecisionCard } from "./data/decisionCards";
-import { useEnterOnTap } from "./hooks/useEnterOnTap";
 import {
   Conditions,
   hasCondition,
@@ -347,31 +345,6 @@ export default function App(){
   const [noAmmo, setNoAmmo] = useState<{open:boolean; enemyName?:string}>({ open:false });
 
   const isSummaryOpen = showDayEnd || showCombatEnd;
-
-  useEnterOnTap({
-    enabled: true,
-    getIsSummaryOpen: () => isSummaryOpen,
-    summarySelector: '[data-enter-scope="summary"]'
-  });
-
-  useEffect(() => {
-    const onKeyDownCapture = (e: KeyboardEvent) => {
-      if (e.key !== "Enter") return;
-      if (!isSummaryOpen) return;
-
-      const scopeEl = document.querySelector('[data-enter-scope="summary"]');
-      if (!scopeEl) return;
-
-      const target = e.target as Node | null;
-      if (target && !scopeEl.contains(target)) {
-        e.stopPropagation();
-        e.preventDefault();
-      }
-    };
-    document.addEventListener("keydown", onKeyDownCapture, true);
-    return () => document.removeEventListener("keydown", onKeyDownCapture, true);
-  }, [isSummaryOpen]);
-
   // Turnos
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
   const [enemyIdx, setEnemyIdx] = useState<number>(0);
@@ -2214,17 +2187,6 @@ function advanceTurn() {
             onSelect={(wid) => equipWeapon(activePlayer.id, wid)}
           />
         )}
-        <CombatLogPanel
-          text={tw.text}
-          typing={tw.typing}
-          onEnter={proceed}
-          onTypingChange={(typing) => {
-            // Si hay una postAcción pendiente, el lock se mantiene, sino depende del typing
-            setControlsLocked(!!postActionContinueRef.current || typing);
-          }}
-          currentActor={activePlayer?.name ?? (isEnemyPhase ? enemies[enemyIdx]?.name : undefined)}
-        />
-
         <PartyPanel
           players={players}
           onUpdatePlayer={updatePlayer}
