@@ -1,7 +1,7 @@
-import { RootState, Actor, Weapon } from '../types/combat.js';
-import { damageRange } from './combatUtils.js';
-import { advanceTurn } from './turns.js';
-import { spendAmmo } from '../systems/ammo.js';
+import { RootState, Actor, Weapon } from '../types/combat';
+import { damageRange } from './combatUtils';
+import { advanceTurn } from './turns';
+import { spendAmmo } from '../systems/ammo';
 
 function rand(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;

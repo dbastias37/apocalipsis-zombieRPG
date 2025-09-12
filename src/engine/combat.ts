@@ -1,5 +1,5 @@
-import { findWeaponById, Weapon } from "../data/weapons.js";
-import { spendAmmo, getLoadedAmmo } from "../systems/ammo.js";
+import { findWeaponById, Weapon } from "../data/weapons";
+import { spendAmmo, getLoadedAmmo } from "../systems/ammo";
 
 export interface Actor {
   id: string;

@@ -39,7 +39,7 @@ import { gameLog } from "./utils/logger";
 import StockAmmoModal from "./components/StockAmmoModal";
 import ReloadModal from "./components/ReloadModal";
 import { ensureBreathPlomoStyle } from "./components/util/breathPlomo";
-import { canReloadFromBackpack } from "./systems/ammo";
+import { canReloadFromBackpack, getLoadedAmmo, spendAmmo, totalAmmoInInventory } from "./systems/ammo";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -56,8 +56,8 @@ type Player = {
   energy: number; energyMax: number;
   defense: number;
   status: "ok"|"wounded"|"infected"|"dead";
-  ammo: number;
-  inventory: string[];
+  inventory: any[];
+  ammoByWeapon: Record<string, number>;
   attrs: Attributes;
   cupos: PlayerCupos;
 };
@@ -450,8 +450,8 @@ export default function GameRoot(){
       energy: 10, energyMax: 10,
       defense: 10 + mod(attrs.Destreza),
       status: "ok",
-      ammo: 20,
       inventory: ["Navaja"],
+      ammoByWeapon: {},
       attrs,
       cupos: resetCupos(),
     };
@@ -699,12 +699,13 @@ export default function GameRoot(){
     ];
     if (hasItem(actor, 'Navaja')) out.push({ id:'knife', label:'Navaja (1–6)', usable:true });
 
-    const ammo = Math.max(0, Number(actor?.ammo ?? 0));
+    const ammoPistol = getLoadedAmmo(actor, 'pistol');
+    const ammoRifle = getLoadedAmmo(actor, 'rifle');
     if (hasItem(actor, 'Pistola')) out.push({
-      id:'pistol', label:`Pistola (2–8) — Munición: ${ammo}`, usable: ammo>0, reason: ammo>0?undefined:'Sin munición'
+      id:'pistol', label:`Pistola (2–8) — Munición: ${ammoPistol}`, usable: ammoPistol>0, reason: ammoPistol>0?undefined:'Sin munición'
     });
     if (hasItem(actor, 'Rifle')) out.push({
-      id:'rifle', label:`Rifle (3–10) — Munición: ${ammo}`, usable: ammo>0, reason: ammo>0?undefined:'Sin munición'
+      id:'rifle', label:`Rifle (3–10) — Munición: ${ammoRifle}`, usable: ammoRifle>0, reason: ammoRifle>0?undefined:'Sin munición'
     });
 
     return out;
@@ -742,9 +743,11 @@ export default function GameRoot(){
 
     const isFirearm = weaponId==='pistol' || weaponId==='rifle';
     if (isFirearm) {
-      if (actor.ammo <= 0) { gameLog(`${actor.name} intenta disparar, pero no tiene munición.`); return; }
-      updatePlayer(actor.id, { ammo: Math.max(0, actor.ammo-1) });
-      gameLog(`🔫 ${actor.name} dispara ${label} (munición restante: ${Math.max(0, actor.ammo-1)}).`);
+      const res = spendAmmo(actor, weaponId);
+      if (!res.ok) { gameLog(`${actor.name} intenta disparar, pero no tiene munición.`); return; }
+      updatePlayer(actor.id, res.player);
+      const left = getLoadedAmmo(res.player, weaponId);
+      gameLog(`🔫 ${actor.name} dispara ${label} (munición restante: ${left}).`);
     }
 
     const atkRoll = roll(1,20, hitMod);
@@ -1540,7 +1543,7 @@ function Details({player, onUpdate, players, setPlayers}:{player:Player; onUpdat
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>DEF: {player.defense}</div>
-        <div>Munición: {player.ammo}</div>
+        <div>Munición: {totalAmmoInInventory(player.inventory)}</div>
         <div>Inventario: {player.inventory.length}</div>
         <div>Estado: {player.status}</div>
       </div>
