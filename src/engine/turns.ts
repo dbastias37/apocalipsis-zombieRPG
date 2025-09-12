@@ -1,5 +1,5 @@
-import { CombatActor, isAlive } from "../systems/combat.js";
-import { ACTION_TIME_COSTS } from "../config/time.js";
+import { CombatActor, isAlive } from "../systems/combat";
+import { ACTION_TIME_COSTS } from "../config/time";
 
 export interface RNG {
   int: (max: number) => number; // 0..max-1

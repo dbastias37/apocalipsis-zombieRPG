@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ReactDOM from "react-dom";
 import { getSelectedWeapon, isRangedWeapon } from "../systems/weapons";
 import { getLoadedAmmo, listAmmoBoxes, listLoose, loadFromBackpackExact } from "../systems/ammo";
 import { ensureBreathPlomoStyle } from "./util/breathPlomo";
@@ -26,14 +27,19 @@ export default function ReloadModal({isOpen,onClose,state,setState}:Props){
   const maxLoad = Math.min(free, available);
   const [count,setCount] = useState(maxLoad);
   useEffect(()=>{ setCount(maxLoad); }, [maxLoad, isOpen]);
+  useEffect(()=>{
+    const fn = (e:KeyboardEvent)=>{ if(e.key==='Escape') onClose(); };
+    if(isOpen) window.addEventListener('keydown', fn);
+    return ()=> window.removeEventListener('keydown', fn);
+  }, [isOpen, onClose]);
   const confirm = ()=>{
     const next = loadFromBackpackExact(state, count);
     setState(next);
     onClose();
   };
   const disabled = count<=0;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 flex items-center justify-center" style={{zIndex:9999}}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative z-10 w-full max-w-sm p-6 rounded-2xl bg-neutral-900 border border-neutral-800 text-neutral-100" role="dialog" aria-modal>
         <button className="absolute top-2 right-3" onClick={onClose}>✖</button>
@@ -52,6 +58,7 @@ export default function ReloadModal({isOpen,onClose,state,setState}:Props){
           <button className={`px-4 py-2 rounded ${disabled? 'btn-disabled':'breath-plomo'}`} disabled={disabled} onClick={confirm}>Cargar</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

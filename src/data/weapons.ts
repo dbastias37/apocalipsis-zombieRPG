@@ -14,7 +14,7 @@ export const WEAPONS: Weapon[] = [
   { id: 'knife',   name: 'Navaja',          type: 'melee',  hitBonus: 1, damage: { times:1, faces:6, mod:0 }, usesAttr: 'Fuerza' },
   { id: 'pistol',  name: 'Pistola',         type: 'ranged', hitBonus: 1, damage: { times:1, faces:6, mod:4 }, usesAttr: 'Destreza', ammoCost:1, magSize:15 },
   { id: 'smg',     name: 'Subfusil (SMG)',  type: 'ranged', hitBonus: 1, damage: { times:1, faces:6, mod:3 }, usesAttr: 'Destreza', ammoCost:1, magSize:30 },
-  { id: 'shotgun', name: 'Escopeta',        type: 'ranged', hitBonus: 0, damage: { times:2, faces:4, mod:3 }, usesAttr: 'Destreza', ammoCost:1, magSize:5  },
+  { id: 'shotgun', name: 'Escopeta',        type: 'ranged', hitBonus: 0, damage: { times:2, faces:4, mod:3 }, usesAttr: 'Destreza', ammoCost:1, magSize:5 },
   { id: 'rifle',   name: 'Rifle',           type: 'ranged', hitBonus: 2, damage: { times:1, faces:8, mod:4 }, usesAttr: 'Destreza', ammoCost:1, magSize:10 },
 ];
 

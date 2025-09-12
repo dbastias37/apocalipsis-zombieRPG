@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ReactDOM from "react-dom";
 import { takeAmmoFromCamp } from "../systems/ammo";
 import { ensureBreathPlomoStyle } from "./util/breathPlomo";
 
@@ -16,6 +17,11 @@ export default function StockAmmoModal({ isOpen, onClose, state, setState }: Pro
   const [boxes, setBoxes] = useState(0);
 
   useEffect(()=>{ if(isOpen){ setLoose(0); setBoxes(0); } }, [isOpen]);
+  useEffect(()=>{
+    const fn = (e:KeyboardEvent)=>{ if(e.key==='Escape') onClose(); };
+    if(isOpen) window.addEventListener('keydown', fn);
+    return ()=> window.removeEventListener('keydown', fn);
+  }, [isOpen, onClose]);
   if(!isOpen) return null;
 
   const total = loose + boxes*15;
@@ -33,8 +39,8 @@ export default function StockAmmoModal({ isOpen, onClose, state, setState }: Pro
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 flex items-center justify-center" style={{zIndex:9999}}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative z-10 w-full max-w-sm p-6 rounded-2xl bg-neutral-900 border border-neutral-800 text-neutral-100" role="dialog" aria-modal>
         <button className="absolute top-2 right-3" onClick={onClose}>✖</button>
@@ -64,6 +70,7 @@ export default function StockAmmoModal({ isOpen, onClose, state, setState }: Pro
           <button className={`px-4 py-2 rounded ${disabled? 'btn-disabled':'breath-plomo'}`} disabled={disabled} onClick={confirm}>Retirar del stock</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

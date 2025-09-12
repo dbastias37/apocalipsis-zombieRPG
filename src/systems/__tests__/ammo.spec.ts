@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spendAmmo, reloadSelectedWeapon, getLoadedAmmo } from '../ammo.js';
-import { getSelectedWeapon } from '../weapons.js';
+import { spendAmmo, reloadSelectedWeapon, getLoadedAmmo } from '../ammo';
+import { getSelectedWeapon } from '../weapons';
 
 const samplePlayer = () => ({
   ammoByWeapon: { pistol: 3 },

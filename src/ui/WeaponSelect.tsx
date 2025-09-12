@@ -1,7 +1,7 @@
 import React from 'react';
-import { Actor, Weapon, RootState } from '../types/combat.js';
-import { damageRange } from '../logic/combatUtils.js';
-import { getLoadedAmmo, totalAmmoInInventory } from '../systems/ammo.js';
+import { Actor, Weapon, RootState } from '../types/combat';
+import { damageRange } from '../logic/combatUtils';
+import { getLoadedAmmo, totalAmmoInInventory } from '../systems/ammo';
 
 export function weaponLabel(actor: Actor, w: Weapon) {
   const { min, max } = damageRange(w.damage);

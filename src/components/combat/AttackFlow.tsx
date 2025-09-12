@@ -1,7 +1,7 @@
-import { getSelectedWeapon, isRangedWeapon } from "../../systems/weapons.js";
-import { spendAmmo } from "../../systems/ammo.js";
-import resolveAttack from "../../systems/combat/resolveAttack.js";
-import { nextTurn, TurnState } from "../../systems/turns.js";
+import { getSelectedWeapon, isRangedWeapon } from "../../systems/weapons";
+import { spendAmmo } from "../../systems/ammo";
+import resolveAttack from "../../systems/combat/resolveAttack";
+import { nextTurn, TurnState } from "../../systems/turns";
 
 /**
  * Ejecuta el ataque del jugador activo y avanza el turno.

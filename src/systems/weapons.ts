@@ -1,9 +1,8 @@
-import { findWeaponById } from "../data/weapons.js";
+import { findWeaponById } from "../data/weapons";
 
 export function getSelectedWeapon(player: any) {
-  const id = player?.currentWeaponId ?? player?.selectedWeaponId;
-  const w = findWeaponById(id);
-  return w ?? findWeaponById("fists")!;
+  const id = player?.currentWeaponId ?? player?.selectedWeaponId ?? "fists";
+  return findWeaponById(id) ?? findWeaponById("fists")!;
 }
 
 export function isRangedWeapon(w: any): boolean {
