@@ -1,11 +1,12 @@
-import { findWeaponById, Weapon } from "../data/weapons";
+import { findWeaponById, Weapon } from "../data/weapons.js";
+import { spendAmmo, getLoadedAmmo } from "../systems/ammo.js";
 
 export interface Actor {
   id: string;
   name: string;
   hp: number;
   def: number;
-  weaponState?: Record<string, { ammoInMag: number }>;
+  ammoByWeapon?: Record<string, number>;
   inventory?: any[];
 }
 
@@ -45,12 +46,9 @@ export function attack(attacker: Actor, defender: Actor, weaponId: string, rng: 
   }
 
   if (weapon.type === 'ranged' && weapon.ammoCost) {
-    const table = { ...(attacker.weaponState ?? {}) };
-    const cur = table[weapon.id] ?? { ammoInMag: 0 };
-    cur.ammoInMag = Math.max(0, cur.ammoInMag - weapon.ammoCost);
-    table[weapon.id] = cur;
-    attacker = { ...attacker, weaponState: table };
-    if (cur.ammoInMag === 0) logs.push(`${weapon.name} sin munición`);
+    const res = spendAmmo(attacker, weapon.id, weapon.ammoCost);
+    attacker = res.player;
+    if (getLoadedAmmo(attacker, weapon.id) === 0) logs.push(`${weapon.name} sin munición`);
   }
 
   logs.forEach(logFn);

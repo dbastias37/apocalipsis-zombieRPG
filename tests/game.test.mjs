@@ -13,7 +13,7 @@ function fixedRng(vals) {
 // 1. Damage ranges in UI
 
 test('Daños correctos en UI', () => {
-  const player = { inventory: ['pistol','rifle'], weaponState: { pistol:{ammoInMag:10}, rifle:{ammoInMag:5} } };
+  const player = { inventory: ['pistol','rifle'], ammoByWeapon: { pistol:10, rifle:5 } };
   const opts = getAvailableWeapons(player);
   const fists = opts.find(o=>o.id==='fists');
   const pistol = opts.find(o=>o.id==='pistol');
@@ -44,14 +44,14 @@ test('Ataque aplica daño', () => {
 // 3. Ammo consumption
 
 test('Munición se consume y deshabilita arma', () => {
-  let atk = { id:'a', name:'Heroe', hp:10, def:10, weaponState:{ pistol:{ammoInMag:3} }, inventory:['pistol'] };
+  let atk = { id:'a', name:'Heroe', hp:10, def:10, ammoByWeapon:{ pistol:3 }, inventory:['pistol'] };
   let def = { id:'z', name:'Zombi', hp:10, def:10 };
   const rng = fixedRng([0.9,0.5]);
   let res = attack(atk, def, 'pistol', rng);
-  assert.equal(res.attacker.weaponState.pistol.ammoInMag,2);
+  assert.equal(res.attacker.ammoByWeapon.pistol,2);
   res = attack(res.attacker, res.defender, 'pistol', fixedRng([0.9,0.5]));
   res = attack(res.attacker, res.defender, 'pistol', fixedRng([0.9,0.5]));
-  assert.equal(res.attacker.weaponState.pistol.ammoInMag,0);
+  assert.equal(res.attacker.ammoByWeapon.pistol,0);
   const opts = getAvailableWeapons(res.attacker);
   const pistolOpt = opts.find(o=>o.id==='pistol');
   assert(pistolOpt.label.includes('(Sin munición)'));

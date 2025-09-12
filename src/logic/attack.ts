@@ -1,6 +1,7 @@
-import { RootState, Actor, Weapon, RangedWeapon } from '../types/combat.js';
-import { damageRange, ensureLoaded, consumeShot } from './combatUtils.js';
+import { RootState, Actor, Weapon } from '../types/combat.js';
+import { damageRange } from './combatUtils.js';
 import { advanceTurn } from './turns.js';
+import { spendAmmo } from '../systems/ammo.js';
 
 function rand(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -17,17 +18,17 @@ export function performAttack(state: RootState, attackerId: string, targetId: st
   }
 
   if (w.type === 'ranged') {
-    if ((w.magAmmo ?? 0) <= 0) ensureLoaded(a, w);
-    if ((w.magAmmo ?? 0) <= 0) {
+    const res = spendAmmo(a, w.id, w.ammoCost ?? 1);
+    if (!res.ok) {
       pushLog(state, 'Sin munición');
       advanceTurn(state);
       return;
     }
+    Object.assign(a, res.player);
     const { min, max } = damageRange(w.damage);
     const dmg = rand(min, max);
     t.hp = Math.max(0, t.hp - dmg);
     if (t.hp === 0) t.alive = false;
-    consumeShot(w as RangedWeapon);
     pushLog(state, `${a.name} dispara ${w.name} e inflige ${dmg}`);
   } else {
     const { min, max } = damageRange(w.damage);
