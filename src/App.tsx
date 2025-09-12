@@ -32,7 +32,6 @@ import {
 } from "./systems/ammo";
 import { consumeAmmoFromPlayer } from "./helpers";
 import WeaponPicker from "./components/WeaponPicker";
-import CombatEndSummary from "./components/overlays/CombatEndSummary";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
 import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
@@ -335,9 +334,7 @@ export default function App(){
   const [dayStats, setDayStats] = useState({ damageDealt: 0, misses: 0, shotsFired: 0 });
   const [stats, setStats] = useState({ decisions:0, explorations:0, battles:0, kills:0 });
 
-  // overlay de fin de combate y fin de día
-  const [showCombatEnd, setShowCombatEnd] = useState(false);
-  const [combatEndLines, setCombatEndLines] = useState<string[]>([]);
+  // overlay de fin de día
   const [infectionDead, setInfectionDead] = useState<{id:string,name:string}|null>(null);
   const [showHealAlly, setShowHealAlly] = useState(false);
   const [showDayEnd, setShowDayEnd] = useState(false);
@@ -346,8 +343,6 @@ export default function App(){
   const [dayEndLines, setDayEndLines] = useState<string[]>([]);
   const [noAmmo, setNoAmmo] = useState<{open:boolean; enemyName?:string}>({ open:false });
   const combatStartedRef = useRef(false);
-
-  const isSummaryOpen = showDayEnd || showCombatEnd;
   // Turnos
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
   const [enemyIdx, setEnemyIdx] = useState<number>(0);
@@ -357,18 +352,6 @@ export default function App(){
 
   // Cuando una acción del jugador requiere terminar con Enter, guardamos el "qué hacer después"
   const postActionContinueRef = useRef<null | (() => void)>(null);
-
-  // DEBUG: abrir resumen con líneas fake
-  useEffect(() => {
-    setCombatEndLines([
-      "— RESUMEN DEL ENFRENTAMIENTO —",
-      "Golpes directos: 2",
-      "Golpes fallidos: 1",
-      "Botín: —",
-    ]);
-    setShowCombatEnd(true);
-    setControlsLocked(true);
-  }, []);
 
   function touchPlayerStats(playerId: string) {
     setBattleStats(prev => {
@@ -1351,43 +1334,6 @@ function finishEnemyPhase() {
     }));
   }
 
-  function computeCombatSummaryLines(): string[] {
-    const lines: string[] = [];
-    const safeStats = battleStats?.byPlayer ? battleStats : { byPlayer: {}, lootNames: [] as string[] };
-
-    let mh=0, mm=0, rh=0, rm=0, heals=0, bestId:string|null=null, bestPts=-1;
-    const nameById: Record<string,string> = {}; players.forEach(p=>nameById[p.id]=p.name);
-
-    Object.entries(safeStats.byPlayer).forEach(([pid, st]: any)=>{
-      const S = st || { meleeHits:0, meleeMisses:0, rangedHits:0, rangedMisses:0, heals:0, points:0 };
-      mh+=S.meleeHits|0; mm+=S.meleeMisses|0; rh+=S.rangedHits|0; rm+=S.rangedMisses|0; heals+=S.heals|0;
-      if ((S.points|0)>bestPts){ bestPts=S.points|0; bestId=pid; }
-    });
-
-    const bestName = bestId ? (nameById[bestId] || "Jugador") : "Nadie";
-    const loot = Array.isArray(safeStats.lootNames) ? safeStats.lootNames : [];
-
-    lines.push("— RESUMEN DEL ENFRENTAMIENTO —");
-    lines.push(`Golpes directos: ${mh}`);
-    lines.push(`Golpes fallidos: ${mm}`);
-    lines.push(`Curaciones: ${heals}`);
-    lines.push(`Disparos efectivos: ${rh}`);
-    lines.push(`Disparos fallidos: ${rm}`);
-    lines.push(`Mejor jugador de la batalla: ${bestName} (${Math.max(0,bestPts)||0} pts)`);
-    if (loot.length){
-      const map: Record<string,number> = {};
-      loot.forEach(n => map[n] = (map[n]||0)+1);
-      lines.push("Botín:");
-      Object.entries(map).forEach(([n,c]) => lines.push(`  • ${n} x${c}`));
-    } else {
-      lines.push("Botín: —");
-    }
-    lines.push("Recompensas: +1 Comida, +1 Agua, +1 Medicina, +1 Fuel, +1 Munición, +1 Materiales.");
-    const total = (mh*2) + (rh*2) + heals;
-    lines.push(`Total de puntos del grupo: ${total}`);
-    return lines;
-  }
-
   function grantCombatRewards() {
     setResources(r => ({
       ...r,
@@ -1395,16 +1341,38 @@ function finishEnemyPhase() {
       fuel:(r.fuel??0)+1, ammo:(r.ammo??0)+1, materials:(r.materials??0)+1,
     }));
   }
+  function handleCombatEnd() {
+    combatStartedRef.current = false;
+    grantCombatRewards();
+    setBattleStats({ byPlayer: {}, lootNames: [] });
+
+    if (currentCard?.type === "combat") {
+      setDiscardCombat(d => currentCard ? [currentCard, ...d] : d);
+      handleCloseCard();
+    }
+
+    if (isEnemyPhaseRef.current) {
+      setIsEnemyPhase(false);
+    }
+
+    const alive = (playersRef.current ?? []).filter(p => p.hp > 0);
+    const order = (turnOrderRef.current?.length ? turnOrderRef.current : alive.map(p => p.id));
+    const firstId = order.find(pid => alive.some(p => p.id === pid)) ?? (alive[0]?.id ?? null);
+    setActedThisRound(() => {
+      const flags: Record<string, boolean> = {};
+      alive.forEach(p => flags[p.id] = false);
+      return flags;
+    });
+    setActivePlayerId(firstId ?? null);
+    setControlsLocked(false);
+  }
 
   function openCombatEndIfCleared() {
-    // Evita falso positivo al iniciar el juego (sin combate real)
     if (!combatStartedRef.current) return;
-    const aliveEnemies = (enemiesRef.current ?? []).filter(e=>e.hp>0);
+    const aliveEnemies = (enemiesRef.current ?? []).filter(e => e.hp > 0);
     const inCombat = currentCard?.type === "combat" || isEnemyPhaseRef.current;
-    if (!showCombatEnd && inCombat && aliveEnemies.length === 0) {
-      setCombatEndLines(computeCombatSummaryLines());
-      setShowCombatEnd(true);
-      setControlsLocked(true);
+    if (inCombat && aliveEnemies.length === 0) {
+      handleCombatEnd();
     }
   }
 
@@ -2119,38 +2087,6 @@ function advanceTurn() {
         }}
         onClose={()=>{ setShowHealAlly(false); setControlsLocked(false); }}
       />
-      <CombatEndSummary
-        open={showCombatEnd}
-        lines={combatEndLines}
-        onFinish={() => {
-          setShowCombatEnd(false);
-          setControlsLocked(false);
-          combatStartedRef.current = false;
-          grantCombatRewards();
-
-          setBattleStats({ byPlayer: {}, lootNames: [] });
-
-          if (currentCard?.type === "combat") {
-            setDiscardCombat(d => currentCard ? [currentCard, ...d] : d);
-            handleCloseCard();
-          }
-
-          if (isEnemyPhase) {
-            setIsEnemyPhase(false);
-          }
-
-          const alive = players.filter(p => p.hp > 0);
-          const order = (turnOrder?.length ? turnOrder : alive.map(p => p.id));
-          const firstId = order.find(pid => alive.some(p => p.id === pid)) ?? (alive[0]?.id ?? null);
-          setActedThisRound(() => {
-            const flags: Record<string,boolean> = {};
-            alive.forEach(p => flags[p.id] = false);
-            return flags;
-          });
-          setActivePlayerId(firstId ?? null);
-        }}
-      />
-
       <InfectionFatalModal
         open={!!infectionDead}
         playerName={infectionDead?.name ?? ""}
