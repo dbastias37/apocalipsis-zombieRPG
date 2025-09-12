@@ -1,15 +1,6 @@
-import { useEffect } from "react";
+import { useAdvanceControls } from "../../hooks/useAdvanceControls";
 
 export default function OverlayRoot({ overlayOpen, proceed }: { overlayOpen: boolean; proceed: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && overlayOpen) {
-        e.preventDefault();
-        proceed();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [overlayOpen, proceed]);
+  useAdvanceControls(proceed, { enabled: overlayOpen, mobileOnly: true });
   return null;
 }
