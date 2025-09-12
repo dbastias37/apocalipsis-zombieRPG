@@ -5,9 +5,7 @@ export type RangedWeapon = {
   name: string;
   type: 'ranged';
   damage: DiceSpec;
-  ammoType: string;
   magSize: number;
-  magAmmo?: number;
   ammoCost?: number;
   hitBonus?: number;
 };
@@ -29,10 +27,9 @@ export type Actor = {
   maxHp: number;
   alive: boolean;
   status?: 'ok' | 'infected' | 'down';
-  inventory: {
-    ammo: Record<string, number>;
-    weapons: Weapon[];
-  };
+  inventory: any[];
+  weapons: Weapon[];
+  ammoByWeapon?: Record<string, number>;
   equipped?: Weapon;
 };
 

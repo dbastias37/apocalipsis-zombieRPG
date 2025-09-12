@@ -1,6 +1,7 @@
-import { getSelectedWeapon, getAmmoFor, isRangedWeapon } from "../../systems/weapons";
-import resolveAttack from "../../systems/combat/resolveAttack";
-import { nextTurn, TurnState } from "../../systems/turns";
+import { getSelectedWeapon, isRangedWeapon } from "../../systems/weapons.js";
+import { spendAmmo } from "../../systems/ammo.js";
+import resolveAttack from "../../systems/combat/resolveAttack.js";
+import { nextTurn, TurnState } from "../../systems/turns.js";
 
 /**
  * Ejecuta el ataque del jugador activo y avanza el turno.
@@ -20,26 +21,22 @@ export function performAttack(
   if (!player) return state;
 
   const weapon = getSelectedWeapon(player);
-  const ammo = getAmmoFor(player, weapon.id);
 
-  if (isRangedWeapon(weapon) && ammo === 0) {
-    const name = player.name || "Alguien";
-    log(`[${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}] ${name} intenta disparar la ${weapon.name}, pero no revisó la recámara. No había balas. Turno perdido.`);
-    if (typeof player.energy === "number") {
-      player.energy = Math.max(0, player.energy - (weapon.energyCost ?? 1));
+  if (isRangedWeapon(weapon)) {
+    const res = spendAmmo(player, weapon.id, weapon.ammoCost ?? 1);
+    if (!res.ok) {
+      const name = player.name || "Alguien";
+      log(`[${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}] ${name} intenta disparar la ${weapon.name}, pero no revisó la recámara. No había balas. Turno perdido.`);
+      if (typeof player.energy === "number") {
+        player.energy = Math.max(0, player.energy - (weapon.energyCost ?? 1));
+      }
+      nextTurn(turn, playersLen, enemiesLen);
+      return state;
     }
-    nextTurn(turn, playersLen, enemiesLen);
-    return state;
+    state.players[turn.activeIndex] = res.player;
   }
 
   const next = resolveAttack(state, weapon.id, { name: player.name || "Alguien" });
-  const nextPlayer = next.players?.[turn.activeIndex];
-  if (isRangedWeapon(weapon) && nextPlayer) {
-    const ws = { ...(nextPlayer.weaponState ?? {}) };
-    const cur = ws[weapon.id]?.ammoInMag ?? ammo;
-    ws[weapon.id] = { ammoInMag: Math.max(0, cur - 1) };
-    nextPlayer.weaponState = ws;
-  }
   nextTurn(turn, playersLen, enemiesLen);
   return next;
 }

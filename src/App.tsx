@@ -2175,7 +2175,7 @@ function advanceTurn() {
       />
       <AmmoWithdrawModal
         isOpen={showAmmoModal}
-        ammo={resources.ammo || 0}
+        ammo={totalAmmoInInventory(players.find(p=>p.id===activePlayerId)?.inventory)}
         onClose={()=>setShowAmmoModal(false)}
         onWithdrawBoxes={handleWithdrawBoxes}
         onWithdrawBullets={handleWithdrawBullets}
@@ -2834,8 +2834,8 @@ function CampPanel({resources, setResources, setShowAmmoModal}:{resources:Resour
           return (
             <div
               key={k}
-              className={`text-center p-3 rounded-xl bg-neutral-800 ${isAmmo ? 'cursor-pointer transition ' + ((resources.ammo||0) > 1 ? 'animate-pulse ring-2 ring-emerald-500 shadow-[0_0_12px_#10b981]' : '') : ''}`}
-              onClick={isAmmo ? (()=>{ if((resources.ammo||0) > 1) setShowAmmoModal(true); }) : undefined}
+              className={`text-center p-3 rounded-xl bg-neutral-800 ${isAmmo ? 'cursor-pointer transition ' + (0 > 1 ? 'animate-pulse ring-2 ring-emerald-500 shadow-[0_0_12px_#10b981]' : '') : ''}`}
+              onClick={isAmmo ? (()=>{ if(0 > 1) setShowAmmoModal(true); }) : undefined}
               title={isAmmo ? 'Gestionar munición' : undefined}
             >
               <div className="text-2xl mb-1">

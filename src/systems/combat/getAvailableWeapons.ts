@@ -4,9 +4,9 @@
 export type WeaponOpt = { id: string; label: string; usable: boolean; reason?: string };
 
 import { getAmmoFor } from "../weapons.js";
-import { findWeaponById } from "../../data/weapons";
+import { findWeaponById } from "../../data/weapons.js";
 
-type Player = { inventory?: any[]; weaponState?: Record<string, { ammoInMag: number }> };
+type Player = { inventory?: any[]; ammoByWeapon?: Record<string, number> };
 
 /** Normaliza a minúsculas, sin tildes y con espacios colapsados */
 function norm(s?: string) {

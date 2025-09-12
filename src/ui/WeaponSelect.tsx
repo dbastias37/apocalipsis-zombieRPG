@@ -1,14 +1,15 @@
 import React from 'react';
 import { Actor, Weapon, RootState } from '../types/combat.js';
 import { damageRange } from '../logic/combatUtils.js';
+import { getLoadedAmmo, totalAmmoInInventory } from '../systems/ammo.js';
 
 export function weaponLabel(actor: Actor, w: Weapon) {
   const { min, max } = damageRange(w.damage);
   if (w.type === 'ranged') {
-    const pool = actor.inventory.ammo[w.ammoType] ?? 0;
-    const mag = w.magAmmo ?? 0;
+    const pool = totalAmmoInInventory(actor.inventory);
+    const mag = getLoadedAmmo(actor, w.id);
     const cap = w.magSize ?? 0;
-    return `${w.name} (${min}–${max}) — ${mag}/${cap} • Reserva: ${pool}${mag <= 0 && pool <= 0 ? ' (Sin munición)' : ''}`;
+    return `${w.name} (${min}–${max}) — Munición: ${mag}/${cap} • Reserva: ${pool}${mag <= 0 && pool <= 0 ? ' (Sin munición)' : ''}`;
   }
   return `${w.name} (${min}–${max})`;
 }
