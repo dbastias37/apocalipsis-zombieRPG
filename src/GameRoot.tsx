@@ -36,6 +36,10 @@ import WelcomeOverlay from "@/components/WelcomeOverlay";
 import { useGameState } from "@/state/gameState";
 import DayEndSummary from "./components/overlays/DayEndSummary";
 import { gameLog } from "./utils/logger";
+import StockAmmoModal from "./components/StockAmmoModal";
+import ReloadModal from "./components/ReloadModal";
+import { ensureBreathPlomoStyle } from "./components/util/breathPlomo";
+import { canReloadFromBackpack } from "./systems/ammo";
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -1228,7 +1232,13 @@ export default function GameRoot(){
               setCamp={setCamp}
             />
 
-            <CampPanel resources={resources} setResources={setResources} />
+            <CampPanel
+              resources={resources}
+              setResources={setResources}
+              players={players}
+              setPlayers={setPlayers}
+              turn={turn}
+            />
 
             <LogPanel log={log} />
           </>
@@ -1501,7 +1511,12 @@ function PartyPanel({players, onUpdatePlayer, onRemove}:{players:Player[]; onUpd
       <div className="card bg-neutral-900 border-neutral-800 p-6">
         <h3 className="text-xl font-bold mb-3">Detalles</h3>
         {selected ? (
-          <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} />
+          <Details
+            player={players.find(p=>p.id===selected)!}
+            onUpdate={(patch)=>onUpdatePlayer(selected, patch)}
+            players={players}
+            setPlayers={setPlayers}
+          />
         ) : (
           <p className="text-neutral-500">Selecciona un personaje.</p>
         )}
@@ -1510,7 +1525,13 @@ function PartyPanel({players, onUpdatePlayer, onRemove}:{players:Player[]; onUpd
   );
 }
 
-function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Player>)=>void}){
+function Details({player, onUpdate, players, setPlayers}:{player:Player; onUpdate:(patch:Partial<Player>)=>void; players:Player[]; setPlayers:React.Dispatch<React.SetStateAction<Player[]>>;}){
+  ensureBreathPlomoStyle();
+  const [reloadOpen, setReloadOpen] = useState(false);
+  const canReload = canReloadFromBackpack(player as any);
+  const activeIndex = players.findIndex(p=>p.id===player.id);
+  const state = { players, turn:{activeIndex} };
+  const apply = (next:any)=>{ setPlayers(next.players); };
   return (
     <div className="space-y-2 text-sm">
       <div>
@@ -1531,6 +1552,10 @@ function Details({player, onUpdate}:{player:Player; onUpdate:(patch:Partial<Play
           }
         </div>
       </div>
+      <div className="mt-2">
+        <button className={`${canReload?'breath-plomo':'btn-disabled'} px-3 py-1 rounded`} disabled={!canReload} onClick={()=>setReloadOpen(true)}>Recargar arma</button>
+      </div>
+      <ReloadModal isOpen={reloadOpen} onClose={()=>setReloadOpen(false)} state={state} setState={apply} />
     </div>
   );
 }
@@ -1665,23 +1690,38 @@ function CampRepair({resources, camp, setResources, setCamp}:{resources:Resource
   );
 }
 
-function CampPanel({resources, setResources}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>}){
+function CampPanel({resources, setResources, players, setPlayers, turn}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>; players:Player[]; setPlayers:React.Dispatch<React.SetStateAction<Player[]>>; turn:number;}){
+  ensureBreathPlomoStyle();
+  const [stockOpen, setStockOpen] = useState(false);
   const total = Object.values(resources).reduce((a,b)=>a+b,0);
+  const activeIndex = players.length ? (turn % players.length) : 0;
+  const state = { camp:{ resources:{ ammo: resources.ammo }}, players, turn:{activeIndex} };
+  const apply = (next:any)=>{
+    setResources(r=>({...r, ammo: next.camp.resources.ammo}));
+    setPlayers(next.players);
+  };
   return (
     <div className="card bg-neutral-900 border-neutral-800 p-6">
       <h3 className="text-xl font-bold mb-4">🏕️ Campamento</h3>
       <div className="grid sm:grid-cols-3 md:grid-cols-6 gap-3">
         {Object.entries(resources).map(([k,v])=>(
-          <div key={k} className="text-center p-3 rounded-xl bg-neutral-800">
-            <div className="text-2xl mb-1">
-              {k==="food"?"🍖":k==="water"?"💧":k==="medicine"?"💊":k==="fuel"?"⛽":k==="ammo"?"🔫":"🔨"}
+          k==='ammo' ? (
+            <div key={k} className="text-center p-3 rounded-xl bg-neutral-800 breath-plomo cursor-pointer" onClick={()=>setStockOpen(true)}>
+              <div className="text-2xl mb-1">🔫</div>
+              <div className="text-xl font-bold">{v}</div>
+              <div className="text-xs text-neutral-400">{k}</div>
             </div>
-            <div className="text-xl font-bold">{v}</div>
-            <div className="text-xs text-neutral-400">{k}</div>
-          </div>
+          ) : (
+            <div key={k} className="text-center p-3 rounded-xl bg-neutral-800">
+              <div className="text-2xl mb-1">{k==="food"?"🍖":k==="water"?"💧":k==="medicine"?"💊":k==="fuel"?"⛽":"🔨"}</div>
+              <div className="text-xl font-bold">{v}</div>
+              <div className="text-xs text-neutral-400">{k}</div>
+            </div>
+          )
         ))}
       </div>
       <p className="mt-3 text-xs text-neutral-500">Total almacenado: {total}</p>
+      <StockAmmoModal isOpen={stockOpen} onClose={()=>setStockOpen(false)} state={state} setState={apply} />
     </div>
   );
 }
