@@ -32,6 +32,7 @@ import {
 } from "./systems/ammo";
 import { consumeAmmoFromPlayer } from "./helpers";
 import WeaponPicker from "./components/WeaponPicker";
+import BattleTicker from "./components/BattleTicker";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
 import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
@@ -371,11 +372,12 @@ export default function App(){
   function confirmReload(weaponId: string, bullets: number) {
     const pid = activePlayerId;
     if (!pid) return;
+    setControlsLocked(true);
+    let reloadLine: string | null = null;
 
     setPlayers(prev => prev.map(p => {
       if (p.id !== pid) return p;
 
-      // --- lógica de recarga sincronizada con el cargador ---
       const weapon = WEAPONS.find(w => w.id === weaponId);
       const magSize = Math.max(0, Number(weapon?.magSize ?? 0));
       const curLoaded = getLoadedAmmo(p, weaponId);
@@ -391,21 +393,22 @@ export default function App(){
       const nextLoaded = Math.min(magSize, curLoaded + taken);
       const afterLoad = setLoadedAmmo(afterConsume, weaponId, nextLoaded);
 
-      // Mantener compatibilidad con rutas legacy que consultan ammoByWeapon
       const table = { ...(afterLoad.ammoByWeapon ?? {}) };
       table[weaponId] = nextLoaded;
 
-      pushLog?.(`🔧 Recargas ${taken} munición(es) en ${weapon?.name ?? weaponId}.`);
+      reloadLine = `🔧 Recargas ${taken} munición(es) en ${weapon?.name ?? weaponId}.`;
       return { ...afterLoad, ammoByWeapon: table, selectedWeaponId: weaponId, currentWeaponId: weaponId };
     }));
 
     setShowReloadModal(false);
 
-    // marcar acción de turno y avanzar (igual que ahora)
-    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
-      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
+    if (reloadLine) {
+      pushBattle(reloadLine);
     }
-    finalizeTurnWithEndConditions(() => { advanceTurn(); });
+
+    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+      advanceTurn();
+    }));
   }
 
   const playersRef = useRef(players);
@@ -428,25 +431,26 @@ export default function App(){
     if (tw.typing) tw.skipTyping();
     else tw.continueNext();
   }, [tw.typing, tw.skipTyping, tw.continueNext]);
-  const overlayOpen = tw.hasPending;
+  const overlayOpen = tw.typing || tw.hasPending;
 
   useEffect(() => {
-    if (!tw.hasPending && postActionContinueRef.current) {
+    if (!tw.hasPending && !tw.typing && postActionContinueRef.current) {
       const fn = postActionContinueRef.current;
       postActionContinueRef.current = null;
       setControlsLocked(false);
-      fn();
+      queueMicrotask(fn);
     }
-  }, [tw.hasPending]);
+  }, [tw.hasPending, tw.typing]);
 
   useEffect(() => {
+    const overlayOpen = tw.typing || tw.hasPending;
     if (!overlayOpen || tw.typing || !tw.current) return;
     const len = tw.current.text.length;
     const base = 600, perChar = 25, cap = 2000;
     const ms = Math.min(cap, base + perChar * len);
-    const t = setTimeout(() => proceed(), ms);
+    const t = setTimeout(proceed, ms);
     return () => clearTimeout(t);
-  }, [overlayOpen, tw.typing, tw.current?.id, proceed]);
+  }, [tw.typing, tw.hasPending, tw.current?.id, proceed]);
 
   // helper para pushear mensajes al panel y registrarlos en el log
   function pushBattle(text: string, onDone?: () => void){
@@ -456,6 +460,19 @@ export default function App(){
       .trim();
     tw.push({ text: clean, onDone });
     gameLog(clean);
+  }
+
+  function continueOrScheduleImmediate(next: () => void) {
+    const pid = activePlayerIdRef.current;
+    if (pid) {
+      setActedThisRound(m => ({ ...(m || {}), [pid]: true }));
+    }
+    if (tw.hasPending || tw.typing) {
+      postActionContinueRef.current = next;
+    } else {
+      setControlsLocked(false);
+      queueMicrotask(next);
+    }
   }
 
   function playerCanActNow(): boolean {
@@ -488,16 +505,6 @@ export default function App(){
     // Bloquear inputs mientras se emite el log de resultado de la acción
     setControlsLocked(true);
     return true;
-  }
-
-  function endPlayerActionAwaitEnter(next: () => void) {
-    const pid = activePlayerIdRef.current;
-    if (pid) {
-      setActedThisRound(m => ({ ...(m || {}), [pid]: true }));
-    }
-    // Guardar la continuación (llamada al presionar Enter en el panel)
-    postActionContinueRef.current = next;
-    // controlsLocked se mantiene true hasta que onContinue lo libere
   }
 
   const [foundNotes, setFoundNotes] = useState<GameNote[]>([]);
@@ -971,14 +978,14 @@ export default function App(){
       if (loaded <= 0) {
         const line = `${actor.name} intenta disparar ${w.name}, pero no tiene munición cargada.`;
         pushBattle(line);
-        endPlayerActionAwaitEnter(() => {});
+        continueOrScheduleImmediate(() => {});
         return;
       }
       const { player: updated, ok } = spendAmmo(actor, w.id, 1);
       if (!ok) {
         const line = `${actor.name} no logra disparar: el arma está vacía.`;
         pushBattle(line);
-        endPlayerActionAwaitEnter(() => {});
+        continueOrScheduleImmediate(() => {});
         return;
       }
       setPlayers(ps => ps.map(p => p.id === actor.id ? updated : p));
@@ -1011,52 +1018,44 @@ export default function App(){
       }));
       if (hasCondition(enemy.conditions, 'stunned')) {
         pushBattle(`${enemy.name} intenta reaccionar, pero está aturdido y no contraataca.`);
-        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+        continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
           timePenalty(ACTION_TIME_COSTS.battle);
           advanceTurn();
         }));
         return;
       }
-      endPlayerActionAwaitEnter(() => {
-        // Genera contraataque
-        const eff = pickCounterEffect(); // define o reutiliza tu helper
-        const dmg = Math.floor(1 + Math.random()*10); // 1..10
-        const effText = counterEffectText(eff);
+      const eff = pickCounterEffect();
+      const dmg = Math.floor(1 + Math.random()*10);
+      const effText = counterEffectText(eff);
 
-        // Aplica daño al jugador activo
-        applyDamageToPlayer(actor.id, dmg, enemy);
+      applyDamageToPlayer(actor.id, dmg, enemy);
 
-        // Aplica estado si corresponde
-        if (eff === 'bleeding') {
-          updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'bleeding', persistent:true }) });
-        } else if (eff === 'stunned') {
-          updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'stunned', turnsLeft:1 }) });
-        } else if (eff === 'infected') {
-          updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'infected', persistent:true, expiresAtMs: Date.now()+120000 }) });
-        }
+      if (eff === 'bleeding') {
+        updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'bleeding', persistent:true }) });
+      } else if (eff === 'stunned') {
+        updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'stunned', turnsLeft:1 }) });
+      } else if (eff === 'infected') {
+        updatePlayer(actor.id, { conditions: addCondition(actor.conditions, { id:'infected', persistent:true, expiresAtMs: Date.now()+120000 }) });
+      }
 
-        // Línea principal del contraataque (20 variantes)
-        const line = renderCounter(
-          ENEMY_COUNTER_20[Math.floor(Math.random()*ENEMY_COUNTER_20.length)],
-          { A: enemy.name, P: actor.name, D: dmg, EFF: effText }
-        );
-        pushBattle(line);
+      const line = renderCounter(
+        ENEMY_COUNTER_20[Math.floor(Math.random()*ENEMY_COUNTER_20.length)],
+        { A: enemy.name, P: actor.name, D: dmg, EFF: effText }
+      );
+      pushBattle(line);
 
-        // Línea extra de estado para dejar rastro claro
-        if (eff === 'bleeding') {
-          pushBattle(`🩸 Estado aplicado a ${actor.name}: Sangrado. Recomendación: curar antes de que siga perdiendo PV.`);
-        } else if (eff === 'stunned') {
-          pushBattle(`😵 Estado aplicado a ${actor.name}: Aturdido. Perderá su próximo turno.`);
-        } else if (eff === 'infected') {
-          pushBattle(`🧪 Estado aplicado a ${actor.name}: Infección. Debe usar medicina antes de 2:00 min.`);
-        }
+      if (eff === 'bleeding') {
+        pushBattle(`🩸 Estado aplicado a ${actor.name}: Sangrado. Recomendación: curar antes de que siga perdiendo PV.`);
+      } else if (eff === 'stunned') {
+        pushBattle(`😵 Estado aplicado a ${actor.name}: Aturdido. Perderá su próximo turno.`);
+      } else if (eff === 'infected') {
+        pushBattle(`🧪 Estado aplicado a ${actor.name}: Infección. Debe usar medicina antes de 2:00 min.`);
+      }
 
-        // Enter final → fin de turno + registro de sangrado
-        postActionContinueRef.current = () => finalizeTurnWithEndConditions(() => {
-          timePenalty(ACTION_TIME_COSTS.battle);
-          advanceTurn();
-        });
-      });
+      continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+        timePenalty(ACTION_TIME_COSTS.battle);
+        advanceTurn();
+      }));
       return;
     }
 
@@ -1077,7 +1076,7 @@ export default function App(){
         pushBattle(`💫 ${actor.name} aturde a ${enemy.name} con ${w.name} (−${stunDmg} PV).`);
         pushBattle(`⚡ ${actor.name} gasta ${cost} de energía.`);
         setDayStats(s=>({ ...s, damageDealt: s.damageDealt + stunDmg, shotsFired: s.shotsFired + (isRanged ? 1 : 0) }));
-        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+        continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
           timePenalty(ACTION_TIME_COSTS.battle);
           advanceTurn();
         }));
@@ -1106,7 +1105,7 @@ export default function App(){
       shotsFired: s.shotsFired + (isRanged ? 1 : 0),
     }));
 
-    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
       timePenalty(ACTION_TIME_COSTS.defend);
       advanceTurn();
     }));
@@ -1241,9 +1240,8 @@ function finishEnemyPhase() {
     if (!activePlayer) { setControlsLocked(false); return; }
     const actor = activePlayer;
     updatePlayer(actor.id, { defense: actor.defense + 3 });
-    gameLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
     pushBattle(`${actor.name} se cubre entre los escombros (+DEF temporal).`);
-    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
       timePenalty(ACTION_TIME_COSTS.defend);
       advanceTurn();
     }));
@@ -1260,20 +1258,20 @@ function finishEnemyPhase() {
 
     if (actor.hp >= actor.hpMax && !isInf && !isBle) {
       pushBattle("PV al máximo");
-      endPlayerActionAwaitEnter(()=>{});
+      continueOrScheduleImmediate(() => {});
       return;
     }
 
     if (isInf) {
       if ((resources.medicine ?? 0) <= 0) {
         pushBattle(`${p.name} necesita medicina para curar la infección.`);
-        endPlayerActionAwaitEnter(()=>{});
+        continueOrScheduleImmediate(() => {});
         return;
       }
       setResources(r => ({ ...r, medicine: Math.max(0, (r.medicine ?? 0) - 1) }));
       updatePlayer(p.id, { conditions: removeCondition(p.conditions,'infected') });
       pushBattle(`${p.name} usa medicina y supera la infección.`);
-      endPlayerActionAwaitEnter(()=> finalizeTurnWithEndConditions(() => {
+      continueOrScheduleImmediate(()=> finalizeTurnWithEndConditions(() => {
         timePenalty(ACTION_TIME_COSTS.heal);
         advanceTurn();
       }));
@@ -1283,7 +1281,7 @@ function finishEnemyPhase() {
     if (isBle) {
       updatePlayer(p.id, { conditions: removeCondition(p.conditions,'bleeding') });
       pushBattle(`${p.name} detiene la hemorragia y se estabiliza.`);
-      endPlayerActionAwaitEnter(()=> finalizeTurnWithEndConditions(() => {
+      continueOrScheduleImmediate(()=> finalizeTurnWithEndConditions(() => {
         timePenalty(ACTION_TIME_COSTS.heal);
         advanceTurn();
       }));
@@ -1292,7 +1290,7 @@ function finishEnemyPhase() {
 
     if(resources.medicine<=0) {
       pushBattle(`Sin medicina suficiente.`);
-      endPlayerActionAwaitEnter(()=>{});
+      continueOrScheduleImmediate(() => {});
       return;
     }
     const healAmt = Math.min(10, actor.hpMax - actor.hp);
@@ -1306,7 +1304,7 @@ function finishEnemyPhase() {
       next.points = (next.meleeHits + next.rangedHits) * 2 + next.heals * 1;
       return { ...prev, byPlayer: { ...prev.byPlayer, [actor.id]: next } };
     });
-    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
       timePenalty(ACTION_TIME_COSTS.heal);
       advanceTurn();
     }));
@@ -1335,7 +1333,7 @@ function finishEnemyPhase() {
       updatePlayer(actor.id, { hp: Math.max(0, actor.hp - 5) });
       gameLog(`💥 ${actor.name} sufre rasguños al huir (-5 PV).`);
     }
-    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
       timePenalty(ACTION_TIME_COSTS.flee);
       advanceTurn();
     }));
@@ -1976,7 +1974,7 @@ function advanceTurn() {
           />
         )}
 
-        {activePlayer && <BattleLogBox lines={logs} />}
+        {activePlayer && <BattleTicker lines={logs} />}
         {activePlayer && (
           <WeaponPicker
             player={activePlayer}
@@ -2032,65 +2030,59 @@ function advanceTurn() {
           const target = players.find(p=>p.id===targetId);
           if(!actor || !target){ setControlsLocked(false); return; }
 
+          setControlsLocked(true);
+
           const inf = hasCondition(target.conditions,'infected');
           const ble = hasCondition(target.conditions,'bleeding');
 
           if (inf) {
-            setResources(r=>{
-              const meds = r.medicine ?? 0;
-              if (meds <= 0) {
-                pushBattle(`${actor.name} intenta curar a ${target.name}, pero no hay medicina.`);
-                if (ble) {
-                  updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
-                  pushBattle(`${actor.name} logra detener la hemorragia de ${target.name}.`);
-                  postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
-                    timePenalty(25);
-                    advanceTurn();
-                    setControlsLocked(false);
-                  });
-                } else {
-                  postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
-                    timePenalty(10);
-                    advanceTurn();
-                    setControlsLocked(false);
-                  });
-                }
-                return r;
-              }
-              const nr = { ...r, medicine: Math.max(0, meds - 1) };
-              updatePlayer(target.id, { conditions: removeCondition(target.conditions,'infected') });
-              pushBattle(`${actor.name} administra medicina a ${target.name} y supera la infección.`);
+            const meds = resources.medicine ?? 0;
+            if (meds <= 0) {
+              pushBattle(`${actor.name} intenta curar a ${target.name}, pero no hay medicina.`);
               if (ble) {
                 updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
-                pushBattle(`Además, ${actor.name} consigue detener la hemorragia de ${target.name}.`);
+                pushBattle(`${actor.name} logra detener la hemorragia de ${target.name}.`);
+                continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+                  timePenalty(25);
+                  advanceTurn();
+                }));
+              } else {
+                continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+                  timePenalty(10);
+                  advanceTurn();
+                }));
               }
-              postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
-                timePenalty(30);
-                advanceTurn();
-                setControlsLocked(false);
-              });
-              return nr;
-            });
+              return;
+            }
+            setResources(r=>({ ...r, medicine: Math.max(0, meds - 1) }));
+            updatePlayer(target.id, { conditions: removeCondition(target.conditions,'infected') });
+            pushBattle(`${actor.name} administra medicina a ${target.name} y supera la infección.`);
+            if (ble) {
+              updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
+              pushBattle(`Además, ${actor.name} consigue detener la hemorragia de ${target.name}.`);
+            }
+            continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+              timePenalty(30);
+              advanceTurn();
+            }));
             return;
           }
 
           if (ble) {
             updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
             pushBattle(`${actor.name} detiene la hemorragia de ${target.name}.`);
-            postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
+            continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
               timePenalty(20);
               advanceTurn();
-              setControlsLocked(false);
-            });
+            }));
             return;
           }
 
           pushBattle(`${actor.name} verifica a ${target.name}: no requiere curación ahora.`);
-          postActionContinueRef.current = ()=> finalizeTurnWithEndConditions(() => {
+          continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
             timePenalty(10);
             advanceTurn();
-            setControlsLocked(false);
-          });
+          }));
         }}
         onClose={()=>{ setShowHealAlly(false); setControlsLocked(false); }}
       />
@@ -2140,19 +2132,6 @@ function advanceTurn() {
   );
 }
 
-// === Subcomponentes ===
-function BattleLogBox({ lines }: { lines: string[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight; }, [lines.length]);
-  return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-900/80 p-3 mb-3">
-      <div ref={ref} className="max-h-40 overflow-y-auto space-y-1 text-sm">
-        {lines.length === 0 ? <div className="text-neutral-500">Sin eventos…</div>
-          : lines.map((t,i)=><div key={i} className="px-2 py-1 rounded bg-white/5">{t}</div>)}
-      </div>
-    </div>
-  );
-}
 function HeaderHUD(props:{
   day:number; phase:Phase; clock:string; progress:number;
   morale:number; threat:number;
