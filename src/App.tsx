@@ -2166,29 +2166,46 @@ function advanceTurn() {
           const ble = hasCondition(target.conditions,'bleeding');
 
           if (inf) {
-            const meds = resources.medicine ?? 0;
-            if (meds <= 0) {
-              pushBattle(`${actor.name} intenta curar a ${target.name}, pero no hay medicina.`);
-              if (ble) {
-                updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
-                pushBattle(`${actor.name} logra detener la hemorragia de ${target.name}.`);
-                endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-                  timePenalty(25);
-                  advanceTurn();
-                }));
-              } else {
-                endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-                  timePenalty(10);
-                  advanceTurn();
-                }));
+            let state: any = { players, camp: { stash, resources } };
+            let med = actor.inventory?.find((it:any)=>it.type==='med');
+            if (!med) {
+              const stock = Number(state.camp.resources?.medicine ?? 0);
+              if (stock <= 0) {
+                pushBattle(`${actor.name} intenta curar a ${target.name}, pero no hay medicina.`);
+                if (ble) {
+                  updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
+                  pushBattle(`${actor.name} logra detener la hemorragia de ${target.name}.`);
+                  endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+                    timePenalty(25);
+                    advanceTurn();
+                  }));
+                } else {
+                  endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+                    timePenalty(10);
+                    advanceTurn();
+                  }));
+                }
+                return;
               }
-              return;
+              state = materializeMedFromStock(state, 1, 'medicine');
+              const newItemId = state.camp.stash[state.camp.stash.length - 1].id;
+              state = moveFromStashToPlayer(state, actor.id, newItemId);
+              med = { id: newItemId } as any;
             }
-            setResources(r=>({ ...r, medicine: Math.max(0, meds - 1) }));
-            updatePlayer(target.id, { conditions: removeCondition(target.conditions,'infected') });
+            const prevHpActor = actor.hp;
+            state = consumeMed(state, actor.id, med.id);
+            const updatedActor = state.players.find((p:any)=>p.id===actor.id);
+            const playersNext = state.players.map((p:any)=>{
+              if(p.id===actor.id) return { ...updatedActor, hp: prevHpActor };
+              if(p.id===target.id) return { ...p, conditions: removeCondition(removeCondition(p.conditions,'infected'),'bleeding') };
+              return p;
+            });
+            state = { ...state, players: playersNext };
+            setPlayers(state.players);
+            setStash(state.camp.stash);
+            setResources(state.camp.resources);
             pushBattle(`${actor.name} administra medicina a ${target.name} y supera la infección.`);
             if (ble) {
-              updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
               pushBattle(`Además, ${actor.name} consigue detener la hemorragia de ${target.name}.`);
             }
             endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
