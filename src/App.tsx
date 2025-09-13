@@ -34,9 +34,10 @@ import {
   toLooseAmmo,
   consumeAmmoFromPlayer,
 } from "./systems/ammo";
-import { materializeFoodFromStock, materializeMedFromStock, moveFromStashToPlayer, consumeFood, consumeMed } from "./systems/inventory";
+import { consumeFood, consumeMed } from "./systems/inventory";
 import StockFoodModal from "./components/StockFoodModal";
 import StockMedicineModal from "./components/StockMedicineModal";
+import StockAmmoModal from "./components/StockAmmoModal";
 import WeaponPicker from "./components/WeaponPicker";
 import BattleTicker from "./components/BattleTicker";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
@@ -46,7 +47,6 @@ import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
 import OverlayRoot from "./components/overlays/OverlayRoot";
 import CampTileButton from "./components/CampTileButton";
-import Modal from "./components/Modal";
 import { registerLogger, gameLog, registerTimeProvider } from "./utils/logger";
 import { DAY_LENGTH_MS, ACTION_TIME_COSTS } from "./config/time";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
@@ -526,6 +526,16 @@ export default function App(){
     return true;
   }
 
+  function endTurnNow(penaltyMs: number = 0) {
+    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
+      setActedThisRound(m => ({ ...(m || {}), [activePlayerIdRef.current as string]: true }));
+    }
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+      if (penaltyMs > 0) timePenalty(penaltyMs);
+      advanceTurn();
+    }));
+  }
+
   const [foundNotes, setFoundNotes] = useState<GameNote[]>([]);
   const [explorationActive, setExplorationActive] = useState<boolean>(false);
 
@@ -897,13 +907,7 @@ export default function App(){
         handleCloseCard();
       }
     }
-    if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
-      setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
-    }
-    finalizeTurnWithEndConditions(() => {
-      timePenalty(ACTION_TIME_COSTS.decision);
-      advanceTurn();
-    });
+    endTurnNow(ACTION_TIME_COSTS.decision);
   }
 
   // ——— Combate muy simplificado ———
@@ -1868,7 +1872,7 @@ function advanceTurn() {
     gameLog(`📦 Traslado: ${p.name} devolvió "${add.name}" al alijo.`);
   }
 
-  function consumeFoodItem(playerId:string, itemId:string){
+  function consumeFoodInventoryItem(playerId:string, itemId:string){
     const next = consumeFood({ players, camp:{ stash, resources } }, playerId, itemId);
     setPlayers(next.players);
     setStash(next.camp.stash);
@@ -1880,6 +1884,37 @@ function advanceTurn() {
     setPlayers(next.players);
     setStash(next.camp.stash);
     setResources(next.camp.resources);
+  }
+
+  // consumeFoodItem: usa resources.food, no inventa inventarios.
+  function consumeFoodItem(label?: string, energyGain?: number) {
+    if (controlsLocked || isEnemyPhase) return;
+    if (!activePlayer) return;
+
+    const p = activePlayer;
+    const foodLeft = resources?.food ?? 0;
+
+    if (foodLeft <= 0) {
+      pushBattle("🍞 No quedan alimentos en el campamento.");
+      endTurnNow(ACTION_TIME_COSTS.heal);
+      return;
+    }
+
+    if (!playerCanActNow()) return;
+    if (!startPlayerActionOrBlock()) return;
+
+    const gain = Math.max(1, Math.floor(energyGain ?? 6));
+    const prev = p.energy ?? 100;
+    const maxE = p.energyMax ?? 100;
+    const next = Math.min(prev + gain, maxE);
+
+    updatePlayer(p.id, { energy: next });
+    setResources(r => ({ ...r, food: Math.max(0, (r?.food ?? 0) - 1) }));
+
+    const name = label ? ` ${label}` : "";
+    pushBattle(`🍞 ${p.name} come${name} (+${next - prev} energía).`);
+
+    endTurnNow(ACTION_TIME_COSTS.heal);
   }
 
   function handleWithdrawBoxes(count:number){
@@ -1991,15 +2026,18 @@ function advanceTurn() {
             onHeal={healSelf}
             onHealAlly={() => { setShowHealAlly(true); setControlsLocked(true); }}
             onFlee={flee}
+            onEat={()=>consumeFoodItem()}
             controlsLocked={controlsLocked}
             isEnemyPhase={isEnemyPhase}
             canAttackWithSelected={canAttackWithSelected}
             activeDown={activeDown}
             canHeal={!!activePlayer && activePlayer.hp < activePlayer.hpMax && resources.medicine>0}
+            canEat={!isEnemyPhase && (resources?.food ?? 0) > 0 && !!activePlayer}
             onClose={()=>{
               if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
               else setDiscardCombat(d=>[currentCard, ...d]);
               handleCloseCard();
+              endTurnNow(ACTION_TIME_COSTS.decision);
             }}
           />
         ) : (
@@ -2020,6 +2058,16 @@ function advanceTurn() {
             player={activePlayer}
             onSelect={(wid) => equipWeapon(activePlayer.id, wid)}
           />
+        )}
+        {!currentCard && !isEnemyPhase && !!activePlayer && (resources?.food ?? 0) > 0 && (
+          <button className="btn btn-green mr-2" onClick={() => consumeFoodItem()}>
+            Comer
+          </button>
+        )}
+        {!isEnemyPhase && !!activePlayer && (
+          <button className="btn btn-ghost" onClick={() => endTurnNow(0)} title="Pasar turno">
+            Terminar turno
+          </button>
         )}
         <PartyPanel
           players={players}
@@ -2045,7 +2093,7 @@ function advanceTurn() {
           setCamp={setCamp}
         />
 
-        <CampPanel resources={resources} setResources={setResources} />
+        <CampPanel resources={resources} setResources={setResources} stash={stash} setStash={setStash} />
 
         <LogPanel log={logs} />
       </main>
@@ -2227,6 +2275,8 @@ function CardView(props:{
   canAttackWithSelected: boolean;
   activeDown: boolean;
   canHeal: boolean;
+  onEat: ()=>void;
+  canEat: boolean;
 }){
   const isDecision = props.card.type==="decision";
   return (
@@ -2311,6 +2361,15 @@ function CardView(props:{
             >
               💊 Curarse
             </button>
+            {props.canEat && (
+              <button
+                className="btn btn-green w-full"
+                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canEat) return; props.onEat(); }}
+                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canEat}
+              >
+                🍞 Comer
+              </button>
+            )}
             <button
               className="btn btn-ghost w-full"
               onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onFlee(); }}
@@ -2453,7 +2512,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
         <h3 className="text-xl font-bold mb-3">Detalles</h3>
         {selected ? (
           <>
-            <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} consumeFood={consumeFoodItem} consumeMed={consumeMedItem} />
+            <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} consumeFood={consumeFoodInventoryItem} consumeMed={consumeMedItem} />
             {(() => {
               // jugador activo
               const p = players.find(pl => pl.id === activePlayerId);
@@ -2807,11 +2866,13 @@ function CampRepair({resources, camp, setResources, setCamp}:{resources:Resource
   );
 }
 
-function CampPanel({resources, setResources}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>}){
+function CampPanel({resources, setResources, stash, setStash}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>; stash:InventoryItem[]; setStash:React.Dispatch<React.SetStateAction<InventoryItem[]>>}){
   const [openModal, setOpenModal] = useState<null | "food" | "medicine" | "ammo">(null);
   const total = Object.values(resources).reduce((a,b)=>a+b,0);
   const iconMap: Record<keyof Resources, string> = { food:"🍖", water:"💧", medicine:"💊", fuel:"⛽", ammo:"🔫", materials:"🔨" };
   const labelMap: Record<"food"|"medicine"|"ammo", string> = { food:"Comida", medicine:"Medicina", ammo:"Munición" };
+  const state = { camp: { resources, stash } };
+  const setState = (next:any) => { setResources(next.camp.resources); setStash(next.camp.stash); };
   return (
     <>
       <div className="card bg-neutral-900 border-neutral-800 p-6">
@@ -2840,15 +2901,9 @@ function CampPanel({resources, setResources}:{resources:Resources; setResources:
         </div>
         <p className="mt-3 text-xs text-neutral-500">Total almacenado: {total}</p>
       </div>
-      <Modal open={openModal === 'food'} title="Comida" onClose={()=>setOpenModal(null)}>
-        <p className="text-zinc-300">Contenido demo para comida.</p>
-      </Modal>
-      <Modal open={openModal === 'medicine'} title="Medicina" onClose={()=>setOpenModal(null)}>
-        <p className="text-zinc-300">Contenido demo para medicina.</p>
-      </Modal>
-      <Modal open={openModal === 'ammo'} title="Munición" onClose={()=>setOpenModal(null)}>
-        <p className="text-zinc-300">Contenido demo para munición.</p>
-      </Modal>
+      <StockFoodModal isOpen={openModal === 'food'} onClose={()=>setOpenModal(null)} state={state} setState={setState} />
+      <StockMedicineModal isOpen={openModal === 'medicine'} onClose={()=>setOpenModal(null)} state={state} setState={setState} />
+      <StockAmmoModal isOpen={openModal === 'ammo'} onClose={()=>setOpenModal(null)} state={state} setState={setState} />
     </>
   );
 }
