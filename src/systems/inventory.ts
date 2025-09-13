@@ -95,3 +95,8 @@ export function consumeMed(state: any, playerId: string, itemId: string): any {
   gameLog(`💊 ${player.name} usa ${item.name} (+${gain} PV).`);
   return { ...state, players };
 }
+
+// Backwards-compatibility aliases for legacy imports
+// (some modules may still expect these names)
+export const consumeFoodInventoryItem = consumeFood;
+export const consumeMedInventoryItem  = consumeMed;
