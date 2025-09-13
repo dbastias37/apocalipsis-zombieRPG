@@ -38,7 +38,6 @@ import HealAllyModal from "./components/overlays/HealAllyModal";
 import DayEndModal from "./components/overlays/DayEndModal";
 import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
-import NoAmmoModal from "./components/overlays/NoAmmoModal";
 import OverlayRoot from "./components/overlays/OverlayRoot";
 import { registerLogger, gameLog, registerTimeProvider } from "./utils/logger";
 import { DAY_LENGTH_MS, ACTION_TIME_COSTS } from "./config/time";
@@ -342,7 +341,6 @@ export default function App(){
   const [showAmmoModal, setShowAmmoModal] = useState(false);
   const [showReloadModal, setShowReloadModal] = useState(false);
   const [dayEndLines, setDayEndLines] = useState<string[]>([]);
-  const [noAmmo, setNoAmmo] = useState<{open:boolean; enemyName?:string}>({ open:false });
   const combatStartedRef = useRef(false);
   // Turnos
   const [isEnemyPhase, setIsEnemyPhase] = useState<boolean>(false);
@@ -406,7 +404,7 @@ export default function App(){
       pushBattle(reloadLine);
     }
 
-    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       advanceTurn();
     }));
   }
@@ -427,18 +425,23 @@ export default function App(){
   useEffect(()=>{ enemiesRef.current = enemies; }, [enemies]);
 
   const tw = useTypewriterQueue();
+  // compuerta única de continuación: solo avanza la cola
   const proceed = useCallback(() => {
     if (tw.typing) tw.skipTyping();
-    else tw.continueNext();
+    else tw.continueNext(); // NO disparar continuación aquí
   }, [tw.typing, tw.skipTyping, tw.continueNext]);
   const overlayOpen = tw.typing || tw.hasPending;
 
   useEffect(() => {
-    if (!tw.hasPending && !tw.typing && postActionContinueRef.current) {
+    const empty = !tw.hasPending && !tw.typing;
+    if (empty && postActionContinueRef.current) {
       const fn = postActionContinueRef.current;
       postActionContinueRef.current = null;
       setControlsLocked(false);
-      queueMicrotask(fn);
+      // microtask para no bloquear el render
+      queueMicrotask(() => {
+        try { fn(); } catch (e) { console.error(e); }
+      });
     }
   }, [tw.hasPending, tw.typing]);
 
@@ -462,16 +465,21 @@ export default function App(){
     gameLog(clean);
   }
 
-  function continueOrScheduleImmediate(next: () => void) {
+  function endPlayerActionAwaitEnter(next: () => void) {
     const pid = activePlayerIdRef.current;
     if (pid) {
       setActedThisRound(m => ({ ...(m || {}), [pid]: true }));
     }
-    if (tw.hasPending || tw.typing) {
-      postActionContinueRef.current = next;
-    } else {
+    postActionContinueRef.current = next;
+    // Si no hay nada que mostrar, continuar ya
+    if (!tw.typing && !tw.hasPending) {
+      const fn = postActionContinueRef.current;
+      postActionContinueRef.current = null;
       setControlsLocked(false);
-      queueMicrotask(next);
+      queueMicrotask(() => { try { fn?.(); } catch (e) { console.error(e); } });
+    } else {
+      // Hay mensajes → el efecto de “drain” ejecutará la continuación
+      setControlsLocked(true);
     }
   }
 
@@ -953,15 +961,6 @@ export default function App(){
   }
   function performAttack(enemyId: string){
     if (controlsLocked || isEnemyPhase) return;
-    const player = players.find(pl => pl.id === activePlayerId);
-    const wid = player?.currentWeaponId ?? player?.selectedWeaponId;
-    const ammoLoaded = Number(player?.ammoByWeapon?.[wid ?? ""] ?? 0);
-    const ranged = WEAPONS.find(x => x.id === wid)?.type === "ranged";
-    const targetName = enemies.find(e=>e.id===enemyId)?.name ?? (enemies && enemies.length ? (enemies[0].name ?? "el enemigo") : "el enemigo");
-    if (ranged && ammoLoaded <= 0) {
-      setNoAmmo({ open:true, enemyName: targetName });
-      return;
-    }
     if (!startPlayerActionOrBlock()) return;
     if (!activePlayer) { setControlsLocked(false); return; }
     const actor = activePlayer;
@@ -978,14 +977,20 @@ export default function App(){
       if (loaded <= 0) {
         const line = `${actor.name} intenta disparar ${w.name}, pero no tiene munición cargada.`;
         pushBattle(line);
-        continueOrScheduleImmediate(() => {});
+        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+          timePenalty(ACTION_TIME_COSTS.battle);
+          advanceTurn();
+        }));
         return;
       }
       const { player: updated, ok } = spendAmmo(actor, w.id, 1);
       if (!ok) {
         const line = `${actor.name} no logra disparar: el arma está vacía.`;
         pushBattle(line);
-        continueOrScheduleImmediate(() => {});
+        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+          timePenalty(ACTION_TIME_COSTS.battle);
+          advanceTurn();
+        }));
         return;
       }
       setPlayers(ps => ps.map(p => p.id === actor.id ? updated : p));
@@ -1018,7 +1023,7 @@ export default function App(){
       }));
       if (hasCondition(enemy.conditions, 'stunned')) {
         pushBattle(`${enemy.name} intenta reaccionar, pero está aturdido y no contraataca.`);
-        continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
           timePenalty(ACTION_TIME_COSTS.battle);
           advanceTurn();
         }));
@@ -1052,7 +1057,7 @@ export default function App(){
         pushBattle(`🧪 Estado aplicado a ${actor.name}: Infección. Debe usar medicina antes de 2:00 min.`);
       }
 
-      continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+      endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
         timePenalty(ACTION_TIME_COSTS.battle);
         advanceTurn();
       }));
@@ -1076,7 +1081,7 @@ export default function App(){
         pushBattle(`💫 ${actor.name} aturde a ${enemy.name} con ${w.name} (−${stunDmg} PV).`);
         pushBattle(`⚡ ${actor.name} gasta ${cost} de energía.`);
         setDayStats(s=>({ ...s, damageDealt: s.damageDealt + stunDmg, shotsFired: s.shotsFired + (isRanged ? 1 : 0) }));
-        continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
           timePenalty(ACTION_TIME_COSTS.battle);
           advanceTurn();
         }));
@@ -1105,8 +1110,8 @@ export default function App(){
       shotsFired: s.shotsFired + (isRanged ? 1 : 0),
     }));
 
-    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
-      timePenalty(ACTION_TIME_COSTS.defend);
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+      timePenalty(ACTION_TIME_COSTS.battle);
       advanceTurn();
     }));
   }
@@ -1241,7 +1246,7 @@ function finishEnemyPhase() {
     const actor = activePlayer;
     updatePlayer(actor.id, { defense: actor.defense + 3 });
     pushBattle(`${actor.name} se cubre entre los escombros (+DEF temporal).`);
-    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(ACTION_TIME_COSTS.defend);
       advanceTurn();
     }));
@@ -1258,20 +1263,26 @@ function finishEnemyPhase() {
 
     if (actor.hp >= actor.hpMax && !isInf && !isBle) {
       pushBattle("PV al máximo");
-      continueOrScheduleImmediate(() => {});
+      endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+        timePenalty(ACTION_TIME_COSTS.heal);
+        advanceTurn();
+      }));
       return;
     }
 
     if (isInf) {
       if ((resources.medicine ?? 0) <= 0) {
         pushBattle(`${p.name} necesita medicina para curar la infección.`);
-        continueOrScheduleImmediate(() => {});
+        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+          timePenalty(ACTION_TIME_COSTS.heal);
+          advanceTurn();
+        }));
         return;
       }
       setResources(r => ({ ...r, medicine: Math.max(0, (r.medicine ?? 0) - 1) }));
       updatePlayer(p.id, { conditions: removeCondition(p.conditions,'infected') });
       pushBattle(`${p.name} usa medicina y supera la infección.`);
-      continueOrScheduleImmediate(()=> finalizeTurnWithEndConditions(() => {
+      endPlayerActionAwaitEnter(()=> finalizeTurnWithEndConditions(() => {
         timePenalty(ACTION_TIME_COSTS.heal);
         advanceTurn();
       }));
@@ -1281,7 +1292,7 @@ function finishEnemyPhase() {
     if (isBle) {
       updatePlayer(p.id, { conditions: removeCondition(p.conditions,'bleeding') });
       pushBattle(`${p.name} detiene la hemorragia y se estabiliza.`);
-      continueOrScheduleImmediate(()=> finalizeTurnWithEndConditions(() => {
+      endPlayerActionAwaitEnter(()=> finalizeTurnWithEndConditions(() => {
         timePenalty(ACTION_TIME_COSTS.heal);
         advanceTurn();
       }));
@@ -1290,7 +1301,10 @@ function finishEnemyPhase() {
 
     if(resources.medicine<=0) {
       pushBattle(`Sin medicina suficiente.`);
-      continueOrScheduleImmediate(() => {});
+      endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+        timePenalty(ACTION_TIME_COSTS.heal);
+        advanceTurn();
+      }));
       return;
     }
     const healAmt = Math.min(10, actor.hpMax - actor.hp);
@@ -1304,7 +1318,7 @@ function finishEnemyPhase() {
       next.points = (next.meleeHits + next.rangedHits) * 2 + next.heals * 1;
       return { ...prev, byPlayer: { ...prev.byPlayer, [actor.id]: next } };
     });
-    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(ACTION_TIME_COSTS.heal);
       advanceTurn();
     }));
@@ -1333,7 +1347,7 @@ function finishEnemyPhase() {
       updatePlayer(actor.id, { hp: Math.max(0, actor.hp - 5) });
       gameLog(`💥 ${actor.name} sufre rasguños al huir (-5 PV).`);
     }
-    continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+    endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(ACTION_TIME_COSTS.flee);
       advanceTurn();
     }));
@@ -2042,12 +2056,12 @@ function advanceTurn() {
               if (ble) {
                 updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
                 pushBattle(`${actor.name} logra detener la hemorragia de ${target.name}.`);
-                continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+                endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
                   timePenalty(25);
                   advanceTurn();
                 }));
               } else {
-                continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+                endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
                   timePenalty(10);
                   advanceTurn();
                 }));
@@ -2061,7 +2075,7 @@ function advanceTurn() {
               updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
               pushBattle(`Además, ${actor.name} consigue detener la hemorragia de ${target.name}.`);
             }
-            continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+            endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
               timePenalty(30);
               advanceTurn();
             }));
@@ -2071,7 +2085,7 @@ function advanceTurn() {
           if (ble) {
             updatePlayer(target.id, { conditions: removeCondition(target.conditions,'bleeding') });
             pushBattle(`${actor.name} detiene la hemorragia de ${target.name}.`);
-            continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+            endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
               timePenalty(20);
               advanceTurn();
             }));
@@ -2079,7 +2093,7 @@ function advanceTurn() {
           }
 
           pushBattle(`${actor.name} verifica a ${target.name}: no requiere curación ahora.`);
-          continueOrScheduleImmediate(() => finalizeTurnWithEndConditions(() => {
+          endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
             timePenalty(10);
             advanceTurn();
           }));
@@ -2120,11 +2134,6 @@ function advanceTurn() {
         player={players.find(p=>p.id===activePlayerId) || null}
         onClose={()=>setShowReloadModal(false)}
         onConfirm={confirmReload}
-      />
-      <NoAmmoModal
-        open={noAmmo.open}
-        enemyName={noAmmo.enemyName}
-        onClose={() => setNoAmmo({ open:false })}
       />
       <OverlayRoot overlayOpen={overlayOpen} proceed={proceed} />
       <WelcomeOverlay />
