@@ -39,6 +39,8 @@ import DayEndModal from "./components/overlays/DayEndModal";
 import AmmoWithdrawModal from "./components/overlays/AmmoWithdrawModal";
 import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
 import OverlayRoot from "./components/overlays/OverlayRoot";
+import CampTileButton from "./components/CampTileButton";
+import Modal from "./components/Modal";
 import { registerLogger, gameLog, registerTimeProvider } from "./utils/logger";
 import { DAY_LENGTH_MS, ACTION_TIME_COSTS } from "./config/time";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
@@ -2019,7 +2021,7 @@ function advanceTurn() {
           setCamp={setCamp}
         />
 
-        <CampPanel resources={resources} setResources={setResources} setShowAmmoModal={setShowAmmoModal} />
+        <CampPanel resources={resources} setResources={setResources} />
 
         <LogPanel log={logs} />
       </main>
@@ -2766,32 +2768,49 @@ function CampRepair({resources, camp, setResources, setCamp}:{resources:Resource
   );
 }
 
-function CampPanel({resources, setResources, setShowAmmoModal}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>; setShowAmmoModal:React.Dispatch<React.SetStateAction<boolean>>}){
+function CampPanel({resources, setResources}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>}){
+  const [openModal, setOpenModal] = useState<null | "food" | "medicine" | "ammo">(null);
   const total = Object.values(resources).reduce((a,b)=>a+b,0);
+  const iconMap: Record<keyof Resources, string> = { food:"🍖", water:"💧", medicine:"💊", fuel:"⛽", ammo:"🔫", materials:"🔨" };
+  const labelMap: Record<"food"|"medicine"|"ammo", string> = { food:"Comida", medicine:"Medicina", ammo:"Munición" };
   return (
-    <div className="card bg-neutral-900 border-neutral-800 p-6">
-      <h3 className="text-xl font-bold mb-4">🏕️ Campamento</h3>
-      <div className="grid sm:grid-cols-3 md:grid-cols-6 gap-3">
-        {Object.entries(resources).map(([k,v])=>{
-          const isAmmo = k === 'ammo';
-          return (
-            <div
-              key={k}
-              className={`text-center p-3 rounded-xl bg-neutral-800 ${isAmmo ? 'cursor-pointer transition ' + (0 > 1 ? 'animate-pulse ring-2 ring-emerald-500 shadow-[0_0_12px_#10b981]' : '') : ''}`}
-              onClick={isAmmo ? (()=>{ if(0 > 1) setShowAmmoModal(true); }) : undefined}
-              title={isAmmo ? 'Gestionar munición' : undefined}
-            >
-              <div className="text-2xl mb-1">
-                {k==="food"?"🍖":k==="water"?"💧":k==="medicine"?"💊":k==="fuel"?"⛽":k==="ammo"?"🔫":"🔨"}
+    <>
+      <div className="card bg-neutral-900 border-neutral-800 p-6">
+        <h3 className="text-xl font-bold mb-4">🏕️ Campamento</h3>
+        <div className="grid sm:grid-cols-3 md:grid-cols-6 gap-3">
+          {Object.entries(resources).map(([k,v])=>{
+            if(k === 'food' || k === 'medicine' || k === 'ammo'){
+              return (
+                <CampTileButton
+                  key={k}
+                  icon={iconMap[k as keyof Resources]}
+                  label={labelMap[k as 'food'|'medicine'|'ammo']}
+                  value={v}
+                  onClick={()=>setOpenModal(k as "food"|"medicine"|"ammo")}
+                />
+              );
+            }
+            return (
+              <div key={k} className="text-center p-3 rounded-xl bg-neutral-800">
+                <div className="text-2xl mb-1">{iconMap[k as keyof Resources]}</div>
+                <div className="text-xl font-bold">{v}</div>
+                <div className="text-xs text-neutral-400">{k}</div>
               </div>
-              <div className="text-xl font-bold">{v}</div>
-              <div className="text-xs text-neutral-400">{k}</div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+        <p className="mt-3 text-xs text-neutral-500">Total almacenado: {total}</p>
       </div>
-      <p className="mt-3 text-xs text-neutral-500">Total almacenado: {total}</p>
-    </div>
+      <Modal open={openModal === 'food'} title="Comida" onClose={()=>setOpenModal(null)}>
+        <p className="text-zinc-300">Contenido demo para comida.</p>
+      </Modal>
+      <Modal open={openModal === 'medicine'} title="Medicina" onClose={()=>setOpenModal(null)}>
+        <p className="text-zinc-300">Contenido demo para medicina.</p>
+      </Modal>
+      <Modal open={openModal === 'ammo'} title="Munición" onClose={()=>setOpenModal(null)}>
+        <p className="text-zinc-300">Contenido demo para munición.</p>
+      </Modal>
+    </>
   );
 }
 
