@@ -34,7 +34,14 @@ import {
   toLooseAmmo,
   consumeAmmoFromPlayer,
 } from "./systems/ammo";
-import { consumeFood, consumeMed } from "./systems/inventory";
+import {
+  consumeFood,
+  consumeMed,
+  materializeFoodFromStock,
+  moveFromStashToPlayer,
+  materializeMedFromStock,
+} from "./systems/inventory";
+import { FOOD_CATALOG } from "./data/consumables";
 import StockFoodModal from "./components/StockFoodModal";
 import StockMedicineModal from "./components/StockMedicineModal";
 import StockAmmoModal from "./components/StockAmmoModal";
@@ -1285,8 +1292,11 @@ function finishEnemyPhase() {
       return;
     }
 
+    let state: any = { players, camp: { stash, resources } };
+
     if (isInf) {
-      if ((resources.medicine ?? 0) <= 0) {
+      let med: any = p.inventory?.find((it: any) => it.type === 'med');
+      if (!med && (resources.medicine ?? 0) <= 0) {
         pushBattle(`${p.name} necesita medicina para curar la infección.`);
         endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
           timePenalty(ACTION_TIME_COSTS.heal);
@@ -1294,8 +1304,22 @@ function finishEnemyPhase() {
         }));
         return;
       }
-      setResources(r => ({ ...r, medicine: Math.max(0, (r.medicine ?? 0) - 1) }));
-      updatePlayer(p.id, { conditions: removeCondition(p.conditions,'infected') });
+      const prevHp = p.hp;
+      if (!med) {
+        state = materializeMedFromStock(state, 1, 'medicine');
+        const newItemId = state.camp.stash[state.camp.stash.length - 1].id;
+        state = moveFromStashToPlayer(state, p.id, newItemId);
+        med = { id: newItemId };
+      }
+      state = consumeMed(state, p.id, med.id);
+      const updated = state.players.find((pl: any) => pl.id === p.id);
+      const playersNext = state.players.map((pl: any) =>
+        pl.id === p.id ? { ...updated, hp: prevHp, conditions: removeCondition(updated.conditions,'infected') } : pl
+      );
+      state = { ...state, players: playersNext };
+      setPlayers(state.players);
+      setStash(state.camp.stash);
+      setResources(state.camp.resources);
       pushBattle(`${p.name} usa medicina y supera la infección.`);
       endPlayerActionAwaitEnter(()=> finalizeTurnWithEndConditions(() => {
         timePenalty(ACTION_TIME_COSTS.heal);
@@ -1314,7 +1338,8 @@ function finishEnemyPhase() {
       return;
     }
 
-    if(resources.medicine<=0) {
+    let med: any = p.inventory?.find((it: any) => it.type === 'med');
+    if (!med && (resources.medicine ?? 0) <= 0) {
       pushBattle(`Sin medicina suficiente.`);
       endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
         timePenalty(ACTION_TIME_COSTS.heal);
@@ -1322,9 +1347,20 @@ function finishEnemyPhase() {
       }));
       return;
     }
-    const healAmt = Math.min(10, actor.hpMax - actor.hp);
-    updatePlayer(actor.id, { hp: clamp(actor.hp+10, 0, actor.hpMax) });
-    setResources(r=>({...r, medicine: Math.max(0, r.medicine-1)}));
+
+    const prevHp = p.hp;
+    if (!med) {
+      state = materializeMedFromStock(state, 1, 'medicine');
+      const newItemId = state.camp.stash[state.camp.stash.length - 1].id;
+      state = moveFromStashToPlayer(state, p.id, newItemId);
+      med = { id: newItemId };
+    }
+    state = consumeMed(state, p.id, med.id);
+    const updated = state.players.find((pl: any) => pl.id === p.id);
+    const healAmt = (updated?.hp ?? 0) - prevHp;
+    setPlayers(state.players);
+    setStash(state.camp.stash);
+    setResources(state.camp.resources);
     pushBattle(render(pick(HEAL_LINES), { P: actor.name, V: healAmt }));
     touchPlayerStats(actor.id);
     setBattleStats(prev => {
@@ -1886,33 +1922,39 @@ function advanceTurn() {
     setResources(next.camp.resources);
   }
 
-  // consumeFoodItem: usa resources.food, no inventa inventarios.
+  // consumeFoodItem: usa el sistema de inventario unificado.
   function consumeFoodItem(label?: string, energyGain?: number) {
     if (controlsLocked || isEnemyPhase) return;
     if (!activePlayer) return;
 
     const p = activePlayer;
-    const foodLeft = resources?.food ?? 0;
+    if (!playerCanActNow()) return;
+    if (!startPlayerActionOrBlock()) return;
 
-    if (foodLeft <= 0) {
+    let state: any = { players, camp: { stash, resources } };
+    const prevEnergy = p.energy ?? 0;
+
+    const invFood = p.inventory?.find((it: any) => it.type === "food");
+    if (invFood) {
+      state = consumeFood(state, p.id, invFood.id);
+    } else if ((resources?.food ?? 0) > 0) {
+      state = materializeFoodFromStock(state, 1, FOOD_CATALOG[0].id);
+      const newItemId = state.camp.stash[state.camp.stash.length - 1].id;
+      state = moveFromStashToPlayer(state, p.id, newItemId);
+      state = consumeFood(state, p.id, newItemId);
+    } else {
       pushBattle("🍞 No quedan alimentos en el campamento.");
       endTurnNow(ACTION_TIME_COSTS.heal);
       return;
     }
 
-    if (!playerCanActNow()) return;
-    if (!startPlayerActionOrBlock()) return;
-
-    const gain = Math.max(1, Math.floor(energyGain ?? 6));
-    const prev = p.energy ?? 100;
-    const maxE = p.energyMax ?? 100;
-    const next = Math.min(prev + gain, maxE);
-
-    updatePlayer(p.id, { energy: next });
-    setResources(r => ({ ...r, food: Math.max(0, (r?.food ?? 0) - 1) }));
+    const updated = state.players.find((pl: any) => pl.id === p.id);
+    setPlayers(state.players);
+    setStash(state.camp.stash);
+    setResources(state.camp.resources);
 
     const name = label ? ` ${label}` : "";
-    pushBattle(`🍞 ${p.name} come${name} (+${next - prev} energía).`);
+    pushBattle(`🍞 ${p.name} come${name} (+${(updated?.energy ?? 0) - prevEnergy} energía).`);
 
     endTurnNow(ACTION_TIME_COSTS.heal);
   }
