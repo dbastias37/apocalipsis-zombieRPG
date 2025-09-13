@@ -425,17 +425,19 @@ export default function App(){
 
   const tw = useTypewriterQueue();
   const proceed = useCallback(() => {
-    if (tw.typing) {
-      tw.skipTyping();
-    } else {
-      tw.continueNext();
+    if (tw.typing) tw.skipTyping();
+    else tw.continueNext();
+  }, [tw.typing, tw.skipTyping, tw.continueNext]);
+  const overlayOpen = tw.hasPending;
+
+  useEffect(() => {
+    if (!tw.hasPending && postActionContinueRef.current) {
       const fn = postActionContinueRef.current;
       postActionContinueRef.current = null;
       setControlsLocked(false);
-      if (typeof fn === "function") fn();
+      fn();
     }
-  }, [tw.typing, tw.skipTyping, tw.continueNext]);
-  const overlayOpen = tw.hasPending;
+  }, [tw.hasPending]);
 
   useEffect(() => {
     if (!overlayOpen || tw.typing || !tw.current) return;
@@ -513,7 +515,7 @@ export default function App(){
   const [logs, setLogs] = useState<string[]>([]);
 
   const pushLog = useCallback((msg: string) => {
-    setLogs(prev => [msg, ...prev].slice(0,200));
+    setLogs(prev => [...prev, msg].slice(-200));
   }, []);
 
   // Registrar logger global
@@ -1974,6 +1976,7 @@ function advanceTurn() {
           />
         )}
 
+        {activePlayer && <BattleLogBox lines={logs} />}
         {activePlayer && (
           <WeaponPicker
             player={activePlayer}
@@ -2138,6 +2141,18 @@ function advanceTurn() {
 }
 
 // === Subcomponentes ===
+function BattleLogBox({ lines }: { lines: string[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight; }, [lines.length]);
+  return (
+    <div className="rounded-2xl border border-white/10 bg-zinc-900/80 p-3 mb-3">
+      <div ref={ref} className="max-h-40 overflow-y-auto space-y-1 text-sm">
+        {lines.length === 0 ? <div className="text-neutral-500">Sin eventos…</div>
+          : lines.map((t,i)=><div key={i} className="px-2 py-1 rounded bg-white/5">{t}</div>)}
+      </div>
+    </div>
+  );
+}
 function HeaderHUD(props:{
   day:number; phase:Phase; clock:string; progress:number;
   morale:number; threat:number;
