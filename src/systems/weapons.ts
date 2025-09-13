@@ -1,4 +1,4 @@
-import { findWeaponById } from "../data/weapons";
+import { findWeaponById } from "../data/weapons.js";
 
 export function getSelectedWeapon(player: any) {
   const id = player?.currentWeaponId ?? player?.selectedWeaponId ?? "fists";

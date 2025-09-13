@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "tsc src/logic/combatUtils.ts --module ESNext --target ES2020 --moduleResolution bundler --jsx react --skipLibCheck --outDir build && node --experimental-specifier-resolution=node --test tests/combatUtils.test.mjs",
-    "test:game": "tsc src/game/items/weapons.ts src/engine/combat.ts src/engine/turn-manager.ts src/systems/weapons.ts src/systems/combat/getAvailableWeapons.ts src/ui/log.ts --module ESNext --target ES2020 --moduleResolution bundler --skipLibCheck --outDir build && node --experimental-specifier-resolution=node --test tests/game.test.mjs"
+    "test:game": "tsc src/data/weapons.ts src/engine/combat.ts src/engine/turn-manager.ts src/systems/ammo.ts src/systems/weapons.ts src/systems/combat/getAvailableWeapons.ts src/ui/log.ts --module ESNext --target ES2020 --moduleResolution bundler --skipLibCheck --outDir build && node --experimental-specifier-resolution=node --test tests/game.test.mjs tests/turn-manager.test.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",

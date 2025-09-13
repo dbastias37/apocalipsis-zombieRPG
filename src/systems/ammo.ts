@@ -1,4 +1,4 @@
-import { getSelectedWeapon, isRangedWeapon } from "./weapons";
+import { getSelectedWeapon, isRangedWeapon } from "./weapons.js";
 
 function norm(s?: string) {
   return String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
