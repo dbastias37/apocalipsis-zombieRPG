@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
-import { takeAmmoFromCamp } from "../systems/ammo";
+import { toAmmoBox, toLooseAmmo } from "../systems/ammo";
 import { ensureBreathPlomoStyle } from "./util/breathPlomo";
 
 type Props = {
@@ -34,7 +34,13 @@ export default function StockAmmoModal({ isOpen, onClose, state, setState }: Pro
 
   const disabled = total<=0 || total>stock;
   const confirm = ()=>{
-    const next = takeAmmoFromCamp(state, { loose, boxes });
+    const lItems = Array.from({length:loose},()=>toLooseAmmo(1));
+    const bItems = Array.from({length:boxes},()=>toAmmoBox(15));
+    const stash = [ ...(state?.camp?.stash ?? []), ...lItems, ...bItems ];
+    const next = {
+      ...state,
+      camp: { ...(state.camp ?? {}), stash, resources: { ...(state.camp?.resources ?? {}), ammo: stock - total } }
+    };
     setState(next);
     onClose();
   };

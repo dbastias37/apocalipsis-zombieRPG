@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { WEAPONS } from "../../data/weapons";
-import { getLoadedAmmo } from "../../systems/ammo";
-import { getTotalAmmoAvailable, listReloadableWeapons } from "../../helpers";
+import { getLoadedAmmo, getTotalAmmoAvailable, listReloadableWeapons } from "../../systems/ammo";
 
 type Weapon = { id:string; name:string };
 

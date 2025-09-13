@@ -1,4 +1,5 @@
 import { getSelectedWeapon, isRangedWeapon } from "./weapons.js";
+import { WEAPONS } from "../data/weapons";
 
 function norm(s?: string) {
   return String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
@@ -29,9 +30,18 @@ export function ammoCount(item: any): number {
 
 export function ensureAmmoNames(item: any) {
   const kind = item?.kind === "box" ? "box" : "loose";
-  const amount = Math.max(0, Math.floor(Number(item?.amount ?? 0)));
+  const amount = Math.max(0, Math.floor(Number(item?.amount ?? item?.bullets ?? 0)));
+  const id = item?.id ?? crypto.randomUUID();
   const name = kind === "box" ? `Caja de munición (${amount})` : `Munición (${amount})`;
-  return { ...item, type: "ammo", kind, amount, qty: amount, count: amount, name };
+  return { ...item, id, type: "ammo", kind, amount, bullets: amount, qty: amount, count: amount, name };
+}
+
+export function toAmmoBox(bullets: number) {
+  return ensureAmmoNames({ kind: "box", amount: bullets });
+}
+
+export function toLooseAmmo(bullets: number) {
+  return ensureAmmoNames({ kind: "loose", amount: bullets });
 }
 
 export function listAmmoBoxes(inv: any[] | null | undefined) {
@@ -197,3 +207,61 @@ export function totalAmmoInInventory(inv: any[] | null | undefined): number {
 }
 
 export const listAmmoboxes = listAmmoBoxes;
+
+export function getTotalAmmoAvailable(player: any){
+  const inv = Array.isArray(player?.inventory) ? player.inventory : [];
+  let loose = 0, boxesBullets = 0, boxesCount = 0;
+  for (const it of inv){
+    const boxB = isAmmoBox(it) ? ammoCount(it) : 0;
+    if (boxB > 0){ boxesBullets += boxB; boxesCount += 1; continue; }
+    const looseN = isLooseAmmo(it) ? ammoCount(it) : 0;
+    loose += looseN;
+  }
+  return { loose, boxesBullets, boxesCount, total: loose + boxesBullets };
+}
+
+export function consumeAmmoFromPlayer(player:any, requested:number){
+  let need = Math.max(0, Math.floor(requested));
+  if (need <= 0) return { player, taken: 0 };
+  let inventory = Array.isArray(player?.inventory) ? [...player.inventory] : [];
+  const rLoose = reduceLoose(inventory, need);
+  let taken = rLoose.taken;
+  inventory = rLoose.inv;
+  if (taken < need){
+    const rBox = reduceBoxes(inventory, need - taken);
+    taken += rBox.taken;
+    inventory = rBox.inv;
+  }
+  return { player: { ...player, inventory }, taken };
+}
+
+export function listReloadableWeapons(player:any): {id:string; name:string}[] {
+  const list: {id:string; name:string}[] = [];
+  const add = (id:string,name:string)=>{ if(!list.find(w=>w.id===id)) list.push({id,name}); };
+  const norm = (s?:string)=>String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
+  const selId = (player as any)?.currentWeaponId ?? (player as any)?.selectedWeaponId;
+  const byId = selId ? WEAPONS.find(w => w.id === selId) : null;
+  const fromGetter = typeof getSelectedWeapon === 'function' ? getSelectedWeapon(player) : null;
+  const sel = byId?.type === 'ranged' ? byId : (fromGetter && fromGetter.type === 'ranged' ? fromGetter : null);
+  if (sel) add(sel.id, sel.name ?? sel.id);
+  const inv = Array.isArray(player?.inventory) ? player.inventory : [];
+  for (const it of inv){
+    if (typeof it === 'string'){
+      const s = norm(it);
+      const m = WEAPONS.find(w=>w.type==='ranged' && (norm(w.name)===s || w.id===s));
+      if (m) add(m.id, m.name);
+      continue;
+    }
+    if (it && typeof it === 'object'){
+      if (it.type === 'ranged' && typeof it.id === 'string'){
+        const m = WEAPONS.find(w=>w.id===it.id) ?? {id:it.id,name:(it as any).name ?? it.id};
+        add(m.id, m.name);
+      } else if (typeof (it as any).name === 'string'){
+        const nm = norm((it as any).name);
+        const m2 = WEAPONS.find(w=>w.type==='ranged' && norm(w.name)===nm);
+        if (m2) add(m2.id, m2.name);
+      }
+    }
+  }
+  return list;
+}

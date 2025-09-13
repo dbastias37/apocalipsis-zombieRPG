@@ -6,6 +6,7 @@ import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
 import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
 import type { AmmoBox, BackpackItem } from "./types/items";
+import type { InventoryItem } from "./types/inventory";
 import {
   weaponFlavorFrom,
   hitPhraseByFlavor,
@@ -29,8 +30,13 @@ import {
   setLoadedAmmo,
   spendAmmo,
   totalAmmoInInventory,
+  toAmmoBox,
+  toLooseAmmo,
+  consumeAmmoFromPlayer,
 } from "./systems/ammo";
-import { consumeAmmoFromPlayer } from "./helpers";
+import { materializeFoodFromStock, materializeMedFromStock, moveFromStashToPlayer, consumeFood, consumeMed } from "./systems/inventory";
+import StockFoodModal from "./components/StockFoodModal";
+import StockMedicineModal from "./components/StockMedicineModal";
 import WeaponPicker from "./components/WeaponPicker";
 import BattleTicker from "./components/BattleTicker";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
@@ -307,6 +313,9 @@ export default function App(){
   ].map(p => {
     const table = { ...(p.ammoByWeapon ?? {}) };
     if (typeof table.pistol !== "number") table.pistol = 3; // 3 balas iniciales
+    const inv = Array.isArray((p as any).inventory)
+      ? (p as any).inventory
+      : Array.isArray((p as any).backpack) ? (p as any).backpack : [];
     return {
       ...p,
       energy: p.energy ?? 100,
@@ -314,8 +323,8 @@ export default function App(){
       selectedWeaponId: p.selectedWeaponId ?? "fists",
       currentWeaponId: p.currentWeaponId ?? p.selectedWeaponId ?? "fists",
       ammoByWeapon: table,
-      backpack: Array.isArray((p as any).backpack) ? (p as any).backpack : [],
-      inventory: Array.isArray((p as any).inventory) ? (p as any).inventory : [],
+      backpack: inv,
+      inventory: inv,
     };
   }));
   const [turnOrder, setTurnOrder] = useState<string[] | null>(null);
@@ -952,13 +961,13 @@ export default function App(){
         gameLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
         setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, name] }));
       }
-      const ammoDrop = maybeEnemyAmmoDrop();
-      if (ammoDrop){
-        const bp = [...(actor.backpack ?? []), ammoDrop];
-        updatePlayer(actor.id, { backpack: bp });
-        gameLog(`${actor.name} encuentra ${ammoDrop.name}.`);
-        setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, ammoDrop.name] }));
-      }
+        const ammoDrop = maybeEnemyAmmoDrop();
+        if (ammoDrop){
+          const bp = [...(actor.inventory ?? []), ammoDrop];
+          updatePlayer(actor.id, { inventory: bp });
+          gameLog(`${actor.name} encuentra ${ammoDrop.name}.`);
+          setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, ammoDrop.name] }));
+        }
     }
   }
   function performAttack(enemyId: string){
@@ -1737,8 +1746,8 @@ function advanceTurn() {
       const holderId = activePlayer?.id;
       if(holderId){
         const p = players.find(pl=>pl.id===holderId);
-        const bp = [...(p?.backpack ?? []), ammoBox];
-        updatePlayer(holderId, { backpack: bp });
+        const bp = [...(p?.inventory ?? []), ammoBox];
+        updatePlayer(holderId, { inventory: bp });
         gameLog(`🧰 En la exploración hallas ${ammoBox.name}. Guardado en tu mochila.`);
       } else {
         setStash(s=>[...s, ammoBox.name]);
@@ -1797,7 +1806,10 @@ function advanceTurn() {
   }, [state, timeRunning, day]);
 
   // ——— Inventario ———
-  const [stash, setStash] = useState<string[]>(["Pistola","Botiquín","Linterna","Cuerda","Chatarra"]);
+  function toBaseItem(name:string): InventoryItem{ return { id: crypto.randomUUID(), name, type:'misc' }; }
+  const [stash, setStash] = useState<InventoryItem[]>([
+    "Pistola","Botiquín","Linterna","Cuerda","Chatarra"].map(toBaseItem)
+  );
 
   // Capacidad de mochila
   function backpackUsed(p: Player){ return p.inventory.length; }
@@ -1805,13 +1817,14 @@ function advanceTurn() {
 
   // Añadir item intentando mochila y si no cabe, al alijo (stash)
   function tryAddToBackpack(playerId: string, itemName: string): {added:boolean, to:'backpack'|'stash'} {
+    const item = toBaseItem(itemName);
     const p = players.find(pp=>pp.id===playerId);
-    if(!p){ setStash(s=>[...s, itemName]); return {added:true, to:'stash'}; }
+    if(!p){ setStash(s=>[...s, item]); return {added:true, to:'stash'}; }
     if (backpackUsed(p) < backpackCap(p)) {
-      updatePlayer(playerId, { inventory: [...p.inventory, itemName] });
+      updatePlayer(playerId, { inventory: [...p.inventory, item] });
       return { added:true, to:'backpack' };
     } else {
-      setStash(s=>[...s, itemName]);
+      setStash(s=>[...s, item]);
       return { added:true, to:'stash' };
     }
   }
@@ -1834,28 +1847,39 @@ function advanceTurn() {
     return randomFrom(LOW_TIER);
   }
 
-  function giveItemToPlayer(playerId:string, item:string){
-    gameLog(`📦 Traslado: se entregó "${item}" al inventario del jugador ${players.find(p=>p.id===playerId)?.name ?? playerId}.`);
-    if(!stash.includes(item)) return;
+  function giveItemToPlayer(playerId:string, item:InventoryItem){
     const p = players.find(pp=>pp.id===playerId);
     if(!p) return;
     if (backpackUsed(p) >= backpackCap(p)) { gameLog(`La mochila de ${p.name} está llena.`); return; }
-    setStash(s=>{
-      const idx = s.indexOf(item);
-      const copy = [...s]; copy.splice(idx,1); return copy;
-    });
-    setPlayers(ps=> ps.map(p => p.id===playerId ? {...p, inventory: [...p.inventory, item]} : p));
+    setStash(s=> s.filter(it=>it.id!==item.id));
+    setPlayers(ps=> ps.map(pl => pl.id===playerId ? {...pl, inventory:[...pl.inventory, item]} : pl));
+    gameLog(`📦 Traslado: se entregó "${item.name}" al inventario del jugador ${p.name}.`);
   }
-  function takeItemFromPlayer(playerId:string, item:string){
-    setPlayers(ps=> ps.map(p => {
-      if(p.id!==playerId) return p;
-      const idx = p.inventory.indexOf(item);
-      if(idx<0) return p;
-      const inv = [...p.inventory]; inv.splice(idx,1);
-      return {...p, inventory: inv};
-    }));
-    setStash(s=> [...s, item]);
-    gameLog(`📦 Traslado: ${players.find(p=>p.id===playerId)?.name ?? playerId} devolvió "${item}" al alijo.`);
+  function takeItemFromPlayer(playerId:string, item:any){
+    const p = players.find(pp=>pp.id===playerId);
+    if(!p) return;
+    const idx = p.inventory.findIndex(it=> it===item || (typeof it==='object' && typeof item==='object' && it.id===item.id));
+    if(idx<0) return;
+    const inv = [...p.inventory];
+    const removed = inv.splice(idx,1)[0];
+    setPlayers(ps=> ps.map(pl => pl.id===playerId ? {...pl, inventory: inv} : pl));
+    const add = typeof removed === 'object' ? removed : toBaseItem(String(removed));
+    setStash(s=> [...s, add]);
+    gameLog(`📦 Traslado: ${p.name} devolvió "${add.name}" al alijo.`);
+  }
+
+  function consumeFoodItem(playerId:string, itemId:string){
+    const next = consumeFood({ players, camp:{ stash, resources } }, playerId, itemId);
+    setPlayers(next.players);
+    setStash(next.camp.stash);
+    setResources(next.camp.resources);
+  }
+
+  function consumeMedItem(playerId:string, itemId:string){
+    const next = consumeMed({ players, camp:{ stash, resources } }, playerId, itemId);
+    setPlayers(next.players);
+    setStash(next.camp.stash);
+    setResources(next.camp.resources);
   }
 
   function handleWithdrawBoxes(count:number){
@@ -1864,7 +1888,7 @@ function advanceTurn() {
       const next = { ...r, ammo: Math.max(0, (r.ammo||0) - count*15) };
       return next;
     });
-    try { setStash?.((s:any[])=>[...s, ...Array(count).fill("Caja de munición")]); } catch {}
+    try { setStash?.((s:InventoryItem[])=>[...s, ...Array(count).fill(0).map(()=>toAmmoBox(15))]); } catch {}
     pushLog?.(`📦 Sacas ${count} ${count===1?'caja':'cajas'} de munición (${count*15} municiones) del depósito.`);
     setShowAmmoModal(false);
   }
@@ -1875,7 +1899,7 @@ function advanceTurn() {
       const next = { ...r, ammo: Math.max(0, (r.ammo||0) - count) };
       return next;
     });
-    try { setStash?.((s:any[])=>[...s, `Munición (${count})`]); } catch {}
+    try { setStash?.((s:InventoryItem[])=>[...s, toLooseAmmo(count)]); } catch {}
     pushLog?.(`🔫 Sacas ${count} ${count===1?'munición':'municiones'} del depósito.`);
     setShowAmmoModal(false);
   }
@@ -2429,7 +2453,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
         <h3 className="text-xl font-bold mb-3">Detalles</h3>
         {selected ? (
           <>
-            <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} />
+            <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} consumeFood={consumeFoodItem} consumeMed={consumeMedItem} />
             {(() => {
               // jugador activo
               const p = players.find(pl => pl.id === activePlayerId);
@@ -2466,10 +2490,8 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
                 return m ? Math.max(0, parseInt(m[1],10)) : 0;
               };
 
-              // munición total (inventario + mochila)
-              const inv = Array.isArray((p as any).inventory) ? (p as any).inventory : [];
-              const bp  = Array.isArray((p as any).backpack)  ? (p as any).backpack  : [];
-              const all = [...inv, ...bp];
+              // munición total en inventario
+              const all = Array.isArray((p as any).inventory) ? (p as any).inventory : [];
               const ammoTotal = all.reduce((acc,it)=>acc + (isBox(it) ? boxBullets(it) : looseCount(it)), 0);
               if (ammoTotal <= 0) return false;
 
@@ -2519,7 +2541,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
   );
 }
 
-function Details({player, onUpdate, addMedicine}:{player:Player; onUpdate:(patch:Partial<Player>)=>void; addMedicine:(n:number)=>void;}){
+function Details({player, onUpdate, addMedicine, consumeFood: onConsumeFood, consumeMed: onConsumeMed}:{player:Player; onUpdate:(patch:Partial<Player>)=>void; addMedicine:(n:number)=>void; consumeFood:(pid:string,itemId:string)=>void; consumeMed:(pid:string,itemId:string)=>void;}){
   const [medkitOpen, setMedkitOpen] = useState(false);
   const [medkitTake, setMedkitTake] = useState(1);
 
@@ -2547,10 +2569,27 @@ function Details({player, onUpdate, addMedicine}:{player:Player; onUpdate:(patch
             })
           }
         </div>
-        <div className="text-xs opacity-80 mt-1">
-          Cajas de munición en mochila: {totalAmmoInInventory(player.inventory)}
-        </div>
+      <div className="text-xs opacity-80 mt-1">
+        Cajas de munición en mochila: {totalAmmoInInventory(player.inventory)}
       </div>
+    </div>
+
+      {player.inventory.some((it:any)=>typeof it==='object' && it.type==='food') && (
+        <button className="mt-2 px-3 py-2 rounded-lg bg-neutral-800" onClick={()=>{
+          const foods = player.inventory.filter((it:any)=>typeof it==='object' && it.type==='food');
+          const choice = foods.length===1 ? 0 : (parseInt(prompt('Elige alimento:\n'+foods.map((f,i)=>`${i+1}. ${f.name}`).join('\n'))||'1',10)-1);
+          const sel = foods[choice];
+          if(sel) onConsumeFood(player.id, sel.id);
+        }}>Comer</button>
+      )}
+      {player.inventory.some((it:any)=>typeof it==='object' && it.type==='med') && (
+        <button className="mt-2 ml-2 px-3 py-2 rounded-lg bg-neutral-800" onClick={()=>{
+          const meds = player.inventory.filter((it:any)=>typeof it==='object' && it.type==='med');
+          const choice = meds.length===1 ? 0 : (parseInt(prompt('Elige medicina:\n'+meds.map((f,i)=>`${i+1}. ${f.name}`).join('\n'))||'1',10)-1);
+          const sel = meds[choice];
+          if(sel) onConsumeMed(player.id, sel.id);
+        }}>Curarse</button>
+      )}
 
       {/* Botón de Botiquín (verde breath neon) */}
       {player.inventory.some(isMedkit) && (
@@ -2638,7 +2677,7 @@ function Details({player, onUpdate, addMedicine}:{player:Player; onUpdate:(patch
   );
 }
 
-function InventoryPanel({stash, players, giveItem, takeItem, foundNotes, followNote}:{stash:string[]; players:Player[]; giveItem:(id:string,item:string)=>void; takeItem:(id:string,item:string)=>void; foundNotes:GameNote[]; followNote:(id:number)=>void}){
+function InventoryPanel({stash, players, giveItem, takeItem, foundNotes, followNote}:{stash:InventoryItem[]; players:Player[]; giveItem:(id:string,item:InventoryItem)=>void; takeItem:(id:string,item:any)=>void; foundNotes:GameNote[]; followNote:(id:number)=>void}){
   const [selectedPlayer, setSelectedPlayer] = useState(players[0]?.id ?? "");
   useEffect(()=>{
     if(!players.find(p=>p.id===selectedPlayer) && players[0]) setSelectedPlayer(players[0].id);
@@ -2660,8 +2699,8 @@ function InventoryPanel({stash, players, giveItem, takeItem, foundNotes, followN
               <h4 className="text-sm text-neutral-400 mb-1">Alijo del Campamento</h4>
               <div className="flex flex-wrap gap-2">
                 {stash.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
-                  stash.map((it,i)=>(
-                    <button key={i} className="btn btn-ghost" onClick={()=>giveItem(player.id,it)}>{it} ➜</button>
+                  stash.map((it)=>(
+                    <button key={it.id} className="btn btn-ghost" onClick={()=>giveItem(player.id,it)}>{it.name} ➜</button>
                   ))
                 }
               </div>
@@ -2671,7 +2710,7 @@ function InventoryPanel({stash, players, giveItem, takeItem, foundNotes, followN
               <div className="flex flex-wrap gap-2">
                 {player.inventory.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
                   player.inventory.map((it,i)=>(
-                    <button key={i} className="btn btn-ghost" onClick={()=>takeItem(player.id,it)}>⟵ {it}</button>
+                    <button key={i} className="btn btn-ghost" onClick={()=>takeItem(player.id,it)}>⟵ {typeof it==='string'? it : it.name}</button>
                   ))
                 }
               </div>
