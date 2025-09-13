@@ -436,13 +436,24 @@ export default function App(){
     }
   }, [tw.typing, tw.skipTyping, tw.continueNext]);
   const overlayOpen = tw.hasPending;
-  // helper para pushear mensajes al panel
+
+  useEffect(() => {
+    if (!overlayOpen || tw.typing || !tw.current) return;
+    const len = tw.current.text.length;
+    const base = 600, perChar = 25, cap = 2000;
+    const ms = Math.min(cap, base + perChar * len);
+    const t = setTimeout(() => proceed(), ms);
+    return () => clearTimeout(t);
+  }, [overlayOpen, tw.typing, tw.current?.id, proceed]);
+
+  // helper para pushear mensajes al panel y registrarlos en el log
   function pushBattle(text: string, onDone?: () => void){
     const clean = text
       .replace(/\s*\n+\s*/g, " ")
       .replace(/\s{2,}/g, " ")
       .trim();
     tw.push({ text: clean, onDone });
+    gameLog(clean);
   }
 
   function playerCanActNow(): boolean {
@@ -460,7 +471,7 @@ export default function App(){
     const ap = (playersRef.current ?? []).find(p => p.id === apId);
     if (!ap) { next(); return; }
 
-    const end = applyEndOfTurnConditions(ap, (msg)=>{ pushBattle?.(msg); gameLog(msg); });
+    const end = applyEndOfTurnConditions(ap, (msg)=>{ pushBattle?.(msg); });
     if (end.hpDelta || end.newConditions) {
       updatePlayer(ap.id, {
         hp: Math.max(0, ap.hp + (end.hpDelta || 0)),
@@ -590,7 +601,7 @@ export default function App(){
       if(timedEvent){
         const elapsed = nowRef.current - timedEvent.startedAt;
         if(elapsed >= timedEvent.durationMs){
-          pushLog(`⏳ El evento "${timedEvent.name}" venció y se resuelve automáticamente.`);
+          gameLog(`⏳ El evento "${timedEvent.name}" venció y se resuelve automáticamente.`);
           timedEvent.onExpire();
           setTimedEvent(null);
         }
@@ -602,7 +613,7 @@ export default function App(){
   // Reglas de fin de partida por moral
   useEffect(()=>{
     if(morale <= 0 && state==="playing"){
-      pushLog("💀 La moral llegó a 0%. El grupo pierde la voluntad de vivir.");
+      gameLog("💀 La moral llegó a 0%. El grupo pierde la voluntad de vivir.");
       setState("gameover");
     }
   }, [morale, state]);
@@ -636,7 +647,7 @@ export default function App(){
 
   function logMsg(s:string){
     if (typeof pushBattle === "function") pushBattle(s);
-    pushLog(s);
+    else gameLog(s);
   }
 
   function formatTime(ms:number){
@@ -674,11 +685,11 @@ export default function App(){
     if(phase!=="night" && !force){
       const newPhase = nextPhase(phase);
       setPhase(newPhase);
-      pushLog(phaseChangeText(newPhase));
+    gameLog(phaseChangeText(newPhase));
       // efectos por fase
       if(newPhase==="night"){
         setThreat(t=>t+8);
-        pushLog("🌙 La noche incrementa el peligro. (+Amenaza)");
+        gameLog("🌙 La noche incrementa el peligro. (+Amenaza)");
       }else if(newPhase==="dawn"){
         setThreat(t=>Math.max(10, t-4));
         setMorale(m=>clamp(m+2,0,100));
@@ -691,7 +702,7 @@ export default function App(){
     setDay(newDay);
     setPhase("dawn");
     setClockMs(DAY_LENGTH_MS);
-    pushLog(`📅 Comienza el Día ${newDay}.`);
+    gameLog(`📅 Comienza el Día ${newDay}.`);
 
     // Resolución nocturna
     nightResolution();
@@ -709,11 +720,11 @@ export default function App(){
     }));
     if(resources.food <= 0){
       setMorale(m=>clamp(m-8,0,100));
-      pushLog("⚠️ Hambre en el campamento mina la moral.");
+      gameLog("⚠️ Hambre en el campamento mina la moral.");
     }
     if(resources.water <= 0){
       setMorale(m=>clamp(m-10,0,100));
-      pushLog("⚠️ Falta de agua provoca disputas y enfermedad.");
+      gameLog("⚠️ Falta de agua provoca disputas y enfermedad.");
     }
   }
 
@@ -728,7 +739,7 @@ export default function App(){
   }
 
   function passNight(){
-    pushLog("⏭️ Deciden aguantar hasta el amanecer...");
+    gameLog("⏭️ Deciden aguantar hasta el amanecer...");
     endOfDay('manual');
   }
 
@@ -741,17 +752,17 @@ export default function App(){
       return;
     }
     setDiscardDecision([]);
-    if(reason==='deck') pushLog("El mazo se agotó. La jornada termina y el grupo descansa.");
+    if(reason==='deck') gameLog("El mazo se agotó. La jornada termina y el grupo descansa.");
 
     if(phase !== 'night'){
       setThreat(t=>t+10);
-      pushLog("La noche cae. La amenaza aumenta.");
+      gameLog("La noche cae. La amenaza aumenta.");
       setPhase('night');
     }
 
     const upcoming = day + 1;
     nextDay(true);
-    pushLog(`=== DÍA ${upcoming} COMIENZA (${reason === 'deck' ? 'mazo agotado' : reason === 'timer' ? 'fin del tiempo' : 'continuación'}) ===`);
+    gameLog(`=== DÍA ${upcoming} COMIENZA (${reason === 'deck' ? 'mazo agotado' : reason === 'timer' ? 'fin del tiempo' : 'continuación'}) ===`);
     setMorale(m=>clamp(m+3,0,100));
   }
 
@@ -773,7 +784,7 @@ export default function App(){
       deck = shuffle(discardCombat);
       setDiscardCombat([]);
     }
-    if(deck.length===0){ pushLog("No quedan cartas de combate."); return; }
+    if(deck.length===0){ gameLog("No quedan cartas de combate."); return; }
     const card = deck[0];
     setCombatDeck(deck.slice(1));
     setCurrentCard(card);
@@ -781,19 +792,19 @@ export default function App(){
     const count = Math.max(1, Math.floor((card.difficulty||12)/6));
     const spawned = Array.from({length: count}, ()=>cloneEnemy(baseEnemies[Math.floor(Math.random()*baseEnemies.length)]));
     setEnemies(spawned);
-    pushLog(`⚔️ ¡Encuentro! (${spawned.length} enemigos)`);
+    gameLog(`⚔️ ¡Encuentro! (${spawned.length} enemigos)`);
   }
   function shuffleDecks(){
     setDecisionDeck(shuffle(decisionDeck));
     setCombatDeck(shuffle(combatDeck));
-    pushLog("🔀 Barajas los mazos restantes.");
+    gameLog("🔀 Barajas los mazos restantes.");
   }
   function recycleDiscards(){
     setDecisionDeck(d=>[...d, ...shuffle(discardDecision)]);
     setCombatDeck(d=>[...d, ...shuffle(discardCombat)]);
     setDiscardDecision([]);
     setDiscardCombat([]);
-    pushLog("♻️ Reintegras descartes a los mazos.");
+    gameLog("♻️ Reintegras descartes a los mazos.");
   }
 
   function resolveChoice(choice: NonNullable<Card["choices"]>[number]){
@@ -842,11 +853,11 @@ export default function App(){
         // Mantener la carta abierta, pero ya como combate
         setCurrentCard({ ...currentCard, type: "combat" });
       }
-      pushLog(`⚔️ Tu decisión provocó un combate (${toSpawn}).`);
+      gameLog(`⚔️ Tu decisión provocó un combate (${toSpawn}).`);
     }
 
     // narrativa
-    pushLog(`📖 Decisión tomada: ${choice.text}`);
+    gameLog(`📖 Decisión tomada: ${choice.text}`);
 
     // descartar carta o mantener si abre combate
     if (currentCard) {
@@ -893,7 +904,7 @@ export default function App(){
     updatePlayer(playerId, { hp });
     if (hp <= 0) {
       updatePlayer(playerId, { status: "dead" });
-      pushLog(`💀 ${p.name} cae para no levantarse jamás.`);
+      gameLog(`💀 ${p.name} cae para no levantarse jamás.`);
     }
   }
 
@@ -906,27 +917,27 @@ export default function App(){
     enemiesRef.current = afterEnemies;
 
     if (newHp <= 0) {
-      pushLog(`✅ ${enemy.name} cae hecho trizas.`);
+      gameLog(`✅ ${enemy.name} cae hecho trizas.`);
       setThreat(t => Math.max(0, t - 2));
       setStats(s => ({ ...s, kills: s.kills + 1 }));
       const tier = tierByEnemy(enemy);
       if (Math.random() < 0.6) {
         const drop = randomWeaponNameByTier(tier as any);
         const res = tryAddToBackpack(actor.id, drop);
-        pushLog(`🧷 ${enemy.name} suelta ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+        gameLog(`🧷 ${enemy.name} suelta ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
         setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, drop] }));
       }
       if (Math.random() < 0.05) {
         const name = "Ampliación de Mochila (+4)";
         const res = tryAddToBackpack(actor.id, name);
-        pushLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+        gameLog(`🎁 Encuentras ${name}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
         setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, name] }));
       }
       const ammoDrop = maybeEnemyAmmoDrop();
       if (ammoDrop){
         const bp = [...(actor.backpack ?? []), ammoDrop];
         updatePlayer(actor.id, { backpack: bp });
-        pushLog(`${actor.name} encuentra ${ammoDrop.name}.`);
+        gameLog(`${actor.name} encuentra ${ammoDrop.name}.`);
         setBattleStats(prev => ({ ...prev, lootNames: [...prev.lootNames, ammoDrop.name] }));
       }
     }
@@ -958,7 +969,6 @@ export default function App(){
       if (loaded <= 0) {
         const line = `${actor.name} intenta disparar ${w.name}, pero no tiene munición cargada.`;
         pushBattle(line);
-        pushLog(line);
         endPlayerActionAwaitEnter(() => {});
         return;
       }
@@ -966,7 +976,6 @@ export default function App(){
       if (!ok) {
         const line = `${actor.name} no logra disparar: el arma está vacía.`;
         pushBattle(line);
-        pushLog(line);
         endPlayerActionAwaitEnter(() => {});
         return;
       }
@@ -993,7 +1002,6 @@ export default function App(){
       const missPool = isRanged ? MISS_RANGED : MISS_MELEE;
       const missLine = render(pick(missPool), { P: actor.name, E: enemy.name, W: w.name });
       pushBattle(missLine);
-      pushLog(missLine);
       setDayStats(s=>({
         ...s,
         misses: s.misses + 1,
@@ -1089,7 +1097,6 @@ export default function App(){
     if (Math.random() < 0.03) tails.push(render(pick(TAIL_INFECT), { P: actor.name, E: enemy.name, W: w.name }));
     const line = (base + (tails.length ? " " + tails.join(" ") : "")).replace(/\s+/g, " ").trim();
     pushBattle(line);
-    pushLog(line);
 
     setDayStats(s=>({
       ...s,
@@ -1150,15 +1157,13 @@ export default function App(){
         if (applied.includes("infected")) line += " Posible infección en el objetivo.";
         line = line.replace(/\s+/g," ").trim();
         pushBattle(line);
-        pushLog(line);
         if (target.hp - dmg <= 0) {
           updatePlayer(target.id, { status: "dead" });
-          pushLog(`💀 ${target.name} cae para no levantarse jamás.`);
+          pushBattle(`💀 ${target.name} cae para no levantarse jamás.`);
         }
       } else {
         const missLine = `${enemy.name} falla al atacar a ${target.name}.`;
         pushBattle(missLine);
-        pushLog(missLine);
       }
     }
 
@@ -1203,13 +1208,13 @@ function finishEnemyPhase() {
 
   if (firstId) {
     const pl = alive.find(p => p.id === firstId)!;
-    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); gameLog(msg); });
+    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); });
     if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
     if (start.hpDelta) {
       const hp = clamp(pl.hp + start.hpDelta, 0, pl.hpMax);
       updatePlayer(pl.id, { hp, ...(hp<=0 ? { status:"dead" } : {}) });
       if (hp <= 0) {
-        pushLog(`💀 ${pl.name} cae para no levantarse jamás.`);
+        gameLog(`💀 ${pl.name} cae para no levantarse jamás.`);
         setActedThisRound(m => ({ ...(m || {}), [pl.id]: true }));
         requestAnimationFrame(() => advanceTurn());
         return;
@@ -1234,7 +1239,7 @@ function finishEnemyPhase() {
     if (!activePlayer) { setControlsLocked(false); return; }
     const actor = activePlayer;
     updatePlayer(actor.id, { defense: actor.defense + 3 });
-    pushLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
+    gameLog(`🛡️ ${actor.name} se cubre entre los escombros (+DEF temporal).`);
     pushBattle(`${actor.name} se cubre entre los escombros (+DEF temporal).`);
     endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(ACTION_TIME_COSTS.defend);
@@ -1315,18 +1320,18 @@ function finishEnemyPhase() {
     pushBattle(render(pick(FLEE_LINES), { P: actor.name }));
     const tookHit = Math.random() < 0.3;
     if(fr.total>=15){
-      pushLog("🏃 Huyen por pasillos colapsados. ¡Escape exitoso!");
+      gameLog("🏃 Huyen por pasillos colapsados. ¡Escape exitoso!");
       pushBattle(`${actor.name} ha escapado.`);
       setEnemies([]);
       handleCloseCard();
       setMorale(m=>clamp(m-3,0,100));
     } else {
-      pushLog("⚠️ El escape falla, te rodean por un momento.");
+      gameLog("⚠️ El escape falla, te rodean por un momento.");
       pushBattle(`${actor.name} no logra escapar.`);
     }
     if(tookHit){
       updatePlayer(actor.id, { hp: Math.max(0, actor.hp - 5) });
-      pushLog(`💥 ${actor.name} sufre rasguños al huir (-5 PV).`);
+      gameLog(`💥 ${actor.name} sufre rasguños al huir (-5 PV).`);
     }
     endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
       timePenalty(ACTION_TIME_COSTS.flee);
@@ -1468,13 +1473,13 @@ function advanceTurn() {
   setActivePlayerId(prev => prev === nextId ? prev : nextId);
   const pl = aliveNow.find(p => p.id === nextId);
   if (pl) {
-    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); gameLog(msg); });
+    const start = applyStartOfTurnConditions(pl, (msg)=>{ pushBattle?.(msg); });
     if (start.newConditions) updatePlayer(pl.id, { conditions: start.newConditions });
     if (start.hpDelta) {
       const hp = clamp(pl.hp + start.hpDelta, 0, pl.hpMax);
       updatePlayer(pl.id, { hp, ...(hp<=0 ? { status:"dead" } : {}) });
       if (hp <= 0) {
-        pushLog(`💀 ${pl.name} cae para no levantarse jamás.`);
+        gameLog(`💀 ${pl.name} cae para no levantarse jamás.`);
         requestAnimationFrame(() => advanceTurn());
         return;
       }
@@ -1547,7 +1552,7 @@ function advanceTurn() {
     if (undiscovered.length === 0) return;
     const note = undiscovered[Math.floor(Math.random() * undiscovered.length)];
     setFoundNotes(prev => [...prev, note]);
-    pushLog(`Encuentras una nota: “${note.title}”${note.hintLocation ? ` (pista: ${note.hintLocation})` : ''}`);
+    gameLog(`Encuentras una nota: “${note.title}”${note.hintLocation ? ` (pista: ${note.hintLocation})` : ''}`);
   }
 
   function followNote(noteId: number) {
@@ -1561,7 +1566,7 @@ function advanceTurn() {
       setBattleStats({ byPlayer: {}, lootNames: [] });
       setCurrentCard({ id: uid(), type: 'combat', title: 'Sigues la pista', text: 'Un peligro acecha.' });
       setExplorationActive(true);
-      pushLog(`Sigues la pista hacia ${note.hintLocation ?? 'un lugar incierto'}: ¡${count} enemigos!`);
+      gameLog(`Sigues la pista hacia ${note.hintLocation ?? 'un lugar incierto'}: ¡${count} enemigos!`);
     } else if (note.leadType === 'cache') {
       const r = note.rewards || {};
       setResources(prev => ({
@@ -1583,23 +1588,23 @@ function advanceTurn() {
         }
       }
       setFoundNotes(prev => prev.map(n => n.id === noteId ? { ...n, resolved: true } : n));
-      pushLog(`Sigues la pista: ${note.hintLocation ?? 'ubicación secreta'} — caché encontrado.`);
+      gameLog(`Sigues la pista: ${note.hintLocation ?? 'ubicación secreta'} — caché encontrado.`);
     } else {
-      pushLog("Esta nota no contiene pista accionable.");
+      gameLog("Esta nota no contiene pista accionable.");
     }
   }
 
   useEffect(() => {
     if (explorationActive && enemies.length === 0 && !currentCard) {
       setExplorationActive(false);
-      pushLog("Evento de exploración resuelto.");
+      gameLog("Evento de exploración resuelto.");
     }
   }, [enemies.length, currentCard, explorationActive]);
 
   // ——— Acciones fuera de combate ———
   function exploreArea(){
     if(explorationActive){
-      pushLog("Ya hay una exploración/evento activo. Resuélvelo primero.");
+      gameLog("Ya hay una exploración/evento activo. Resuélvelo primero.");
       return;
     }
     setExplorationActive(true);
@@ -1627,7 +1632,7 @@ function advanceTurn() {
         spawnEnemies(card.zombies);
         setBattleStats({ byPlayer: {}, lootNames: [] });
         setCurrentCard({ id: uid(), type: "combat", title: card.title, text: card.text });
-        pushLog(`Exploración interrumpida: ${card.title}`);
+        gameLog(`Exploración interrumpida: ${card.title}`);
         if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
           setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
         }
@@ -1636,8 +1641,8 @@ function advanceTurn() {
         });
         return;
       }
-      pushLog(`🔎 ${card.title}`);
-      pushLog(card.text);
+      gameLog(`🔎 ${card.title}`);
+      gameLog(card.text);
       discoverRandomNote(0.25);
       return;
     }
@@ -1650,7 +1655,7 @@ function advanceTurn() {
       spawnEnemies(count);
       setBattleStats({ byPlayer: {}, lootNames: [] });
       setCurrentCard({ id: uid(), type: "combat", title: "Encuentro inesperado", text: "Durante la exploración aparecen enemigos." });
-      pushLog(`Exploración interrumpida: ¡${count} enemigos!`);
+      gameLog(`Exploración interrumpida: ¡${count} enemigos!`);
       if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
         setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
       }
@@ -1679,10 +1684,10 @@ function advanceTurn() {
       const holderId = activePlayer?.id;
       if (holderId) {
         const res = tryAddToBackpack(holderId, r.item);
-        pushLog(`🔎 Encuentras ${r.item}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+        gameLog(`🔎 Encuentras ${r.item}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
       } else {
         setStash(s=>[...s, r.item]);
-        pushLog(`🔎 Encuentras ${r.item}. Guardado en el alijo.`);
+        gameLog(`🔎 Encuentras ${r.item}. Guardado en el alijo.`);
       }
     }
 
@@ -1692,10 +1697,10 @@ function advanceTurn() {
         const drop = randomWeaponNameByTier('mid');
         if (playerId) {
           const res = tryAddToBackpack(playerId, drop);
-          pushLog(`🧰 En la exploración hallas ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+          gameLog(`🧰 En la exploración hallas ${drop}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
         } else {
           setStash(s=>[...s, drop]);
-          pushLog(`🧰 En la exploración hallas ${drop}. Guardado en el alijo.`);
+          gameLog(`🧰 En la exploración hallas ${drop}. Guardado en el alijo.`);
         }
       }
       // 3% chance de ampliación de mochila (si la usas)
@@ -1703,10 +1708,10 @@ function advanceTurn() {
       if (Math.random() < 0.03) {
         if (playerId) {
           const res = tryAddToBackpack(playerId, BP_UP);
-          pushLog(`🎒 Encuentras ${BP_UP}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
+          gameLog(`🎒 Encuentras ${BP_UP}. Guardado en ${res.to === 'backpack' ? "tu mochila" : "el alijo"}.`);
         } else {
           setStash(s=>[...s, BP_UP]);
-          pushLog(`🎒 Encuentras ${BP_UP}. Guardado en el alijo.`);
+          gameLog(`🎒 Encuentras ${BP_UP}. Guardado en el alijo.`);
         }
       }
     })(activePlayer?.id);
@@ -1718,14 +1723,14 @@ function advanceTurn() {
         const p = players.find(pl=>pl.id===holderId);
         const bp = [...(p?.backpack ?? []), ammoBox];
         updatePlayer(holderId, { backpack: bp });
-        pushLog(`🧰 En la exploración hallas ${ammoBox.name}. Guardado en tu mochila.`);
+        gameLog(`🧰 En la exploración hallas ${ammoBox.name}. Guardado en tu mochila.`);
       } else {
         setStash(s=>[...s, ammoBox.name]);
-        pushLog(`🧰 En la exploración hallas ${ammoBox.name}. Guardado en el alijo.`);
+        gameLog(`🧰 En la exploración hallas ${ammoBox.name}. Guardado en el alijo.`);
       }
     }
 
-    pushLog(`${ev.text} — Recompensa obtenida.`);
+    gameLog(`${ev.text} — Recompensa obtenida.`);
     setExplorationActive(false);
     if (!isEnemyPhaseRef.current && activePlayerIdRef.current) {
       setActedThisRound(m => ({ ...m, [activePlayerIdRef.current as string]: true }));
@@ -1747,15 +1752,15 @@ function advanceTurn() {
       onExpire: () => {
         setThreat(t=>t+6);
         setMorale(m=>clamp(m-3,0,100));
-        pushLog("🚨 La sirena atrajo una horda lejana (+Amenaza, -Moral).");
+        gameLog("🚨 La sirena atrajo una horda lejana (+Amenaza, -Moral).");
       },
       onResolvePositive: () => {
         setResources(r=>({...r, materials: r.materials+2, fuel: r.fuel+1}));
-        pushLog("🛠️ Neutralizan la sirena y recuperan piezas (+2 materiales, +1 combustible).");
+        gameLog("🛠️ Neutralizan la sirena y recuperan piezas (+2 materiales, +1 combustible).");
       }
     };
     setTimedEvent(ev);
-    pushLog("⏳ Evento activado: una barra indica el tiempo para resolverlo.");
+    gameLog("⏳ Evento activado: una barra indica el tiempo para resolverlo.");
   }
 
   function resolveTimedEventPositively(){
@@ -1818,7 +1823,7 @@ function advanceTurn() {
     if(!stash.includes(item)) return;
     const p = players.find(pp=>pp.id===playerId);
     if(!p) return;
-    if (backpackUsed(p) >= backpackCap(p)) { pushLog(`La mochila de ${p.name} está llena.`); return; }
+    if (backpackUsed(p) >= backpackCap(p)) { gameLog(`La mochila de ${p.name} está llena.`); return; }
     setStash(s=>{
       const idx = s.indexOf(item);
       const copy = [...s]; copy.splice(idx,1); return copy;
@@ -1864,7 +1869,7 @@ function advanceTurn() {
     if(!p) return;
     if(!confirm(`Eliminar a ${p.name} de forma permanente?`)) return;
     setPlayers(ps => ps.filter(x=>x.id!==id));
-    pushLog(`🩸 ${p.name} abandona la historia para siempre.`);
+    gameLog(`🩸 ${p.name} abandona la historia para siempre.`);
     setMorale(m=>clamp(m-6,0,100));
   }
 
@@ -1997,7 +2002,6 @@ function advanceTurn() {
           camp={camp}
           setResources={setResources}
           setCamp={setCamp}
-          pushLog={pushLog}
         />
 
         <CampPanel resources={resources} setResources={setResources} setShowAmmoModal={setShowAmmoModal} />
@@ -2106,7 +2110,7 @@ function advanceTurn() {
           setClockMs(DAY_LENGTH_MS);
           setDecisionDeck(shuffle(mapDecisionCards(getDecisionDeckForDay(upcoming))));
           setExplorationDeck(shuffle(getExplorationDeckForDay(upcoming)));
-          pushLog(`— Comienza el Día ${upcoming} —`);
+          gameLog(`— Comienza el Día ${upcoming} —`);
         }}
       />
       <AmmoWithdrawModal
@@ -2709,7 +2713,7 @@ function InventoryPanel({stash, players, giveItem, takeItem, foundNotes, followN
   );
 }
 
-function CampRepair({resources, camp, setResources, setCamp, pushLog}:{resources:Resources; camp:Camp; setResources:React.Dispatch<React.SetStateAction<Resources>>; setCamp:React.Dispatch<React.SetStateAction<Camp>>; pushLog:(s:string)=>void}){
+function CampRepair({resources, camp, setResources, setCamp}:{resources:Resources; camp:Camp; setResources:React.Dispatch<React.SetStateAction<Resources>>; setCamp:React.Dispatch<React.SetStateAction<Camp>>}){
   const canRepairDefense = resources.materials >= 3 && camp.defense < 20;
   const canRepairComfort = resources.materials >= 2 && camp.comfort < 20;
 
@@ -2717,14 +2721,14 @@ function CampRepair({resources, camp, setResources, setCamp, pushLog}:{resources
     if(!canRepairDefense) return;
     setResources(prev => ({ ...prev, materials: prev.materials - 3 }));
     setCamp(prev => ({ ...prev, defense: Math.min(20, prev.defense + 2) }));
-    pushLog("Reparación: +2 Defensa (coste 3 materiales)");
+    gameLog("Reparación: +2 Defensa (coste 3 materiales)");
   };
 
   const repairComfort = () => {
     if(!canRepairComfort) return;
     setResources(prev => ({ ...prev, materials: prev.materials - 2 }));
     setCamp(prev => ({ ...prev, comfort: Math.min(20, prev.comfort + 2) }));
-    pushLog("Reparación: +2 Comodidad (coste 2 materiales)");
+    gameLog("Reparación: +2 Comodidad (coste 2 materiales)");
   };
 
   return (
@@ -2805,10 +2809,15 @@ function Bar({label, current, max, color}:{label:string; current:number; max:num
 }
 
 function LogPanel({log}:{log:string[]}){
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    const el = ref.current;
+    if(el) el.scrollTop = el.scrollHeight;
+  }, [log.length]);
   return (
     <div className="card bg-neutral-900 border-neutral-800 p-6">
       <h3 className="text-xl font-bold mb-4">📜 Registro</h3>
-      <div className="max-h-72 overflow-y-auto scrollbar-hide space-y-2">
+      <div ref={ref} className="max-h-72 overflow-y-auto scrollbar-hide space-y-2">
         {log.length===0 ? <p className="text-neutral-500">Sin eventos aún.</p> :
           log.map((l,i)=>(<div key={i} className="p-2 bg-neutral-800/60 rounded">{l}</div>))
         }
