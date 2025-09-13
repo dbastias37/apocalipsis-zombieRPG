@@ -1,16 +1,16 @@
 // src/state/levelStore.tsx
-import React, { createContext, useContext, useMemo, useReducer, useEffect } from "react";
+import React, { createContext, useContext, useMemo, useReducer, useEffect, useRef } from "react";
 import type {
   DayId, DayState, LevelContextAPI, NarrativeFlags, DayRules, DeckId, LevelEndReason
 } from "@/types/level";
 import { dayDecksById, dayRulesById } from "@/data/days/dayConfigs";
+import { TurnSystem } from "@/engine/turn-system";
 
 type Action =
   | { type: "INIT_DAY"; day: DayId; players: string[] }
   | { type: "TICK"; nowMs: number }
   | { type: "OPEN_TURN_GATE"; index: number }
   | { type: "START_TURN" }
-  | { type: "END_TURN" }
   | { type: "DRAW_CARD"; deck: DeckId; cardId: number | null }
   | { type: "MARK_USED"; deck: DeckId; cardId: number }
   | { type: "SPEND"; deck: DeckId; playerId: string }
@@ -94,10 +94,6 @@ function reducer(state: State, action: Action): State {
       return { ...state, dayState: { ...state.dayState, currentPlayerIndex: action.index, isTurnGateOpen: true } };
     case "START_TURN":
       return { ...state, dayState: { ...state.dayState, isTurnGateOpen: false } };
-    case "END_TURN": {
-      const next = (state.dayState.currentPlayerIndex + 1) % state.dayState.turnCounters.length;
-      return { ...state, dayState: { ...state.dayState, currentPlayerIndex: next, isTurnGateOpen: true } };
-    }
     case "DRAW_CARD": {
       if (action.cardId == null) return state;
       return state;
@@ -177,6 +173,7 @@ export const LevelProvider: React.FC<{
   onEvent?: (e: any) => void;
 }> = ({ children, onEvent }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const turnRef = useRef<TurnSystem>(new TurnSystem([], {}));
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -214,7 +211,19 @@ export const LevelProvider: React.FC<{
 
       initDay: (day, players) => {
         dispatch({ type: "INIT_DAY", day, players });
-        onEvent?.({ type: "DAY_STARTED", day });
+        const actors = Object.fromEntries(players.map(p => [p, { id: p, hp: 1, status: 'alive' as const }]));
+        const ts = new TurnSystem(players, actors);
+        turnRef.current = ts;
+        ts.onTurnChange(actor => {
+          ts.openTurnGate();
+          const idx = players.indexOf(actor.id);
+          dispatch({ type: 'OPEN_TURN_GATE', index: idx });
+          const nextName = players[idx] ?? 'Siguiente';
+          onEvent?.({ type: 'TURN_ENDED', nextPlayerName: nextName });
+        });
+        ts.openTurnGate(0);
+        dispatch({ type: 'OPEN_TURN_GATE', index: 0 });
+        onEvent?.({ type: 'DAY_STARTED', day });
       },
 
       drawCard: (deck) => drawFrom(deck),
@@ -229,13 +238,16 @@ export const LevelProvider: React.FC<{
       startExploreInstance: (id) => dispatch({ type: "START_EXPLORE", id }),
       resolveExploreInstance: (id) => dispatch({ type: "RESOLVE_EXPLORE", id }),
 
-      openTurnGate: (playerIndex) => dispatch({ type: "OPEN_TURN_GATE", index: playerIndex }),
-      startTurn: () => dispatch({ type: "START_TURN" }),
+      openTurnGate: (playerIndex) => {
+        turnRef.current.openTurnGate(playerIndex);
+        dispatch({ type: 'OPEN_TURN_GATE', index: playerIndex });
+      },
+      startTurn: () => {
+        turnRef.current.startTurn();
+        dispatch({ type: 'START_TURN' });
+      },
       endTurn: () => {
-        dispatch({ type: "END_TURN" });
-        const next = (state.dayState.currentPlayerIndex + 1) % state.dayState.turnCounters.length;
-        const nextName = state.dayState.turnCounters[next]?.playerId ?? "Siguiente";
-        onEvent?.({ type: "TURN_ENDED", nextPlayerName: nextName });
+        turnRef.current.endTurn();
       },
 
       tick: (now) => dispatch({ type: "TICK", nowMs: now }),
@@ -251,6 +263,7 @@ export const LevelProvider: React.FC<{
 
       setFlag: (key, value) => dispatch({ type: "SET_FLAG", key, value }),
       onEvent,
+      turnSystem: turnRef.current,
     };
   }, [state, onEvent]);
 

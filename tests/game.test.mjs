@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getAvailableWeapons } from '../build/systems/combat/getAvailableWeapons.js';
 import { attack } from '../build/engine/combat.js';
-import { advanceTurn } from '../build/engine/turn-manager.js';
+import { advanceTurn } from '../build/engine/turn-system.js';
 import { Log } from '../build/ui/log.js';
 
 function fixedRng(vals) {
