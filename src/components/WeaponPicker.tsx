@@ -1,6 +1,6 @@
 import React from "react";
 import { WEAPONS } from "../data/weapons";
-import { playerOwnsWeapon } from "../systems/ammo";
+import { playerOwnsWeapon } from "../systems/weapons";
 
 type WeaponPickerProps = {
   player: any;
@@ -8,9 +8,9 @@ type WeaponPickerProps = {
 };
 
 export default function WeaponPicker({ player, onSelect }: WeaponPickerProps) {
-  const options = [WEAPONS.find(w=>w.id==='fists')!];
-  if (playerOwnsWeapon(player, 'knife')) options.push(WEAPONS.find(w=>w.id==='knife')!);
-  if (playerOwnsWeapon(player, 'pistol9')) options.push(WEAPONS.find(w=>w.id==='pistol9')!);
+  const options = [WEAPONS['fists']];
+  if (playerOwnsWeapon(player, 'knife')) options.push(WEAPONS['knife']);
+  if (playerOwnsWeapon(player, 'pistol9')) options.push(WEAPONS['pistol9']);
 
   return (
     <div className="mt-3">

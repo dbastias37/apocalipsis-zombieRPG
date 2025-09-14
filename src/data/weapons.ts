@@ -1,24 +1,25 @@
 export type Weapon = {
   id: string;
-  name: 'Puños' | 'Navaja' | 'Pistola' | 'Subfusil (SMG)' | 'Escopeta' | 'Rifle' | string;
-  type: 'melee' | 'ranged';
-  hitBonus: number;
-  damage: { times: number; faces: number; mod: number };
-  usesAttr: 'Fuerza' | 'Destreza';
+  name: string;
+  type: 'melee' | 'firearm';
+  dice: string;          // display (p.ej. "1d6")
+  caliber?: '9mm';
+  magSize?: number;      // para pistola
+  // legacy fields for compatibility
+  hitBonus?: number;
+  damage?: { times: number; faces: number; mod: number };
+  usesAttr?: 'Fuerza' | 'Destreza';
   ammoCost?: number;
-  magSize?: number;
 };
 
-export const WEAPONS: Weapon[] = [
-  { id: 'fists',   name: 'Puños',           type: 'melee',  hitBonus: 0, damage: { times:1, faces:4, mod:0 }, usesAttr: 'Fuerza' },
-  { id: 'knife',   name: 'Navaja',          type: 'melee',  hitBonus: 1, damage: { times:1, faces:6, mod:0 }, usesAttr: 'Fuerza' },
-  { id: 'pistol',  name: 'Pistola',         type: 'ranged', hitBonus: 1, damage: { times:1, faces:6, mod:4 }, usesAttr: 'Destreza', ammoCost:1, magSize:15 },
-  { id: 'pistol9', name: 'Pistola 9mm',     type: 'ranged', hitBonus: 1, damage: { times:1, faces:8, mod:0 }, usesAttr: 'Destreza', ammoCost:1, magSize:12 },
-  { id: 'smg',     name: 'Subfusil (SMG)',  type: 'ranged', hitBonus: 1, damage: { times:1, faces:6, mod:3 }, usesAttr: 'Destreza', ammoCost:1, magSize:30 },
-  { id: 'shotgun', name: 'Escopeta',        type: 'ranged', hitBonus: 0, damage: { times:2, faces:4, mod:3 }, usesAttr: 'Destreza', ammoCost:1, magSize:5 },
-  { id: 'rifle',   name: 'Rifle',           type: 'ranged', hitBonus: 2, damage: { times:1, faces:8, mod:4 }, usesAttr: 'Destreza', ammoCost:1, magSize:10 },
-];
+export const WEAPONS: Record<string, Weapon> = {
+  fists:   { id:'fists',   name:'Puños',          type:'melee',   dice:'1d4', hitBonus:0, damage:{times:1,faces:4,mod:0}, usesAttr:'Fuerza' },
+  knife:   { id:'knife',   name:'Navaja',         type:'melee',   dice:'1d6', hitBonus:1, damage:{times:1,faces:6,mod:0}, usesAttr:'Fuerza' },
+  pistol9: { id:'pistol9', name:'Pistola 9mm',    type:'firearm', dice:'1d8', caliber:'9mm', magSize:12, hitBonus:1, damage:{times:1,faces:8,mod:0}, usesAttr:'Destreza', ammoCost:1 },
+};
+
+export const WEAPON_LIST: Weapon[] = Object.values(WEAPONS);
 
 export function findWeaponById(id?: string) {
-  return WEAPONS.find(w => w.id === id);
+  return id ? WEAPONS[id] : undefined;
 }

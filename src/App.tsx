@@ -27,7 +27,7 @@ import {
   counterEffectText,
 } from "./data/combatPhrases";
 import { WEAPONS } from "./data/weapons";
-import { getSelectedWeapon, isRangedWeapon } from "./systems/weapons";
+import { equipWeapon, getEquippedWeapon, isOutOfAmmoForEquipped, canReloadEquipped } from "./systems/weapons";
 import {
   getLoadedAmmo,
   setLoadedAmmo,
@@ -36,8 +36,8 @@ import {
   toAmmoBox,
   toLooseAmmo,
   consumeAmmoFromPlayer,
-  canReload,
-  equipWeapon as equipWeaponState,
+  reloadWeaponMagazine,
+  getMagazineCount,
 } from "./systems/ammo";
 import { withEnergy } from "./systems/actors";
 import { consumeFoodFromPlayer } from "./systems/food";
@@ -59,7 +59,7 @@ import { FOOD_CATALOG } from "./data/consumables";
 import StockFoodModal from "./components/StockFoodModal";
 import StockMedicineModal from "./components/StockMedicineModal";
 import StockAmmoModal from "./components/StockAmmoModal";
-import WeaponPicker from "./components/WeaponPicker";
+import WeaponSelector from "./components/combat/WeaponSelector";
 import BattleTicker from "./components/BattleTicker";
 import InfectionFatalModal from "./components/overlays/InfectionFatalModal";
 import HealAllyModal from "./components/overlays/HealAllyModal";
@@ -405,7 +405,7 @@ export default function App(){
     setPlayers(prev => prev.map(p => {
       if (p.id !== pid) return p;
 
-      const weapon = WEAPONS.find(w => w.id === weaponId);
+      const weapon = WEAPONS[weaponId];
       const magSize = Math.max(0, Number(weapon?.magSize ?? 0));
       const curLoaded = getLoadedAmmo(p, weaponId);
       const freeSpace = Math.max(0, magSize - curLoaded);
@@ -596,9 +596,9 @@ export default function App(){
   const canAttackWithSelected = (() => {
     const p = activePlayer;
     if (!p) return false;
-    const w = getSelectedWeapon(p);
-    if (isRangedWeapon(w)) {
-      return getLoadedAmmo(p, w.id) > 0;
+    const w = getEquippedWeapon(p);
+    if (w.type === 'firearm') {
+      return getMagazineCount(p, w.id) > 0;
     }
     return true;
   })();
@@ -1006,32 +1006,22 @@ export default function App(){
     const enemy = enemies.find(e=>e.id===enemyId);
     if(!enemy){ setControlsLocked(false); return; }
 
-    const w = getSelectedWeapon(actor);
-    const flavor = weaponFlavorFrom(w.id, w.name, w.type);
-    const isRanged = isRangedWeapon(w);
+    const w = getEquippedWeapon(actor);
+    const flavor = weaponFlavorFrom(w.id, w.name, w.type === 'firearm' ? 'ranged' : 'melee');
+    const isRanged = w.type === 'firearm';
     const isMelee = w?.type === "melee";
 
+    if (isRanged && isOutOfAmmoForEquipped(actor)) {
+      const line = `${actor.name} intenta disparar ${w.name}, pero no tiene munición cargada.`;
+      pushBattle(line);
+      endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
+        timePenalty(ACTION_TIME_COSTS.battle);
+        advanceTurn();
+      }));
+      return;
+    }
     if (isRanged) {
-      const loaded = getLoadedAmmo(actor, w.id);
-      if (loaded <= 0) {
-        const line = `${actor.name} intenta disparar ${w.name}, pero no tiene munición cargada.`;
-        pushBattle(line);
-        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-          timePenalty(ACTION_TIME_COSTS.battle);
-          advanceTurn();
-        }));
-        return;
-      }
-      const { player: updated, ok } = spendAmmo(actor, w.id, 1);
-      if (!ok) {
-        const line = `${actor.name} no logra disparar: el arma está vacía.`;
-        pushBattle(line);
-        endPlayerActionAwaitEnter(() => finalizeTurnWithEndConditions(() => {
-          timePenalty(ACTION_TIME_COSTS.battle);
-          advanceTurn();
-        }));
-        return;
-      }
+      const { player: updated } = spendAmmo(actor, w.id, 1);
       setPlayers(ps => ps.map(p => p.id === actor.id ? updated : p));
     }
 
@@ -1621,12 +1611,6 @@ function advanceTurn() {
     }
   }
 
-  function equipWeapon(playerId: string, weaponId: string) {
-    const p = players.find(pl=>pl.id===playerId);
-    if(!p) return;
-    const next = equipWeaponState(p, weaponId);
-    updatePlayer(playerId, { ...next, selectedWeaponId: weaponId, currentWeaponId: weaponId });
-  }
   function getItemById(id?: string) {
     return ITEMS_CATALOG.find(it => it.id === id);
   }
@@ -2118,11 +2102,21 @@ function advanceTurn() {
         )}
 
         {activePlayer && <BattleTicker lines={logs} />}
-        {activePlayer && (
-          <WeaponPicker
-            player={activePlayer}
-            onSelect={(wid) => equipWeapon(activePlayer.id, wid)}
-          />
+        {activePlayer && !isEnemyPhase && !controlsLocked && (
+          <>
+            <WeaponSelector
+              player={activePlayer}
+              onEquip={(wId)=> setPlayers(list => list.map(p => p.id===activePlayer.id ? equipWeapon(p, wId) : p))}
+            />
+            {getEquippedWeapon(activePlayer).type==='firearm' && canReloadEquipped(activePlayer) && (
+              <button
+                onClick={()=> setPlayers(list => list.map(p => p.id===activePlayer.id ? reloadWeaponMagazine(p, getEquippedWeapon(activePlayer).id) : p))}
+                className="btn btn-ghost ml-2"
+              >
+                Recargar
+              </button>
+            )}
+          </>
         )}
         {!currentCard && !isEnemyPhase && !!activePlayer && (resources?.food ?? 0) > 0 && (
           <button className="btn btn-green mr-2" onClick={() => consumeFoodItem()}>
@@ -2598,10 +2592,10 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
               const st = addMedicineToCamp({ resources }, n);
               setResources(st.resources);
             }} consumeFood={consumeFoodForPlayer} consumeMed={consumeMedForPlayer} />
-            {activePlayer && activePlayer.equippedWeaponId === 'pistol9' && canReload(activePlayer, WEAPONS.find(w=>w.id==='pistol9')!) && (
+            {activePlayer && getEquippedWeapon(activePlayer).type==='firearm' && canReloadEquipped(activePlayer) && (
               <button
                 className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
-                onClick={()=>setShowReloadModal(true)}
+                onClick={()=>setPlayers(list => list.map(p => p.id===activePlayer.id ? reloadWeaponMagazine(p, getEquippedWeapon(activePlayer).id) : p))}
                 title="Recargar arma"
               >
                 🔧 Recargar arma
@@ -2620,9 +2614,9 @@ function Details({player, onUpdate, addMedicine, consumeFood: onConsumeFood, con
   const [medkitOpen, setMedkitOpen] = useState(false);
   const [medkitTake, setMedkitTake] = useState(1);
 
-  const selWeapon = getSelectedWeapon(player);
-  const isFirearm = isRangedWeapon(selWeapon);
-  const loaded = isFirearm ? getLoadedAmmo(player, selWeapon.id) : 0;
+  const selWeapon = getEquippedWeapon(player);
+  const isFirearm = selWeapon.type === 'firearm';
+  const loaded = isFirearm ? getMagazineCount(player, selWeapon.id) : 0;
   return (
     <div className="space-y-2 text-sm">
       <div className="grid grid-cols-2 gap-2">
@@ -2631,8 +2625,7 @@ function Details({player, onUpdate, addMedicine, consumeFood: onConsumeFood, con
         <div>Estado: {player.status}</div>
       </div>
       <div className="text-xs mt-2">
-        Arma actual: {selWeapon.name} · Daño {selWeapon.damageMin}-{selWeapon.damageMax} ·{" "}
-        {isFirearm ? `Munición: ${loaded}` : "Munición: --"}
+        Arma actual: {selWeapon.name} · Daño {selWeapon.dice} {isFirearm ? `· Munición ${loaded}/${selWeapon.magSize}` : ''}
       </div>
       <div>
         <h4 className="text-neutral-400 text-xs mt-2">Objetos</h4>
