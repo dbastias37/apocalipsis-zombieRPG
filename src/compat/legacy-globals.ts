@@ -1,10 +1,25 @@
 import { consumeFoodFromPlayer } from "../systems/food";
 import { consumeMedicineFromPlayer } from "../systems/medicine";
 
-// mapear globals antiguos si faltan
-if(!(window as any).consumeFoodInventoryItem){
-  (window as any).consumeFoodInventoryItem = (p:any,n:number)=>consumeFoodFromPlayer(p,n);
+declare global {
+  interface Window {
+    consumeFoodInventoryItem?: (player:any, amount:number)=>any;
+    consumeMedItem?: (player:any, amount:number)=>any;
+    consumeFoodForPlayer?: (player:any, amount:number)=>any;
+  }
 }
-if(!(window as any).consumeMedItem){
-  (window as any).consumeMedItem = (p:any,n:number)=>consumeMedicineFromPlayer(p,n);
-}
+
+(function install(){
+  const g = window as any;
+  if(typeof g.consumeFoodInventoryItem!=="function"){
+    g.consumeFoodInventoryItem = (p:any, n:number=1)=> consumeFoodFromPlayer(p, n);
+  }
+  if(typeof g.consumeFoodForPlayer!=="function"){
+    g.consumeFoodForPlayer = (p:any, n:number=1)=> consumeFoodFromPlayer(p, n);
+  }
+  if(typeof g.consumeMedItem!=="function"){
+    g.consumeMedItem = (p:any, n:number=1)=> consumeMedicineFromPlayer(p, n);
+  }
+})();
+export {};
+

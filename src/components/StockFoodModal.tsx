@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
-import { takeFoodFromCamp, FoodItem } from "../systems/food";
+import { takeFoodFromCamp, FoodItem, ensureRation } from "../systems/food";
 import { ensureBreathPlomoStyle } from "./util/breathPlomo";
 
 type Props = {
@@ -27,13 +27,13 @@ export default function StockFoodModal({ isOpen, onClose, state, setState }: Pro
   const dec = ()=> setAmount(a=> Math.max(0, a-1));
   const disabled = amount<=0 || amount>stock;
   const confirm = ()=>{
-    const { state: st, taken } = takeFoodFromCamp(state, amount);
-    const stash = Array.isArray(st?.camp?.stash) ? [...st.camp.stash] : [];
+    const { state: camp, taken } = takeFoodFromCamp(state.camp, amount);
+    const stash = Array.isArray(camp?.stash) ? [...camp.stash] : [];
     if(taken>0){
-      const item: FoodItem = { type:'ration', food:taken };
+      const item: FoodItem = ensureRation({}, taken);
       stash.push(item);
     }
-    const next = { ...st, camp:{ ...(st.camp ?? {}), stash } };
+    const next = { ...state, camp: { ...camp, stash } };
     setState(next);
     onClose();
   };

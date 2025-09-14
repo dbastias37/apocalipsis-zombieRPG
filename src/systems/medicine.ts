@@ -1,72 +1,64 @@
-export type MedkitItem = { type:'medkit'; medicines:number; name?:string };
-
-export const isMedkit = (it:any): it is MedkitItem => !!it && typeof it==='object' && it.type==='medkit';
-
-export function medCount(it:any){
-  return isMedkit(it) ? Math.max(0, Math.floor(it.medicines || 0)) : 0;
+function norm(s?: string){ return String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase(); }
+export type MedkitItem = { type:"med"; kind:"medkit"; amount:number; name?:string };
+export function isMedkit(it:any): it is MedkitItem {
+  if(!it) return false;
+  if(typeof it==="object" && (it.type==="med" || it.type==="medicine")) return true;
+  const n = norm((it?.name ?? it?.title ?? it)+"");
+  return n.includes("med") || n.includes("botiquin") || n.includes("botiquín") || n.includes("cura") || n.includes("medicina");
 }
-export function setMedCount(it:MedkitItem,n:number):MedkitItem{
-  return { ...it, medicines: Math.max(0, Math.floor(n)) };
+export function medkitCount(it:any): number {
+  const n = Number(it?.amount ?? it?.qty ?? it?.count ?? 0);
+  if(Number.isFinite(n) && n>0) return Math.floor(n);
+  const name = String(it?.name ?? it?.title ?? "");
+  const m = name.match(/\((\d+)\)/);
+  return m ? Math.max(0, parseInt(m[1],10)) : (isMedkit(it) ? 1 : 0);
 }
-
-function consumeFromList(list:any[]|null|undefined, need:number){
-  const arr = Array.isArray(list) ? [...list] : [];
-  const n = Math.max(0, Math.floor(need));
-  let taken = 0;
-  for(let i=0;i<arr.length && taken<n;i++){
-    const it = arr[i];
-    if(!isMedkit(it)) continue;
-    const cnt = medCount(it);
-    if(cnt<=0) continue;
-    const take = Math.min(n - taken, cnt);
-    const left = cnt - take;
-    if(left<=0){ arr.splice(i,1); i--; }
-    else arr[i] = setMedCount(it,left);
+export function ensureMedkit(it:any, amount:number){
+  const amt = Math.max(0, Math.floor(amount));
+  const base = typeof it==="object" ? it : {};
+  return { ...base, type:"med", kind:"medkit", amount:amt, qty:amt, count:amt, name: base?.name ?? `Botiquín (${amt})` } as MedkitItem;
+}
+function listMedkits(inv:any[]|null|undefined){
+  const arr = Array.isArray(inv)? inv : [];
+  return arr.map((it,i)=>({ i, it, units: medkitCount(it) })).filter(r=> isMedkit(r.it) && r.units>0);
+}
+function consumeFromList(list:any[], need:number){
+  const out = [...list]; let taken = 0;
+  for(let i=0;i<out.length && taken<need;i++){
+    const it = out[i]; const units = isMedkit(it) ? medkitCount(it) : 0;
+    if(units<=0) continue;
+    const take = Math.min(need-taken, units);
+    const left = units - take;
+    if(left<=0) { out.splice(i,1); i--; }
+    else { out[i] = ensureMedkit(it, left); }
     taken += take;
   }
-  return { list: arr, taken };
+  return { out, taken };
 }
-
-export function countMedicineInInventory(player:any): number {
-  const inv = Array.isArray(player?.inventory) ? player.inventory : [];
-  const pack = Array.isArray(player?.backpack) ? player.backpack : [];
-  return [...inv, ...pack].reduce((sum,it)=> sum + medCount(it), 0);
+export function totalMedicineInInventory(inv:any[]|null|undefined){
+  return listMedkits(inv).reduce((a,r)=>a+r.units,0);
 }
-
-export function consumeMedicineFromPlayer(player:any, n:number){
-  const need = Math.max(0, Math.floor(n));
-  if(need<=0) return { player, taken:0 };
-  let inventory = Array.isArray(player?.inventory) ? [...player.inventory] : [];
-  let backpack = Array.isArray(player?.backpack) ? [...player.backpack] : [];
-  const rInv = consumeFromList(inventory, need);
-  let taken = rInv.taken;
-  inventory = rInv.list;
-  if(taken < need){
-    const rPack = consumeFromList(backpack, need - taken);
-    taken += rPack.taken;
-    backpack = rPack.list;
-  }
-  return { player: { ...player, inventory, backpack }, taken };
+export function consumeMedicineFromPlayer(player:any, need:number){
+  const inv = Array.isArray(player?.inventory)? player.inventory : [];
+  const bp  = Array.isArray(player?.backpack) ? player.backpack  : [];
+  const a = consumeFromList(inv, Math.max(0, Math.floor(need)));
+  const b = a.taken>=need ? { out: bp, taken: 0 } : consumeFromList(bp, need - a.taken);
+  return { player: { ...player, inventory: a.out, backpack: b.out }, taken: a.taken + b.taken };
 }
-
 export function addMedicineToCamp(state:any, n:number){
-  const stock = Math.max(0, Number(state?.camp?.resources?.medicine ?? 0));
-  const add = Math.max(0, Math.floor(n));
-  return {
-    ...state,
-    camp:{
-      ...(state.camp ?? {}),
-      resources:{ ...(state.camp?.resources ?? {}), medicine: stock + add }
-    }
-  };
+  const next = structuredClone(state ?? {});
+  const cur = Math.max(0, Number(next?.resources?.medicine ?? 0));
+  next.resources = { ...(next.resources??{}), medicine: cur + Math.max(0, Math.floor(n)) };
+  return next;
 }
-
 export function takeMedicineFromCamp(state:any, n:number){
-  const stock = Math.max(0, Number(state?.camp?.resources?.medicine ?? 0));
-  const take = Math.min(stock, Math.max(0, Math.floor(n)));
-  const next = {
-    ...state,
-    camp:{ ...(state.camp ?? {}), resources:{ ...(state.camp?.resources ?? {}), medicine: stock - take } }
-  };
+  const next = structuredClone(state ?? {});
+  const cur = Math.max(0, Number(next?.resources?.medicine ?? 0));
+  const take = Math.min(cur, Math.max(0, Math.floor(n)));
+  next.resources = { ...(next.resources??{}), medicine: cur - take };
   return { state: next, taken: take };
 }
+
+// Backwards compatibility aliases
+export { medkitCount as medCount, ensureMedkit as setMedCount };
+

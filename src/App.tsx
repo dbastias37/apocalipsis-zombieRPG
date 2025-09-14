@@ -2565,8 +2565,8 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
         {selected ? (
           <>
             <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=>{
-              const st = addMedicineToCamp({ camp:{ resources } }, n);
-              setResources(st.camp.resources);
+              const st = addMedicineToCamp({ resources }, n);
+              setResources(st.resources);
             }} consumeFood={consumeFoodForPlayer} consumeMed={consumeMedForPlayer} />
             {(() => {
               // jugador activo

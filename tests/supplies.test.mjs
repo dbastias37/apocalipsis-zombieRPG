@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { consumeFoodFromPlayer, consumeMedicineFromPlayer } from '../build/systems/supplies.js';
+import { consumeFoodFromPlayer, consumeMedicineFromPlayer, ensureRation, ensureMedkit, rationCount } from '../build/systems/supplies.js';
 
 test('consumeFoodFromPlayer uses inventory then backpack', () => {
-  const player = { inventory:[{ type:'ration', food:2 }], backpack:[{ type:'ration', food:3 }] };
+  const player = { inventory:[ensureRation({},2)], backpack:[ensureRation({},3)] };
   const { player: res, taken } = consumeFoodFromPlayer(player, 3);
   assert.equal(taken, 3);
   assert.equal(res.inventory.length, 0);
-  assert.equal(res.backpack[0].food, 2);
+  assert.equal(rationCount(res.backpack[0]), 2);
 });
 
 test('consumeMedicineFromPlayer handles lack of stock', () => {
@@ -18,7 +18,7 @@ test('consumeMedicineFromPlayer handles lack of stock', () => {
 });
 
 test('consumeMedicineFromPlayer pulls from backpack', () => {
-  const player = { inventory:[{ type:'medkit', medicines:1 }], backpack:[{ type:'medkit', medicines:2 }] };
+  const player = { inventory:[ensureMedkit({},1)], backpack:[ensureMedkit({},2)] };
   const { player: res, taken } = consumeMedicineFromPlayer(player, 3);
   assert.equal(taken, 3);
   assert.equal(res.inventory.length, 0);
