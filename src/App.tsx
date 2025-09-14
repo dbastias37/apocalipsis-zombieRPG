@@ -1,6 +1,8 @@
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { clsx } from "clsx";
+import { setActivePlayerCompat } from "./compat/active-player-compat";
+import { useTurn } from "./state/turnStore";
 import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
@@ -584,7 +586,15 @@ export default function App(){
 
   const alivePlayers = players.filter(p => p.status !== "dead");
   const aliveEnemies = enemies;
-  const activePlayer = activePlayerId ? players.find(p => p.id === activePlayerId) ?? null : null;
+  const turn = useTurn?.();
+  const activePlayer = useMemo(() => {
+    const ps = turn?.players ?? players;
+    const id = turn?.currentActorId ?? activePlayerId;
+    return ps.find((p: any) => p?.id === id) ?? null;
+  }, [turn?.players, turn?.currentActorId, players, activePlayerId]);
+  useEffect(() => {
+    setActivePlayerCompat(activePlayer);
+  }, [activePlayer?.id]);
   const activeDown = !!activePlayer && activePlayer.hp <= 0;
   const canAttackWithSelected = (() => {
     const p = activePlayer;
