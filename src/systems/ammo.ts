@@ -1,5 +1,7 @@
 import { getSelectedWeapon, isRangedWeapon } from "./weapons.js";
-import { WEAPONS } from "../data/weapons";
+import { WEAPONS } from "../data/weapons.js";
+
+export type AmmoItem = { type:'ammo'; kind:'loose'|'box'; amount:number; name?:string; id?:string; bullets?:number; qty?:number; count?:number };
 
 function norm(s?: string) {
   return String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();

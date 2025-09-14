@@ -34,13 +34,15 @@ import {
   toAmmoBox,
   toLooseAmmo,
   consumeAmmoFromPlayer,
-  consumeFoodFromPlayer,
+} from "./systems/ammo";
+import { consumeFoodFromPlayer } from "./systems/food";
+import {
   consumeMedicineFromPlayer,
   addMedicineToCamp,
   isMedkit,
   medCount,
   setMedCount,
-} from "./systems/supplies";
+} from "./systems/medicine";
 import {
   consumeFood,
   consumeMed,
@@ -80,10 +82,6 @@ import {
   applyEndOfTurnConditions,
   cureCondition,
 } from "./systems/status";
-
-// expose helpers for legacy flows
- (window as any).consumeFoodInventoryItem = (p:any,n:number)=>consumeFoodFromPlayer(p,n);
- (window as any).consumeMedicineInventoryItem = (p:any,n:number)=>consumeMedicineFromPlayer(p,n);
 
 
 
@@ -1903,14 +1901,14 @@ function advanceTurn() {
     gameLog(`📦 Traslado: ${p.name} devolvió "${add.name}" al alijo.`);
   }
 
-  function consumeFoodInventoryItem(playerId:string, _itemId:string){
+  function consumeFoodForPlayer(playerId:string, _itemId:string){
     const idx = players.findIndex(p=>p.id===playerId);
     if(idx<0) return;
     const res = consumeFoodFromPlayer(players[idx],1);
     setPlayers(ps=> ps.map((p,i)=> i===idx ? res.player : p));
   }
 
-  function consumeMedItem(playerId:string, _itemId:string){
+  function consumeMedForPlayer(playerId:string, _itemId:string){
     const idx = players.findIndex(p=>p.id===playerId);
     if(idx<0) return;
     const res = consumeMedicineFromPlayer(players[idx],1);
@@ -2569,7 +2567,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
             <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=>{
               const st = addMedicineToCamp({ camp:{ resources } }, n);
               setResources(st.camp.resources);
-            }} consumeFood={consumeFoodInventoryItem} consumeMed={consumeMedItem} />
+            }} consumeFood={consumeFoodForPlayer} consumeMed={consumeMedForPlayer} />
             {(() => {
               // jugador activo
               const p = players.find(pl => pl.id === activePlayerId);
