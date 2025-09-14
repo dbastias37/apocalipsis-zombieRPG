@@ -39,7 +39,7 @@ import { consumeFoodFromPlayer } from "./systems/food";
 import {
   consumeMedicineFromPlayer,
   addMedicineToCamp,
-  isMedkit,
+  isMed,
   medCount,
   setMedCount,
 } from "./systems/medicine";
@@ -85,6 +85,7 @@ import {
 
 
 
+const isMedkit = (it:any) => isMed(it) && (it.kind === "kit" || medCount(it) > 1);
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
 type GameState = "menu" | "playing" | "paused" | "victory" | "gameover";
