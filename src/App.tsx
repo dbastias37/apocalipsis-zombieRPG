@@ -34,7 +34,10 @@ import {
   toAmmoBox,
   toLooseAmmo,
   consumeAmmoFromPlayer,
+  canReload,
+  equipWeapon as equipWeaponState,
 } from "./systems/ammo";
+import { withEnergy } from "./systems/actors";
 import { consumeFoodFromPlayer } from "./systems/food";
 import {
   consumeMedicineFromPlayer,
@@ -317,10 +320,12 @@ export default function App(){
     const inv = Array.isArray((p as any).inventory)
       ? (p as any).inventory
       : Array.isArray((p as any).backpack) ? (p as any).backpack : [];
+    const { energy, energyMax } = p as any;
     return {
       ...p,
-      energy: p.energy ?? 100,
-      energyMax: p.energyMax ?? 100,
+      energy: typeof energy === 'number' ? energy : 50,
+      energyMax: typeof energyMax === 'number' ? energyMax : 100,
+      equippedWeaponId: (p as any).equippedWeaponId ?? 'fists',
       selectedWeaponId: p.selectedWeaponId ?? "fists",
       currentWeaponId: p.currentWeaponId ?? p.selectedWeaponId ?? "fists",
       ammoByWeapon: table,
@@ -384,6 +389,16 @@ export default function App(){
     if (!pid) return;
     setControlsLocked(true);
     let reloadLine: string | null = null;
+
+    const player = players.find(p=>p.id===pid);
+    if (!player) { setControlsLocked(false); return; }
+    const wId = player.equippedWeaponId ?? player.selectedWeaponId ?? 'fists';
+    if (wId !== weaponId) {
+      pushBattle('Debes tener equipada la pistola para recargarla.');
+      setShowReloadModal(false);
+      setControlsLocked(false);
+      return;
+    }
 
     setPlayers(prev => prev.map(p => {
       if (p.id !== pid) return p;
@@ -672,6 +687,7 @@ export default function App(){
       attrs,
       selectedWeaponId: 'fists',
       currentWeaponId: 'fists',
+      equippedWeaponId: 'fists',
       ammoByWeapon: {},
       backpackCapacity: 8,
     };
@@ -747,7 +763,7 @@ export default function App(){
     nightResolution();
     // Recuperación ligera
     setPlayers(ps=>ps.map(p => p.status!=="dead"
-      ? {...p, energy: clamp(p.energy+1,0,p.energyMax)}
+      ? withEnergy(p, (p.energy ?? 0) + 1)
       : p
     ));
     // Consumo base
@@ -1599,7 +1615,10 @@ function advanceTurn() {
   }
 
   function equipWeapon(playerId: string, weaponId: string) {
-    updatePlayer(playerId, { selectedWeaponId: weaponId, currentWeaponId: weaponId });
+    const p = players.find(pl=>pl.id===playerId);
+    if(!p) return;
+    const next = equipWeaponState(p, weaponId);
+    updatePlayer(playerId, { ...next, selectedWeaponId: weaponId, currentWeaponId: weaponId });
   }
   function getItemById(id?: string) {
     return ITEMS_CATALOG.find(it => it.id === id);
@@ -1928,13 +1947,14 @@ function advanceTurn() {
     let state: any = { players, camp: { stash, resources } };
     const prevEnergy = p.energy ?? 0;
 
-    const invFood = p.inventory?.find((it: any) => it.type === "food");
+    let invFood = p.inventory?.find((it: any) => it.type === "food");
     if (invFood) {
       state = consumeFood(state, p.id, invFood.id);
     } else if ((resources?.food ?? 0) > 0) {
       state = materializeFoodFromStock(state, 1, FOOD_CATALOG[0].id);
       const newItemId = state.camp.stash[state.camp.stash.length - 1].id;
       state = moveFromStashToPlayer(state, p.id, newItemId);
+      invFood = state.players.find((pl: any)=>pl.id===p.id)?.inventory.find((it:any)=>it.id===newItemId);
       state = consumeFood(state, p.id, newItemId);
     } else {
       pushBattle("🍞 No quedan alimentos en el campamento.");
@@ -1947,8 +1967,10 @@ function advanceTurn() {
     setStash(state.camp.stash);
     setResources(state.camp.resources);
 
-    const name = label ? ` ${label}` : "";
-    pushBattle(`🍞 ${p.name} come${name} (+${(updated?.energy ?? 0) - prevEnergy} energía).`);
+    const consumedName = invFood?.name ?? label;
+    const name = consumedName ? ` ${consumedName}` : "";
+    const delta = (updated?.energy ?? 0) - prevEnergy;
+    pushBattle(`🍽️ ${p.name} come${name} (+${delta} energía).`);
 
     endTurnNow(ACTION_TIME_COSTS.heal);
   }
@@ -2569,76 +2591,7 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
               const st = addMedicineToCamp({ resources }, n);
               setResources(st.resources);
             }} consumeFood={consumeFoodForPlayer} consumeMed={consumeMedForPlayer} />
-            {(() => {
-              // jugador activo
-              const p = players.find(pl => pl.id === activePlayerId);
-              if (!p) return false;
-
-              // utilidades locales (no dependemos de otros archivos)
-              const norm = (s?:string)=>String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
-              const isBox = (it:any) => {
-                if (!it) return false;
-                if (typeof it === "object" && (it.type === "ammo" || it.kind === "ammoBox")) return true;
-                const nm = norm((it?.name ?? it) as any);
-                return /caja\s+de\s+municion/.test(nm);
-              };
-              const boxBullets = (it:any) => {
-                if (!isBox(it)) return 0;
-                if (typeof it === "object") {
-                  const n = Number(it.bullets ?? it.count ?? it.qty ?? it.amount ?? 15);
-                  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 15;
-                }
-                return 15;
-              };
-              const looseCount = (it:any) => {
-                if (!it) return 0;
-                if (typeof it === "object") {
-                  const nm = norm(String(it.name ?? it.title ?? ""));
-                  if (/municion/.test(nm) && !isBox(it)) {
-                    const n = Number(it.count ?? it.qty ?? it.amount ?? 0);
-                    return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
-                  }
-                  return 0;
-                }
-                const s = norm(String(it));
-                const m = s.match(/municion\s*\((\d+)\)/);
-                return m ? Math.max(0, parseInt(m[1],10)) : 0;
-              };
-
-              // munición total en inventario
-              const all = Array.isArray((p as any).inventory) ? (p as any).inventory : [];
-              const ammoTotal = all.reduce((acc,it)=>acc + (isBox(it) ? boxBullets(it) : looseCount(it)), 0);
-              if (ammoTotal <= 0) return false;
-
-              // hay arma de fuego? (catálogo + strings/objetos)
-              const weaponsFound: {id:string; name:string}[] = [];
-              const addW = (id:string, name:string) => { if(!weaponsFound.find(w=>w.id===id)) weaponsFound.push({id,name}); };
-
-              const selId = (p as any)?.currentWeaponId ?? (p as any)?.selectedWeaponId;
-              const sel = selId ? WEAPONS.find(w => w.id === selId) : null;
-              if (sel && sel.type === "ranged") addW(sel.id, sel.name);
-
-              for (const it of all){
-                if (typeof it === "string"){
-                  const s = norm(it);
-                  const match = WEAPONS.find(w => w.type === "ranged" && (norm(w.name)===s || w.id===s));
-                  if (match) addW(match.id, match.name);
-                  continue;
-                }
-                if (it && typeof it === "object"){
-                  if (it.type === "ranged" && typeof it.id === "string"){
-                    const w = WEAPONS.find(w => w.id === it.id) ?? { id: it.id, name: (it as any).name ?? it.id, type:"ranged" };
-                    addW(w.id, w.name);
-                  } else if (typeof (it as any).name === "string"){
-                    const nm = norm((it as any).name);
-                    const match2 = WEAPONS.find(w => w.type === "ranged" && norm(w.name)===nm);
-                    if (match2) addW(match2.id, match2.name);
-                  }
-                }
-              }
-
-              return weaponsFound.length > 0;
-            })() && (
+            {activePlayer && activePlayer.equippedWeaponId === 'pistol9' && canReload(activePlayer, WEAPONS.find(w=>w.id==='pistol9')!) && (
               <button
                 className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
                 onClick={()=>setShowReloadModal(true)}

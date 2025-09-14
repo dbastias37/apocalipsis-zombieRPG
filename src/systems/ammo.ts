@@ -1,5 +1,6 @@
 import { getSelectedWeapon, isRangedWeapon } from "./weapons.js";
 import { WEAPONS } from "../data/weapons.js";
+import type { Weapon } from "../data/weapons.js";
 
 export type AmmoItem = { type:'ammo'; kind:'loose'|'box'; amount:number; name?:string; id?:string; bullets?:number; qty?:number; count?:number };
 
@@ -266,4 +267,23 @@ export function listReloadableWeapons(player:any): {id:string; name:string}[] {
     }
   }
   return list;
+}
+
+export function playerOwnsWeapon(player:any, weaponId:string){
+  const arr = [...(player?.inventory||[]), ...(player?.backpack||[])];
+  return arr.some(it => {
+    const n = norm(it?.name || it?.id || '');
+    return weaponId.includes('pistol') ? n.includes('pistola') : n.includes('navaja');
+  });
+}
+
+export function canReload(player:any, weapon:Weapon){
+  if (weapon.type!=='ranged' && weapon.type!=='firearm') return false;
+  const total = getTotalAmmoAvailable(player);
+  return total.total > 0;
+}
+
+export function equipWeapon(player:any, weaponId:string){
+  if (weaponId!=='fists' && !playerOwnsWeapon(player, weaponId)) return player;
+  return { ...player, equippedWeaponId: weaponId };
 }
