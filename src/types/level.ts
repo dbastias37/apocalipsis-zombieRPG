@@ -79,8 +79,7 @@ export type LevelContextAPI = {
   // turnos
   openTurnGate: (playerIndex: number) => void;
   startTurn: () => void; // cierra gate
-  endTurn: () => void;   // rota jugador y verifica fin de día
-  turnSystem: import('../engine/turn-system').TurnSystem;
+    endTurn: () => void;   // rota jugador y verifica fin de día
 
   // tiempo
   tick: (nowMs: number) => void; // reduce remainingMs y verifica fin de día
