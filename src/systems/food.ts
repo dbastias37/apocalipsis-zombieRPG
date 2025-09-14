@@ -2,7 +2,23 @@
 // Funciones puras para manejar "raciones" de comida
 export type FoodItem = { type:"food"; kind:"ration"; amount:number; name?:string };
 
-function norm(s?: string){ return String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase(); }
+import { getEnergy, getEnergyMax, withEnergy } from "./actors";
+
+const NUTRITION: Record<string, number> = {
+  "barra de cereal": 10,
+  "barrita de cereal": 10,
+  "lata": 12,
+  "enlatado": 12,
+  "racion": 8, "ración": 8,
+};
+function norm(s?:string){ return String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase().trim(); }
+
+export function getNutritionForItem(it:any): number {
+  const n = norm(it?.name ?? it?.title ?? it?.label);
+  for (const k of Object.keys(NUTRITION)) if (n.includes(k)) return NUTRITION[k];
+  const guess = Number(it?.amount ?? it?.nutrition ?? 1);
+  return Number.isFinite(guess) && guess>0 ? Math.floor(guess) : 1;
+}
 
 export function isRation(it:any): it is FoodItem {
   if (!it) return false;
@@ -55,6 +71,14 @@ export function consumeFoodFromPlayer(player:any, need:number){
   const a = consumeFromList(inv, n);
   const b = a.taken >= n ? { out: bp, taken: 0 } : consumeFromList(bp, n - a.taken);
   return { player: { ...player, inventory: a.out, backpack: b.out }, taken: a.taken + b.taken };
+}
+
+export function eat(player:any, foodItem:any){
+  const gain = Math.max(0, Math.floor(getNutritionForItem(foodItem)));
+  const cur = getEnergy(player), max = getEnergyMax(player);
+  const delta = Math.max(0, Math.min(gain, max - cur));
+  const next = withEnergy(player, cur + delta);
+  return { player: next, delta };
 }
 
 // Operaciones en el campamento (recursos.globales)

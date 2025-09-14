@@ -1,4 +1,5 @@
 import { FOOD_CATALOG, MED_CATALOG } from "../data/consumables";
+import { eat } from "./food";
 import { gameLog } from "../utils/logger";
 import type { CampState, FoodItem, InventoryItem, MedItem } from "../types/inventory";
 
@@ -71,12 +72,11 @@ export function consumeFood(state: any, playerId: string, itemId: string): any {
   const idx = player.inventory.findIndex((it:InventoryItem)=>it.id===itemId && it.type==='food');
   if (idx < 0) return state;
   const item = player.inventory[idx] as FoodItem;
-  const gain = Math.max(0, Math.min(item.energy, (player.energyMax ?? 100) - (player.energy ?? 0)));
+  const { player: afterEat } = eat(player, item);
   const inventory = [ ...player.inventory ];
   inventory.splice(idx,1);
   const players = [ ...state.players ];
-  players[pIdx] = { ...player, inventory, energy: (player.energy ?? 0) + gain };
-  gameLog(`🍽️ ${player.name} come ${item.name} (+${gain} energía).`);
+  players[pIdx] = { ...afterEat, inventory };
   return { ...state, players };
 }
 
