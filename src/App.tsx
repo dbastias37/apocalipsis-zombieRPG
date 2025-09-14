@@ -1,5 +1,5 @@
 
-import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { setActivePlayerCompat } from "./compat/active-player-compat";
 import { useTurn } from "./state/turnStore";
@@ -586,12 +586,9 @@ export default function App(){
 
   const alivePlayers = players.filter(p => p.status !== "dead");
   const aliveEnemies = enemies;
-  const turn = useTurn?.();
-  const activePlayer = useMemo(() => {
-    const ps = turn?.players ?? players;
-    const id = turn?.currentActorId ?? activePlayerId;
-    return ps.find((p: any) => p?.id === id) ?? null;
-  }, [turn?.players, turn?.currentActorId, players, activePlayerId]);
+  const turn = useTurn();
+  const apId = turn.currentActorId();
+  const activePlayer = turn.players.find(p => p.id === apId) ?? null;
   useEffect(() => {
     setActivePlayerCompat(activePlayer);
   }, [activePlayer?.id]);
