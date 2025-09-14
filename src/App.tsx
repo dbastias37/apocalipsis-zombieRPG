@@ -5,8 +5,9 @@ import { ITEMS_CATALOG } from "./data/items";
 import { GAME_NOTES, GameNote } from "./data/notes";
 import WelcomeOverlay from "./components/WelcomeOverlay";
 import { useTypewriterQueue } from "./hooks/useTypewriterQueue";
-import type { AmmoBox, BackpackItem } from "./types/items";
+import type { AmmoBox } from "./types/items";
 import type { InventoryItem } from "./types/inventory";
+import type { BackpackItem } from "./systems/supplies";
 import {
   weaponFlavorFrom,
   hitPhraseByFlavor,
@@ -33,7 +34,13 @@ import {
   toAmmoBox,
   toLooseAmmo,
   consumeAmmoFromPlayer,
-} from "./systems/ammo";
+  consumeFoodFromPlayer,
+  consumeMedicineFromPlayer,
+  addMedicineToCamp,
+  isMedkit,
+  medCount,
+  setMedCount,
+} from "./systems/supplies";
 import {
   consumeFood,
   consumeMed,
@@ -74,23 +81,11 @@ import {
   cureCondition,
 } from "./systems/status";
 
+// expose helpers for legacy flows
+ (window as any).consumeFoodInventoryItem = (p:any,n:number)=>consumeFoodFromPlayer(p,n);
+ (window as any).consumeMedicineInventoryItem = (p:any,n:number)=>consumeMedicineFromPlayer(p,n);
 
 
-// === Botiquín helpers ===
-type MedkitItem = { name: string; medicines: number; kind?: string };
-function isMedkit(it:any){ 
-  const n = typeof it === 'string' ? it : it?.name ?? it?.title ?? '';
-  return String(n).toLowerCase().includes('botiquín') || String(n).toLowerCase().includes('botiquin');
-}
-function medkitCount(it:any):number{
-  if(typeof it==='object' && typeof it?.medicines==='number') return it.medicines;
-  // default capacity if plain string
-  return 4;
-}
-function setMedkitCount(it:any, count:number):any{
-  if(typeof it==='object') return { ...it, medicines: count };
-  return { name: String(it), medicines: count, kind: 'medico' };
-}
 
 // === Tipos ===
 type Phase = "dawn" | "day" | "dusk" | "night";
@@ -1908,18 +1903,18 @@ function advanceTurn() {
     gameLog(`📦 Traslado: ${p.name} devolvió "${add.name}" al alijo.`);
   }
 
-  function consumeFoodInventoryItem(playerId:string, itemId:string){
-    const next = consumeFood({ players, camp:{ stash, resources } }, playerId, itemId);
-    setPlayers(next.players);
-    setStash(next.camp.stash);
-    setResources(next.camp.resources);
+  function consumeFoodInventoryItem(playerId:string, _itemId:string){
+    const idx = players.findIndex(p=>p.id===playerId);
+    if(idx<0) return;
+    const res = consumeFoodFromPlayer(players[idx],1);
+    setPlayers(ps=> ps.map((p,i)=> i===idx ? res.player : p));
   }
 
-  function consumeMedItem(playerId:string, itemId:string){
-    const next = consumeMed({ players, camp:{ stash, resources } }, playerId, itemId);
-    setPlayers(next.players);
-    setStash(next.camp.stash);
-    setResources(next.camp.resources);
+  function consumeMedItem(playerId:string, _itemId:string){
+    const idx = players.findIndex(p=>p.id===playerId);
+    if(idx<0) return;
+    const res = consumeMedicineFromPlayer(players[idx],1);
+    setPlayers(ps=> ps.map((p,i)=> i===idx ? res.player : p));
   }
 
   // consumeFoodItem: usa el sistema de inventario unificado.
@@ -2571,7 +2566,10 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
         <h3 className="text-xl font-bold mb-3">Detalles</h3>
         {selected ? (
           <>
-            <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=> setResources(r=>({...r, medicine: (r.medicine??0)+n}))} consumeFood={consumeFoodInventoryItem} consumeMed={consumeMedItem} />
+            <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=>{
+              const st = addMedicineToCamp({ camp:{ resources } }, n);
+              setResources(st.camp.resources);
+            }} consumeFood={consumeFoodInventoryItem} consumeMed={consumeMedItem} />
             {(() => {
               // jugador activo
               const p = players.find(pl => pl.id === activePlayerId);
@@ -2730,7 +2728,7 @@ function Details({player, onUpdate, addMedicine, consumeFood: onConsumeFood, con
                     // tomar el primer botiquín
                     const idx = player.inventory.findIndex(isMedkit);
                     const it = player.inventory[idx];
-                    const total = medkitCount(it);
+                    const total = medCount(it);
                     return (
                       <div className="space-y-2">
                         <div className="text-sm">Tiene <b>{total}</b> medicinas dentro.</div>
@@ -2762,11 +2760,11 @@ function Details({player, onUpdate, addMedicine, consumeFood: onConsumeFood, con
                             const idxMk = player.inventory.findIndex(isMedkit);
                             if(idxMk<0) return;
                             const item = player.inventory[idxMk];
-                            const total = medkitCount(item);
+                            const total = medCount(item);
                             const take = Math.min(medkitTake, total);
                             // actualizar inventario del jugador
                             const left = total - take;
-                            const newItem = left>0 ? setMedkitCount(item, left) : null;
+                            const newItem = left>0 ? setMedCount(item, left) : null;
                             onUpdate({
                               inventory: player.inventory.map((x,i)=> i===idxMk ? (newItem ?? undefined) : x).filter(Boolean) as any[]
                             });
