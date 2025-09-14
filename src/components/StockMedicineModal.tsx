@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
-import { takeMedicineFromCamp, MedkitItem } from "../systems/medicine";
+import { takeMedicineFromCamp, MedkitItem, ensureMedkit } from "../systems/medicine";
 import { ensureBreathPlomoStyle } from "./util/breathPlomo";
 
 type Props = {
@@ -27,13 +27,13 @@ export default function StockMedicineModal({ isOpen, onClose, state, setState }:
   const dec = ()=> setAmount(a=> Math.max(0, a-1));
   const disabled = amount<=0 || amount>stock;
   const confirm = ()=>{
-    const { state: st, taken } = takeMedicineFromCamp(state, amount);
-    const stash = Array.isArray(st?.camp?.stash) ? [...st.camp.stash] : [];
+    const { state: camp, taken } = takeMedicineFromCamp(state.camp, amount);
+    const stash = Array.isArray(camp?.stash) ? [...camp.stash] : [];
     if(taken>0){
-      const item: MedkitItem = { type:'medkit', medicines:taken };
+      const item: MedkitItem = ensureMedkit({}, taken);
       stash.push(item);
     }
-    const next = { ...st, camp:{ ...(st.camp ?? {}), stash } };
+    const next = { ...state, camp: { ...camp, stash } };
     setState(next);
     onClose();
   };

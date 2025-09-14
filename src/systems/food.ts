@@ -1,72 +1,62 @@
-export type FoodItem = { type:'ration'; food:number; name?:string };
-
-export const isRation = (it:any): it is FoodItem => !!it && typeof it==='object' && it.type==='ration';
-
-function foodCount(it:any){
-  return isRation(it) ? Math.max(0, Math.floor(it.food || 0)) : 0;
+function norm(s?: string){ return String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase(); }
+export type FoodItem = { type:"food"; kind:"ration"; amount:number; name?:string };
+export function isRation(it:any): it is FoodItem {
+  if(!it) return false;
+  if(typeof it==="object" && it.type==="food") return true;
+  const n = norm((it?.name ?? it?.title ?? it)+"");
+  return n.includes("comida") || n.includes("racion") || n.includes("ración") || n.includes("lata") || n.includes("conserva");
 }
-function setFoodCount(it:FoodItem,n:number):FoodItem{
-  return { ...it, food: Math.max(0, Math.floor(n)) };
+export function rationCount(it:any): number {
+  const n = Number(it?.amount ?? it?.qty ?? it?.count ?? 0);
+  if(Number.isFinite(n) && n>0) return Math.floor(n);
+  const name = String(it?.name ?? it?.title ?? "");
+  const m = name.match(/\((\d+)\)/);
+  return m ? Math.max(0, parseInt(m[1],10)) : (isRation(it) ? 1 : 0);
 }
-
-function consumeFromList(list:any[]|null|undefined, need:number){
-  const arr = Array.isArray(list) ? [...list] : [];
-  const n = Math.max(0, Math.floor(need));
-  let taken = 0;
-  for(let i=0;i<arr.length && taken<n;i++){
-    const it = arr[i];
-    if(!isRation(it)) continue;
-    const cnt = foodCount(it);
-    if(cnt<=0) continue;
-    const take = Math.min(n - taken, cnt);
-    const left = cnt - take;
-    if(left<=0){ arr.splice(i,1); i--; }
-    else arr[i] = setFoodCount(it,left);
+export function ensureRation(it:any, amount:number){
+  const amt = Math.max(0, Math.floor(amount));
+  const base = typeof it==="object" ? it : {};
+  return { ...base, type:"food", kind:"ration", amount:amt, qty:amt, count:amt, name: base?.name ?? `Ración (${amt})` } as FoodItem;
+}
+function listRations(inv:any[]|null|undefined){
+  const arr = Array.isArray(inv)? inv : [];
+  return arr.map((it,i)=>({ i, it, units: rationCount(it) })).filter(r=> isRation(r.it) && r.units>0);
+}
+function consumeFromList(list:any[], need:number){
+  const out = [...list]; let taken = 0;
+  for(let i=0;i<out.length && taken<need;i++){
+    const it = out[i]; const units = isRation(it) ? rationCount(it) : 0;
+    if(units<=0) continue;
+    const take = Math.min(need-taken, units);
+    const left = units - take;
+    if(left<=0) { out.splice(i,1); i--; }
+    else { out[i] = ensureRation(it, left); }
     taken += take;
   }
-  return { list: arr, taken };
+  return { out, taken };
 }
-
-export function countFoodInInventory(player:any): number {
-  const inv = Array.isArray(player?.inventory) ? player.inventory : [];
-  const pack = Array.isArray(player?.backpack) ? player.backpack : [];
-  return [...inv, ...pack].reduce((sum,it)=> sum + foodCount(it), 0);
+export function totalFoodInInventory(inv:any[]|null|undefined){
+  return listRations(inv).reduce((a,r)=>a+r.units,0);
 }
-
-export function consumeFoodFromPlayer(player:any, n:number){
-  const need = Math.max(0, Math.floor(n));
-  if(need<=0) return { player, taken:0 };
-  let inventory = Array.isArray(player?.inventory) ? [...player.inventory] : [];
-  let backpack = Array.isArray(player?.backpack) ? [...player.backpack] : [];
-  const rInv = consumeFromList(inventory, need);
-  let taken = rInv.taken;
-  inventory = rInv.list;
-  if(taken < need){
-    const rPack = consumeFromList(backpack, need - taken);
-    taken += rPack.taken;
-    backpack = rPack.list;
-  }
-  return { player: { ...player, inventory, backpack }, taken };
+// Consume primero inventory y luego backpack
+export function consumeFoodFromPlayer(player:any, need:number){
+  const inv = Array.isArray(player?.inventory)? player.inventory : [];
+  const bp  = Array.isArray(player?.backpack) ? player.backpack  : [];
+  const a = consumeFromList(inv, Math.max(0, Math.floor(need)));
+  const b = a.taken>=need ? { out: bp, taken: 0 } : consumeFromList(bp, need - a.taken);
+  return { player: { ...player, inventory: a.out, backpack: b.out }, taken: a.taken + b.taken };
 }
-
+// Campamento
 export function addFoodToCamp(state:any, n:number){
-  const stock = Math.max(0, Number(state?.camp?.resources?.food ?? 0));
-  const add = Math.max(0, Math.floor(n));
-  return {
-    ...state,
-    camp:{
-      ...(state.camp ?? {}),
-      resources:{ ...(state.camp?.resources ?? {}), food: stock + add }
-    }
-  };
+  const next = structuredClone(state ?? {});
+  const cur = Math.max(0, Number(next?.resources?.food ?? 0));
+  next.resources = { ...(next.resources??{}), food: cur + Math.max(0, Math.floor(n)) };
+  return next;
 }
-
 export function takeFoodFromCamp(state:any, n:number){
-  const stock = Math.max(0, Number(state?.camp?.resources?.food ?? 0));
-  const take = Math.min(stock, Math.max(0, Math.floor(n)));
-  const next = {
-    ...state,
-    camp:{ ...(state.camp ?? {}), resources:{ ...(state.camp?.resources ?? {}), food: stock - take } }
-  };
+  const next = structuredClone(state ?? {});
+  const cur = Math.max(0, Number(next?.resources?.food ?? 0));
+  const take = Math.min(cur, Math.max(0, Math.floor(n)));
+  next.resources = { ...(next.resources??{}), food: cur - take };
   return { state: next, taken: take };
 }
