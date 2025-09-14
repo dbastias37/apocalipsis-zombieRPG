@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { WEAPONS } from "../../data/weapons";
+import { WEAPON_LIST } from "../../data/weapons";
 import { getLoadedAmmo, getTotalAmmoAvailable, listReloadableWeapons } from "../../systems/ammo";
 
 type Weapon = { id:string; name:string };
@@ -19,7 +19,7 @@ export default function AmmoReloadModal({ isOpen, player, onClose, onConfirm }: 
 
   const [wid, setWid] = useState<string>(weapons[0]?.id ?? "");
   // calcular límite real
-  const selected = useMemo(()=> WEAPONS.find(w => w.id === wid), [wid]);
+  const selected = useMemo(()=> WEAPON_LIST.find(w => w.id === wid), [wid]);
   const curLoaded = useMemo(()=> (player && wid ? getLoadedAmmo(player, wid) : 0), [player, wid]);
   const freeSpace = Math.max(0, Number(selected?.magSize ?? 0) - curLoaded);
 

@@ -1,5 +1,5 @@
 import { getSelectedWeapon, isRangedWeapon } from "./weapons.js";
-import { WEAPONS } from "../data/weapons.js";
+import { WEAPONS, WEAPON_LIST } from "../data/weapons.js";
 import type { Weapon } from "../data/weapons.js";
 
 export type AmmoItem = { type:'ammo'; kind:'loose'|'box'; amount:number; name?:string; id?:string; bullets?:number; qty?:number; count?:number };
@@ -132,6 +132,47 @@ export function spendAmmo(player: any, weaponId: string, n = 1) {
   return { player: setLoadedAmmo(player, weaponId, cur - n), ok: true };
 }
 
+export function getMagazineCount(player:any, weaponId:string){
+  return getLoadedAmmo(player, weaponId);
+}
+
+export function getAmmoTotalForCaliber(player:any, caliber:string){
+  const arr = [...(player?.inventory||[]), ...(player?.backpack||[])];
+  const c = norm(caliber);
+  let total = 0;
+  for(const it of arr){
+    const name = norm((it as any)?.name ?? (typeof it === 'string' ? it : ''));
+    if(name.includes(c)){
+      const amount = Number((it as any)?.amount ?? (it as any)?.qty ?? (it as any)?.count ?? 1);
+      total += Number.isFinite(amount) ? amount : 1;
+    }
+  }
+  return total;
+}
+
+export function reloadWeaponMagazine(player:any, weaponId:string){
+  const w:any = (WEAPONS as any)[weaponId];
+  if(!w || w.type!=='firearm') return player;
+  const magSize = w.magSize ?? 0;
+  const loaded = getMagazineCount(player, weaponId);
+  const need = Math.max(0, magSize - loaded);
+  if(need <= 0) return player;
+  let remaining = need;
+  let inventory = Array.isArray(player?.inventory)? [...player.inventory]: [];
+  let backpack = Array.isArray(player?.backpack)? [...player.backpack]: [];
+  const match = (it:any)=> norm((it as any)?.name ?? (typeof it === 'string'? it:'')).includes(w.caliber ?? '');
+  function consume(arr:any[]){
+    for(let i=0;i<arr.length && remaining>0;i++){
+      if(match(arr[i])){ arr.splice(i,1); i--; remaining--; }
+    }
+  }
+  consume(inventory);
+  consume(backpack);
+  const ammoByWeapon = { ...(player?.ammoByWeapon ?? {}) };
+  ammoByWeapon[weaponId] = loaded + (need - remaining);
+  return { ...player, inventory, backpack, ammoByWeapon };
+}
+
 export function takeAmmoFromCamp(state: any, { loose, boxes }: { loose: number; boxes: number }) {
   const l = Math.max(0, Math.floor(loose));
   const b = Math.max(0, Math.floor(boxes));
@@ -243,7 +284,7 @@ export function listReloadableWeapons(player:any): {id:string; name:string}[] {
   const add = (id:string,name:string)=>{ if(!list.find(w=>w.id===id)) list.push({id,name}); };
   const norm = (s?:string)=>String(s||"").normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
   const selId = (player as any)?.currentWeaponId ?? (player as any)?.selectedWeaponId;
-  const byId = selId ? WEAPONS.find(w => w.id === selId) : null;
+  const byId = selId ? WEAPON_LIST.find(w => w.id === selId) : null;
   const fromGetter = typeof getSelectedWeapon === 'function' ? getSelectedWeapon(player) : null;
   const sel = byId?.type === 'ranged' ? byId : (fromGetter && fromGetter.type === 'ranged' ? fromGetter : null);
   if (sel) add(sel.id, sel.name ?? sel.id);
@@ -251,17 +292,17 @@ export function listReloadableWeapons(player:any): {id:string; name:string}[] {
   for (const it of inv){
     if (typeof it === 'string'){
       const s = norm(it);
-      const m = WEAPONS.find(w=>w.type==='ranged' && (norm(w.name)===s || w.id===s));
+      const m = WEAPON_LIST.find(w=>w.type==='ranged' && (norm(w.name)===s || w.id===s));
       if (m) add(m.id, m.name);
       continue;
     }
     if (it && typeof it === 'object'){
       if (it.type === 'ranged' && typeof it.id === 'string'){
-        const m = WEAPONS.find(w=>w.id===it.id) ?? {id:it.id,name:(it as any).name ?? it.id};
+        const m = WEAPON_LIST.find(w=>w.id===it.id) ?? {id:it.id,name:(it as any).name ?? it.id};
         add(m.id, m.name);
       } else if (typeof (it as any).name === 'string'){
         const nm = norm((it as any).name);
-        const m2 = WEAPONS.find(w=>w.type==='ranged' && norm(w.name)===nm);
+        const m2 = WEAPON_LIST.find(w=>w.type==='ranged' && norm(w.name)===nm);
         if (m2) add(m2.id, m2.name);
       }
     }
@@ -269,21 +310,8 @@ export function listReloadableWeapons(player:any): {id:string; name:string}[] {
   return list;
 }
 
-export function playerOwnsWeapon(player:any, weaponId:string){
-  const arr = [...(player?.inventory||[]), ...(player?.backpack||[])];
-  return arr.some(it => {
-    const n = norm(it?.name || it?.id || '');
-    return weaponId.includes('pistol') ? n.includes('pistola') : n.includes('navaja');
-  });
-}
-
 export function canReload(player:any, weapon:Weapon){
   if (weapon.type!=='ranged' && weapon.type!=='firearm') return false;
   const total = getTotalAmmoAvailable(player);
   return total.total > 0;
-}
-
-export function equipWeapon(player:any, weaponId:string){
-  if (weaponId!=='fists' && !playerOwnsWeapon(player, weaponId)) return player;
-  return { ...player, equippedWeaponId: weaponId };
 }
