@@ -4,7 +4,6 @@ import type {
   DayId, DayState, LevelContextAPI, NarrativeFlags, DayRules, DeckId, LevelEndReason
 } from "@/types/level";
 import { dayDecksById, dayRulesById } from "@/data/days/dayConfigs";
-import { TurnSystem } from "@/engine/turn-system";
 
 type Action =
   | { type: "INIT_DAY"; day: DayId; players: string[] }
@@ -173,7 +172,6 @@ export const LevelProvider: React.FC<{
   onEvent?: (e: any) => void;
 }> = ({ children, onEvent }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const turnRef = useRef<TurnSystem>(new TurnSystem([], {}));
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -211,17 +209,6 @@ export const LevelProvider: React.FC<{
 
       initDay: (day, players) => {
         dispatch({ type: "INIT_DAY", day, players });
-        const actors = Object.fromEntries(players.map(p => [p, { id: p, hp: 1, status: 'alive' as const }]));
-        const ts = new TurnSystem(players, actors);
-        turnRef.current = ts;
-        ts.onTurnChange(actor => {
-          ts.openTurnGate();
-          const idx = players.indexOf(actor.id);
-          dispatch({ type: 'OPEN_TURN_GATE', index: idx });
-          const nextName = players[idx] ?? 'Siguiente';
-          onEvent?.({ type: 'TURN_ENDED', nextPlayerName: nextName });
-        });
-        ts.openTurnGate(0);
         dispatch({ type: 'OPEN_TURN_GATE', index: 0 });
         onEvent?.({ type: 'DAY_STARTED', day });
       },
@@ -239,15 +226,17 @@ export const LevelProvider: React.FC<{
       resolveExploreInstance: (id) => dispatch({ type: "RESOLVE_EXPLORE", id }),
 
       openTurnGate: (playerIndex) => {
-        turnRef.current.openTurnGate(playerIndex);
         dispatch({ type: 'OPEN_TURN_GATE', index: playerIndex });
       },
       startTurn: () => {
-        turnRef.current.startTurn();
         dispatch({ type: 'START_TURN' });
       },
       endTurn: () => {
-        turnRef.current.endTurn();
+        const total = state.dayState.turnCounters.length;
+        const nextIndex = (state.dayState.currentPlayerIndex + 1) % total;
+        dispatch({ type: 'OPEN_TURN_GATE', index: nextIndex });
+        const nextName = state.dayState.turnCounters[nextIndex]?.playerId ?? 'Siguiente';
+        onEvent?.({ type: 'TURN_ENDED', nextPlayerName: nextName });
       },
 
       tick: (now) => dispatch({ type: "TICK", nowMs: now }),
@@ -263,7 +252,6 @@ export const LevelProvider: React.FC<{
 
       setFlag: (key, value) => dispatch({ type: "SET_FLAG", key, value }),
       onEvent,
-      turnSystem: turnRef.current,
     };
   }, [state, onEvent]);
 
