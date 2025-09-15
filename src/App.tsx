@@ -195,6 +195,90 @@ function mod(score:number){ return Math.floor((score-10)/2); }
 
 function rollInt(min:number,max:number){ return Math.floor(min + Math.random()*(max-min+1)); }
 
+const WEAPON_ID_ALIASES: Record<string, string> = {
+  pistol: "pistol9",
+};
+
+function resolveWeaponId(id: string): string {
+  if (WEAPONS[id]) return id;
+  return WEAPON_ID_ALIASES[id] ?? id;
+}
+
+function CombatLog({ lines }: { lines: string[] }) {
+  if (!Array.isArray(lines) || lines.length === 0) return null;
+  return (
+    <div
+      style={{
+        maxHeight: 140,
+        overflowY: "auto",
+        padding: "8px 10px",
+        borderRadius: 8,
+        border: "1px solid #333",
+        marginBottom: 8,
+      }}
+    >
+      {lines.map((ln, i) => (
+        <div key={i} style={{ fontSize: 13, lineHeight: 1.25, opacity: 0.95 }}>
+          {ln}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WeaponQuickBar({
+  player,
+  onSelect,
+}: {
+  player: Player;
+  onSelect: (playerId: string, weaponId: string) => void;
+}) {
+  const options = getAvailableWeapons(player) ?? [];
+  const selectedWeapon = getSelectedWeapon(player);
+  const current = selectedWeapon?.id ?? player.currentWeaponId ?? player.selectedWeaponId ?? "fists";
+
+  const dmg = (id: string) => {
+    const resolved = resolveWeaponId(id);
+    const weapon = WEAPONS[resolved];
+    const dice = weapon?.damage;
+    if (!dice) return "--";
+    const min = dice.times * 1 + (dice.mod ?? 0);
+    const max = dice.times * dice.faces + (dice.mod ?? 0);
+    return `${min}-${max}`;
+  };
+
+  const safeOptions = options.length ? options : [{ id: "fists", label: "Puños" }];
+
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "6px 0 10px 0" }}>
+      {safeOptions.map((opt: any) => {
+        const resolvedId = resolveWeaponId(opt.id);
+        const weapon = WEAPONS[resolvedId];
+        const name = weapon?.name ?? opt.name ?? opt.label ?? resolvedId;
+        const selected = resolvedId === resolveWeaponId(current);
+        return (
+          <button
+            key={opt.id}
+            onClick={() => onSelect(player.id, resolvedId)}
+            aria-pressed={selected}
+            className={`btn ${selected ? "btn-primary" : "btn-outline"}`}
+            style={{
+              borderRadius: 10,
+              padding: "6px 10px",
+              fontWeight: selected ? 700 : 500,
+              outline: selected ? "2px solid #6cf" : "none",
+              cursor: "pointer",
+            }}
+            title={name}
+          >
+            {name} · {dmg(resolvedId)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function maybeAmmoBox(){
   if (Math.random() < 0.35){
     const n = rollInt(6,12);
@@ -579,6 +663,29 @@ export default function App(){
   const pushLog = useCallback((msg: string) => {
     setLogs(prev => [...prev, msg].slice(-200));
   }, []);
+
+  const handleQuickEquip = useCallback(
+    (playerId: string, weaponId: string) => {
+      const resolvedId = resolveWeaponId(weaponId);
+      if (!WEAPONS[resolvedId]) return;
+      setPlayers(list =>
+        list.map(p => {
+          if (p.id !== playerId) return p;
+          const updated = equipWeapon(p, resolvedId);
+          if (updated === p && (p.equippedWeaponId ?? p.currentWeaponId ?? p.selectedWeaponId) !== resolvedId) {
+            return p;
+          }
+          return {
+            ...updated,
+            equippedWeaponId: resolvedId,
+            currentWeaponId: resolvedId,
+            selectedWeaponId: resolvedId,
+          };
+        }),
+      );
+    },
+    [setPlayers],
+  );
 
   // Registrar logger global
   useEffect(() => {
@@ -2108,6 +2215,7 @@ function advanceTurn() {
             card={currentCard}
             onResolveChoice={resolveChoice}
             enemies={enemies}
+            battleLines={logs}
             onAttack={performAttack}
             onDefend={defend}
             onHeal={healSelf}
@@ -2118,6 +2226,8 @@ function advanceTurn() {
             isEnemyPhase={isEnemyPhase}
             canAttackWithSelected={canAttackWithSelected}
             activeDown={activeDown}
+            activePlayer={activePlayer}
+            onEquipWeapon={handleQuickEquip}
             canHeal={!!activePlayer && activePlayer.hp < activePlayer.hpMax && resources.medicine>0}
             canEat={!isEnemyPhase && (resources?.food ?? 0) > 0 && !!activePlayer}
             onClose={()=>{
@@ -2139,8 +2249,8 @@ function advanceTurn() {
           />
         )}
 
-        {activePlayer && <BattleTicker lines={logs} />}
-        {activePlayer && !isEnemyPhase && !controlsLocked && (
+        {activePlayer && currentCard?.type !== "combat" && <BattleTicker lines={logs} />}
+        {activePlayer && !isEnemyPhase && !controlsLocked && currentCard?.type !== "combat" && (
           <>
             <WeaponSelector
               player={activePlayer}
@@ -2379,6 +2489,7 @@ function CardView(props:{
   onResolveChoice: (choice: NonNullable<Card["choices"]>[number])=>void;
   onClose: ()=>void;
   enemies: Enemy[];
+  battleLines: string[];
   onAttack: (id:string)=>void;
   onDefend: ()=>void;
   onHeal: ()=>void;
@@ -2388,6 +2499,8 @@ function CardView(props:{
   isEnemyPhase: boolean;
   canAttackWithSelected: boolean;
   activeDown: boolean;
+  activePlayer: Player | null;
+  onEquipWeapon: (playerId: string, weaponId: string) => void;
   canHeal: boolean;
   onEat: ()=>void;
   canEat: boolean;
@@ -2414,86 +2527,98 @@ function CardView(props:{
       )}
 
       {!isDecision && (
-        <div className="mt-5 grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-3">
-            {props.enemies.length===0 ? (
-              <div className="p-4 bg-neutral-900 rounded-xl border border-neutral-800">
-                <p className="text-lg">🕊️ No quedan enemigos. La zona está momentáneamente segura.</p>
-              </div>
-            ) : (
-              props.enemies.map(e=>{
-                const isEnemyStunned = hasCondition(e.conditions, 'stunned');
-                return (
-                  <div key={e.id} className={[
-                    "p-4 bg-neutral-900 rounded-xl border border-red-900",
-                    isEnemyStunned ? "saturate-0 grayscale border-zinc-400/60" : "",
-                  ].join(" ")}>
-                    <div className="text-xs opacity-80 mb-1">
-                      {isEnemyStunned && <span className="px-2 py-0.5 rounded bg-zinc-600/80">Aturdido</span>}
-                    </div>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-bold">{e.name}</h4>
-                        <p className="text-sm text-neutral-400">DEF {e.def} • ATK {e.atk}</p>
+        <div className="mt-5 space-y-3">
+          {props.enemies.length > 0 && (
+            <div>
+              <CombatLog lines={props.battleLines} />
+              {props.activePlayer && (
+                <WeaponQuickBar player={props.activePlayer} onSelect={props.onEquipWeapon} />
+              )}
+            </div>
+          )}
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 space-y-3">
+              {props.enemies.length===0 ? (
+                <div className="p-4 bg-neutral-900 rounded-xl border border-neutral-800">
+                  <p className="text-lg">🕊️ No quedan enemigos. La zona está momentáneamente segura.</p>
+                </div>
+              ) : (
+                props.enemies.map(e=>{
+                  const isEnemyStunned = hasCondition(e.conditions, 'stunned');
+                  return (
+                    <div key={e.id} className={[
+                      "p-4 bg-neutral-900 rounded-xl border border-red-900",
+                      isEnemyStunned ? "saturate-0 grayscale border-zinc-400/60" : "",
+                    ].join(" ")}>
+                      <div className="text-xs opacity-80 mb-1">
+                        {isEnemyStunned && <span className="px-2 py-0.5 rounded bg-zinc-600/80">Aturdido</span>}
                       </div>
-                      <button
-                        className="btn btn-red text-white"
-                        onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canAttackWithSelected) return; props.onAttack(e.id); }}
-                        disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canAttackWithSelected}
-                      >
-                        {props.canAttackWithSelected ? "🗡️ Atacar" : "Sin munición"}
-                      </button>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold">{e.name}</h4>
+                          <p className="text-sm text-neutral-400">DEF {e.def} • ATK {e.atk}</p>
+                        </div>
+                        <button
+                          className="btn btn-red text-white"
+                          onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canAttackWithSelected) return; props.onAttack(e.id); }}
+                          disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canAttackWithSelected}
+                        >
+                          {props.canAttackWithSelected ? "🗡️ Atacar" : "Sin munición"}
+                        </button>
+                      </div>
+                      <div className="mt-2 h-2 bg-neutral-800 rounded-full overflow-hidden">
+                        <div className={clsx("h-full", e.hp/e.hpMax>0.6?"bg-green-600":e.hp/e.hpMax>0.3?"bg-yellow-500":"bg-red-600")} style={{width:`${(e.hp/e.hpMax)*100}%`}}/>
+                      </div>
                     </div>
-                    <div className="mt-2 h-2 bg-neutral-800 rounded-full overflow-hidden">
-                      <div className={clsx("h-full", e.hp/e.hpMax>0.6?"bg-green-600":e.hp/e.hpMax>0.3?"bg-yellow-500":"bg-red-600")} style={{width:`${(e.hp/e.hpMax)*100}%`}}/>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-          <div className="space-y-2">
-            <button
-              className="btn btn-ghost w-full"
-              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onDefend(); }}
-              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
-            >
-              🛡️ Defender
-            </button>
-            <button
-              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onHealAlly(); }}
-              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
-              className="px-3 py-2 w-full rounded-xl border border-white/15 hover:bg-white/5"
-            >
-              Curar aliado
-            </button>
-            <button
-              className="btn btn-ghost w-full"
-              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canHeal) return; props.onHeal(); }}
-              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canHeal}
-              title={!props.canHeal ? "PV al máximo" : undefined}
-            >
-              💊 Curarse
-            </button>
-            {props.canEat && (
+                  );
+                })
+              )}
+            </div>
+            <div className="space-y-2">
               <button
-                className="btn btn-green w-full"
-                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canEat) return; props.onEat(); }}
-                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canEat}
+                className="btn btn-ghost w-full"
+                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onDefend(); }}
+                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
               >
-                🍞 Comer
+                🛡️ Defender
               </button>
-            )}
-            <button
-              className="btn btn-ghost w-full"
-              onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onFlee(); }}
-              disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
-            >
-              🏃 Huir
-            </button>
+              <button
+                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onHealAlly(); }}
+                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
+                className="px-3 py-2 w-full rounded-xl border border-white/15 hover:bg-white/5"
+              >
+                Curar aliado
+              </button>
+              <button
+                className="btn btn-ghost w-full"
+                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canHeal) return; props.onHeal(); }}
+                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canHeal}
+                title={!props.canHeal ? "PV al máximo" : undefined}
+              >
+                💊 Curarse
+              </button>
+              {props.canEat && (
+                <button
+                  className="btn btn-green w-full"
+                  onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canEat) return; props.onEat(); }}
+                  disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canEat}
+                >
+                  🍞 Comer
+                </button>
+              )}
+              <button
+                className="btn btn-ghost w-full"
+                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onFlee(); }}
+                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
+              >
+                🏃 Huir
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+
     </div>
   );
 }
