@@ -1,6 +1,12 @@
 import { playerOwnsWeapon } from '../../systems/weapons';
 
-export default function WeaponSelector({ player, onEquip }:{ player:any; onEquip:(weaponId:string)=>void }){
+type WeaponSelectorProps = {
+  player: any;
+  onEquip: (weaponId: string) => void;
+};
+
+export default function WeaponSelector({ player, onEquip }: WeaponSelectorProps) {
+  if (!player) return null;
   const options = [
     { id:'fists',   label:'Puños' },
     ...(playerOwnsWeapon(player,'knife')   ? [{ id:'knife',   label:'Navaja' }]   : []),

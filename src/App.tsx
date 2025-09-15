@@ -685,8 +685,11 @@ export default function App(){
   const alivePlayers = players.filter(p => p.status !== "dead");
   const aliveEnemies = enemies;
   const turn = useTurn();
-  const apId = turn.currentActorId();
-  const activePlayer = turn.players.find(p => p.id === apId) ?? null;
+  const isCombat = turn.phase !== "out_of_combat";
+  const combatActorId = isCombat ? turn.currentActorId() : null;
+  const activePlayer = isCombat
+    ? turn.players.find(p => p.id === combatActorId) ?? null
+    : players.find(p => p.id === (activePlayerId ?? "")) ?? null;
   useEffect(() => {
     setActivePlayerCompat(activePlayer);
   }, [activePlayer?.id]);
@@ -702,26 +705,25 @@ export default function App(){
   })();
 
   useEffect(() => {
-    const p = activePlayer;
-    if (!p) return;
-    const w = getSelectedWeapon(p);
-    if (isRangedWeapon(w) && getLoadedAmmo(p, w.id) <= 0) {
-      const opts = getAvailableWeapons(p);
+    if (!activePlayer) return;
+    const statePlayer = players.find(pl => pl.id === activePlayer.id) ?? activePlayer;
+    const w = getSelectedWeapon(statePlayer);
+    if (isRangedWeapon(w) && getLoadedAmmo(statePlayer, w.id) <= 0) {
+      const opts = getAvailableWeapons(statePlayer);
       const hasKnife = !!opts.find(o => o.id === "knife");
       const fallback = hasKnife ? "knife" : "fists";
-      const cur = p.currentWeaponId ?? p.selectedWeaponId ?? "fists";
-      const equippedId = p.equippedWeaponId ?? cur;
+      const cur = statePlayer.currentWeaponId ?? statePlayer.selectedWeaponId ?? "fists";
+      const equippedId = statePlayer.equippedWeaponId ?? cur;
       if (cur !== fallback || equippedId !== fallback) {
         setPlayers(list =>
           list.map(pl => {
-            if (pl.id !== p.id) return pl;
+            if (pl.id !== statePlayer.id) return pl;
             const updated = equipWeapon(pl, fallback);
-            const next = {
+            return {
               ...updated,
               currentWeaponId: fallback,
               selectedWeaponId: fallback,
             };
-            return next;
           }),
         );
         const currentName = w?.name ?? w?.id ?? "arma actual";
@@ -729,7 +731,7 @@ export default function App(){
         pushBattle(`⚠️ Sin munición en ${currentName}. Cambias automáticamente a ${fallbackName}.`);
       }
     }
-  }, [activePlayerId, players]);
+  }, [activePlayer, players]);
 
   useEffect(() => {
     setDecisionDeck(shuffle(mapDecisionCards(getDecisionDeckForDay(day))));
@@ -2187,6 +2189,40 @@ function advanceTurn() {
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {!isCombat && activePlayer && <BattleTicker lines={logs} />}
+        {!isCombat && activePlayer && !isEnemyPhase && !controlsLocked && (
+          <div className="flex flex-wrap items-center gap-3">
+            <WeaponSelector
+              player={activePlayer}
+              onEquip={(weaponId) => handleQuickEquip(activePlayer.id, weaponId)}
+            />
+            {getEquippedWeapon(activePlayer).type === 'firearm' && canReloadEquipped(activePlayer) && (
+              <button
+                onClick={() =>
+                  setPlayers(list =>
+                    list.map(p =>
+                      p.id === activePlayer.id
+                        ? reloadWeaponMagazine(p, getEquippedWeapon(p).id)
+                        : p,
+                    ),
+                  )
+                }
+                className="btn btn-ghost"
+              >
+                Recargar
+              </button>
+            )}
+          </div>
+        )}
+
+        <PartyPanel
+          players={players}
+          onUpdatePlayer={updatePlayer}
+          onRemove={removePlayer}
+          activePlayerId={activePlayerId ?? undefined}
+          isEnemyPhase={isEnemyPhase}
+        />
+
         {/* Zonas principales */}
         <DeckControls
           onDrawDecision={drawDecision} onDrawCombat={drawCombat}
@@ -2231,24 +2267,6 @@ function advanceTurn() {
             onResolve={resolveTimedEventPositively}
           />
         )}
-
-        {activePlayer && currentCard?.type !== "combat" && <BattleTicker lines={logs} />}
-        {activePlayer && !isEnemyPhase && !controlsLocked && currentCard?.type !== "combat" && (
-          <>
-            <WeaponSelector
-              player={activePlayer}
-              onEquip={(wId)=> setPlayers(list => list.map(p => p.id===activePlayer.id ? equipWeapon(p, wId) : p))}
-            />
-            {getEquippedWeapon(activePlayer).type==='firearm' && canReloadEquipped(activePlayer) && (
-              <button
-                onClick={()=> setPlayers(list => list.map(p => p.id===activePlayer.id ? reloadWeaponMagazine(p, getEquippedWeapon(activePlayer).id) : p))}
-                className="btn btn-ghost ml-2"
-              >
-                Recargar
-              </button>
-            )}
-          </>
-        )}
         {!currentCard && !isEnemyPhase && !!activePlayer && (resources?.food ?? 0) > 0 && (
           <button className="btn btn-green mr-2" onClick={() => consumeFoodItem()}>
             Comer
@@ -2259,14 +2277,6 @@ function advanceTurn() {
             Terminar turno
           </button>
         )}
-        <PartyPanel
-          players={players}
-          onUpdatePlayer={updatePlayer}
-          onRemove={removePlayer}
-          activePlayerId={activePlayerId ?? undefined}
-          isEnemyPhase={isEnemyPhase}
-        />
-
         <InventoryPanel
           stash={stash}
           players={players}

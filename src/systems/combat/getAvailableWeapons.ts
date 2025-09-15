@@ -31,22 +31,36 @@ const ALIAS: Record<string, string[]> = {
   smg: ["smg","subfusil","subfusil (smg)"],
 };
 
+function collectCandidateStrings(entry: any): string[] {
+  const values: string[] = [];
+  const push = (value: any) => {
+    if (!value) return;
+    if (typeof value === "string" || typeof value === "number") {
+      values.push(String(value));
+      return;
+    }
+    if (typeof value === "object") {
+      if (typeof value.string === "string") values.push(value.string);
+      if (typeof value.name === "string") values.push(value.name);
+      if (typeof value.label === "string") values.push(value.label);
+      if (typeof value.type === "string") values.push(value.type);
+    }
+  };
+  push(entry);
+  push(entry?.id);
+  push(entry?.name);
+  push(entry?.type);
+  push(entry?.string);
+  return values.map(norm);
+}
+
 /** ¿El inventario contiene alguno de los alias dados? */
 function hasAny(p: Player, keys: string[]): boolean {
   if (!Array.isArray(p.inventory)) return false;
+  const tokens = keys.map(norm);
   return p.inventory.some((it: any) => {
-    const parts = [
-      typeof it === "string" ? it : undefined,
-      it?.id,
-      it?.name,
-      it?.type,
-    ]
-      .filter(Boolean)
-      .map(norm);
-    return keys.some(k => {
-      const token = norm(k);
-      return parts.some(v => v.includes(token));
-    });
+    const parts = collectCandidateStrings(it);
+    return tokens.some(token => parts.some(value => value === token || value.includes(token)));
   });
 }
 
