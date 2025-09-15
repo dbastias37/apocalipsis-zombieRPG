@@ -204,28 +204,6 @@ function resolveWeaponId(id: string): string {
   return WEAPON_ID_ALIASES[id] ?? id;
 }
 
-function CombatLog({ lines }: { lines: string[] }) {
-  if (!Array.isArray(lines) || lines.length === 0) return null;
-  return (
-    <div
-      style={{
-        maxHeight: 140,
-        overflowY: "auto",
-        padding: "8px 10px",
-        borderRadius: 8,
-        border: "1px solid #333",
-        marginBottom: 8,
-      }}
-    >
-      {lines.map((ln, i) => (
-        <div key={i} style={{ fontSize: 13, lineHeight: 1.25, opacity: 0.95 }}>
-          {ln}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function WeaponQuickBar({
   player,
   onSelect,
@@ -247,31 +225,36 @@ function WeaponQuickBar({
     return `${min}-${max}`;
   };
 
-  const safeOptions = options.length ? options : [{ id: "fists", label: "Puños" }];
+  const safeOptions = options.length ? options : [{ id: "fists", label: "Puños", usable: true }];
 
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "6px 0 10px 0" }}>
       {safeOptions.map((opt: any) => {
         const resolvedId = resolveWeaponId(opt.id);
         const weapon = WEAPONS[resolvedId];
-        const name = weapon?.name ?? opt.name ?? opt.label ?? resolvedId;
+        const fallbackName = weapon?.name ?? opt.name ?? resolvedId;
+        const label = opt.label ?? `${fallbackName} · ${dmg(resolvedId)}`;
         const selected = resolvedId === resolveWeaponId(current);
+        const unavailable = opt.usable === false;
         return (
           <button
             key={opt.id}
+            type="button"
             onClick={() => onSelect(player.id, resolvedId)}
             aria-pressed={selected}
-            className={`btn ${selected ? "btn-primary" : "btn-outline"}`}
+            className={`btn ${selected ? "btn-primary" : "btn-outline"} ${unavailable ? "opacity-60" : ""}`}
             style={{
               borderRadius: 10,
               padding: "6px 10px",
               fontWeight: selected ? 700 : 500,
               outline: selected ? "2px solid #6cf" : "none",
               cursor: "pointer",
+              textAlign: "left",
+              whiteSpace: "normal",
             }}
-            title={name}
+            title={opt.reason ?? fallbackName}
           >
-            {name} · {dmg(resolvedId)}
+            {label}
           </button>
         );
       })}
@@ -2528,13 +2511,9 @@ function CardView(props:{
 
       {!isDecision && (
         <div className="mt-5 space-y-3">
-          {props.enemies.length > 0 && (
-            <div>
-              <CombatLog lines={props.battleLines} />
-              {props.activePlayer && (
-                <WeaponQuickBar player={props.activePlayer} onSelect={props.onEquipWeapon} />
-              )}
-            </div>
+          {props.activePlayer && <BattleTicker lines={props.battleLines} />}
+          {props.activePlayer && (
+            <WeaponQuickBar player={props.activePlayer} onSelect={props.onEquipWeapon} />
           )}
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-3">

@@ -34,10 +34,19 @@ const ALIAS: Record<string, string[]> = {
 /** ¿El inventario contiene alguno de los alias dados? */
 function hasAny(p: Player, keys: string[]): boolean {
   if (!Array.isArray(p.inventory)) return false;
-  return p.inventory.some((i: any) => {
-    const idOrName = typeof i === "string" ? i : (i?.id ?? i?.type ?? i?.name);
-    const token = norm(idOrName);
-    return keys.some(k => token.includes(norm(k)));
+  return p.inventory.some((it: any) => {
+    const parts = [
+      typeof it === "string" ? it : undefined,
+      it?.id,
+      it?.name,
+      it?.type,
+    ]
+      .filter(Boolean)
+      .map(norm);
+    return keys.some(k => {
+      const token = norm(k);
+      return parts.some(v => v.includes(token));
+    });
   });
 }
 
