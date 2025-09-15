@@ -27,7 +27,14 @@ import {
   counterEffectText,
 } from "./data/combatPhrases";
 import { WEAPONS } from "./data/weapons";
-import { equipWeapon, getEquippedWeapon, isOutOfAmmoForEquipped, canReloadEquipped } from "./systems/weapons";
+import {
+  equipWeapon,
+  getEquippedWeapon,
+  getSelectedWeapon,
+  isOutOfAmmoForEquipped,
+  isRangedWeapon,
+  canReloadEquipped,
+} from "./systems/weapons";
 import {
   getLoadedAmmo,
   setLoadedAmmo,
@@ -39,6 +46,7 @@ import {
   reloadWeaponMagazine,
   getMagazineCount,
 } from "./systems/ammo";
+import { getAvailableWeapons } from "./systems/combat/getAvailableWeapons";
 import { withEnergy } from "./systems/actors";
 import { consumeFoodFromPlayer } from "./systems/food";
 import {
@@ -602,6 +610,36 @@ export default function App(){
     }
     return true;
   })();
+
+  useEffect(() => {
+    const p = activePlayer;
+    if (!p) return;
+    const w = getSelectedWeapon(p);
+    if (isRangedWeapon(w) && getLoadedAmmo(p, w.id) <= 0) {
+      const opts = getAvailableWeapons(p);
+      const hasKnife = !!opts.find(o => o.id === "knife");
+      const fallback = hasKnife ? "knife" : "fists";
+      const cur = p.currentWeaponId ?? p.selectedWeaponId ?? "fists";
+      const equippedId = p.equippedWeaponId ?? cur;
+      if (cur !== fallback || equippedId !== fallback) {
+        setPlayers(list =>
+          list.map(pl => {
+            if (pl.id !== p.id) return pl;
+            const updated = equipWeapon(pl, fallback);
+            const next = {
+              ...updated,
+              currentWeaponId: fallback,
+              selectedWeaponId: fallback,
+            };
+            return next;
+          }),
+        );
+        const currentName = w?.name ?? w?.id ?? "arma actual";
+        const fallbackName = WEAPONS[fallback]?.name ?? fallback;
+        pushBattle(`⚠️ Sin munición en ${currentName}. Cambias automáticamente a ${fallbackName}.`);
+      }
+    }
+  }, [activePlayerId, players]);
 
   useEffect(() => {
     setDecisionDeck(shuffle(mapDecisionCards(getDecisionDeckForDay(day))));
