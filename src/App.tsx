@@ -3323,6 +3323,40 @@ function CampResourcesTab({resources, setResources, stash, setStash}:{resources:
   );
 }
 
+function NoCardActions({
+  onExplore,
+  onPassNight,
+  phase,
+  explorationActive,
+}: {
+  onExplore: () => void;
+  onPassNight: () => void;
+  phase: Phase;
+  explorationActive: boolean;
+}) {
+  return (
+    <div className="card flex flex-wrap items-center gap-3 border-neutral-800 bg-neutral-900 p-6">
+      <button
+        onClick={onExplore}
+        disabled={explorationActive}
+        className={`px-6 py-3 rounded-xl font-bold transition-all ${
+          explorationActive ? "bg-neutral-800 cursor-not-allowed opacity-60" : "bg-red-900 hover:bg-red-800"
+        }`}
+      >
+        🧭 Explorar {explorationActive ? "(en curso...)" : "(saqueo y riesgo)"}
+      </button>
+      {(phase === "dusk" || phase === "night") && (
+        <button className="btn btn-red text-white" onClick={onPassNight}>
+          🌙 Pasar la noche
+        </button>
+      )}
+      {(phase === "dawn" || phase === "day") && (
+        <span className="text-sm text-neutral-400">El sol aún ofrece margen para actuar...</span>
+      )}
+    </div>
+  );
+}
+
 function Bar({label, current, max, color}:{label:string; current:number; max:number; color:"green"|"blue"}){
   const pct = clamp((current/max)*100, 0, 100);
   const bg = color==="green"?"from-green-600 to-green-400":"from-blue-600 to-blue-400";
