@@ -1,5 +1,5 @@
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { setActivePlayerCompat } from "./compat/active-player-compat";
 import { useTurn } from "./state/turnStore";
@@ -77,6 +77,7 @@ import AmmoReloadModal from "./components/overlays/AmmoReloadModal";
 import OverlayRoot from "./components/overlays/OverlayRoot";
 import CampTileButton from "./components/CampTileButton";
 import { registerLogger, gameLog, registerTimeProvider } from "./utils/logger";
+import { initLogger } from "./systems/logger";
 import { DAY_LENGTH_MS, ACTION_TIME_COSTS } from "./config/time";
 import { day1DecisionCards } from "./data/days/day1/decisionCards.day1";
 import { day2DecisionCards } from "./data/days/day2/decisionCards.day2";
@@ -642,9 +643,16 @@ export default function App(){
 
   // Registro de narrativa
   const [logs, setLogs] = useState<string[]>([]);
+  const [notifications, setNotifications] = useState<string[]>([]);
+  const [activeCampTab, setActiveCampTab] = useState<"inv" | "camp" | "rep">("inv");
+  const gameLogRef = useRef<HTMLElement | null>(null);
 
   const pushLog = useCallback((msg: string) => {
     setLogs(prev => [...prev, msg].slice(-200));
+  }, []);
+
+  const pushNotification = useCallback((msg: string) => {
+    setNotifications(prev => [...prev, msg].slice(-50));
   }, []);
 
   const handleQuickEquip = useCallback(
@@ -677,6 +685,12 @@ export default function App(){
   }, [pushLog]);
 
   useEffect(() => {
+    if (state === "playing" || state === "paused") {
+      initLogger();
+    }
+  }, [state]);
+
+  useEffect(() => {
     clockMsRef.current = clockMs;
   }, [clockMs]);
 
@@ -703,6 +717,78 @@ export default function App(){
     }
     return true;
   })();
+
+  const activePlayerState = activePlayer
+    ? players.find(pl => pl.id === activePlayer.id) ?? activePlayer
+    : null;
+
+  const weaponOptions = useMemo(() => {
+    if (!activePlayerState) return [] as { id: string; label: string; usable: boolean }[];
+    try {
+      const opts = getAvailableWeapons(activePlayerState) ?? [];
+      const dmg = (weaponId: string) => {
+        const weapon = WEAPONS[weaponId];
+        const dice = weapon?.damage;
+        if (!dice) return "--";
+        const min = dice.times * 1 + (dice.mod ?? 0);
+        const max = dice.times * dice.faces + (dice.mod ?? 0);
+        return `${min}-${max}`;
+      };
+      const mapped = opts.map((opt: any) => {
+        const resolvedId = resolveWeaponId(opt.id);
+        const weapon = WEAPONS[resolvedId];
+        const fallbackName = weapon?.name ?? opt.name ?? resolvedId;
+        const label = opt.label ?? `${fallbackName} · ${dmg(resolvedId)}`;
+        return {
+          id: resolvedId,
+          label,
+          usable: opt.usable !== false,
+        };
+      });
+      if (!mapped.length) {
+        return [{ id: "fists", label: "Puños", usable: true }];
+      }
+      return mapped;
+    } catch {
+      return [] as { id: string; label: string; usable: boolean }[];
+    }
+  }, [activePlayerState, players]);
+
+  const equippedWeapon = activePlayerState ? getEquippedWeapon(activePlayerState) : null;
+  const currentWeaponId = activePlayerState
+    ? resolveWeaponId(
+        equippedWeapon?.id ??
+        activePlayerState.currentWeaponId ??
+        activePlayerState.selectedWeaponId ??
+        "fists",
+      )
+    : "";
+
+  const canEatOutOfCombat = !isCombat && !isEnemyPhase && !!activePlayerState && (resources?.food ?? 0) > 0;
+  const canHealOutOfCombat =
+    !isCombat &&
+    !!activePlayerState &&
+    activePlayerState.hp < activePlayerState.hpMax &&
+    (resources?.medicine ?? 0) > 0;
+  const canEndTurnAction = !isEnemyPhase && !!activePlayerState;
+  const combatActive = currentCard?.type === "combat" && isCombat;
+  const timeProgressValue = progressPercent(clockMs);
+  const clockLabel = formatTime(clockMs);
+  const phaseIcon = phase === "dawn" ? "🌅" : phase === "day" ? "☀️" : phase === "dusk" ? "🌆" : "🌙";
+  const handlePauseToggle = useCallback(() => {
+    if (state === "paused") {
+      setState("playing");
+      setTimeRunning(true);
+      return;
+    }
+    if (timeRunning) {
+      setTimeRunning(false);
+      setState("paused");
+    } else {
+      setState("playing");
+      setTimeRunning(true);
+    }
+  }, [state, timeRunning]);
 
   useEffect(() => {
     if (!activePlayer) return;
@@ -832,9 +918,10 @@ export default function App(){
 
   function start(){
     setState("playing");
-    setLogs([`📝 Día ${day}: El mundo ya no es el mismo.`]);
+    setLogs([]);
     setFoundNotes([]);
     setExplorationActive(false);
+    gameLog(`📝 Día ${day}: El mundo ya no es el mismo.`);
   }
 
   function logMsg(s:string){
@@ -990,6 +1077,7 @@ export default function App(){
     setDecisionDeck(shuffle(decisionDeck));
     setCombatDeck(shuffle(combatDeck));
     gameLog("🔀 Barajas los mazos restantes.");
+    pushNotification("🔀 Mazos rebarajados.");
   }
   function recycleDiscards(){
     setDecisionDeck(d=>[...d, ...shuffle(discardDecision)]);
@@ -997,6 +1085,7 @@ export default function App(){
     setDiscardDecision([]);
     setDiscardCombat([]);
     gameLog("♻️ Reintegras descartes a los mazos.");
+    pushNotification("♻️ Descartes reintegrados en los mazos.");
   }
 
   function resolveChoice(choice: NonNullable<Card["choices"]>[number]){
@@ -2181,39 +2270,218 @@ function advanceTurn() {
   // HUD superior
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-black to-neutral-950">
-      <HeaderHUD
-        day={day} phase={phase} clock={formatTime(clockMs)} progress={progressPercent(clockMs)}
-        morale={morale} threat={threat}
-        timeRunning={timeRunning} setTimeRunning={setTimeRunning}
-        onPause={()=>setState("paused")}
-      />
+      <main
+        id="appRoot"
+        className="min-h-screen w-full grid gap-3 p-3 grid-cols-12 grid-rows-[auto_auto_auto_auto_auto_auto_auto_auto_auto] text-neutral-100"
+      >
+        <section
+          id="topHead"
+          className="col-span-12 flex flex-wrap items-center gap-4 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-3"
+        >
+          <div id="dayInfo" className="flex items-center gap-2 text-lg font-semibold">
+            <span>📅 Día {day}</span>
+            <span>{phaseIcon} {phase}</span>
+          </div>
+          <div
+            id="moraleInfo"
+            className="flex flex-wrap items-center gap-3 text-sm text-neutral-300"
+          >
+            <span>💭 Moral {morale}%</span>
+            <span className="text-red-300">⚠️ Amenaza {threat}</span>
+            <span className="tabular-nums text-neutral-400">🕒 {clockLabel}</span>
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <div id="timeProgress" className="h-2 rounded-full bg-neutral-800 overflow-hidden">
+              <div
+                id="timeProgressFill"
+                className="h-full bg-neutral-200"
+                style={{ width: `${timeProgressValue}%` }}
+              />
+            </div>
+          </div>
+          <button
+            id="btnPausePlay"
+            className="px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-sm"
+            onClick={handlePauseToggle}
+          >
+            {timeRunning && state !== "paused" ? "⏸️" : "▶️"}
+          </button>
+        </section>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {!isCombat && activePlayer && <BattleTicker lines={logs} />}
-        {!isCombat && activePlayer && !isEnemyPhase && !controlsLocked && (
-          <div className="flex flex-wrap items-center gap-3">
-            <WeaponSelector
-              player={activePlayer}
-              onEquip={(weaponId) => handleQuickEquip(activePlayer.id, weaponId)}
-            />
-            {getEquippedWeapon(activePlayer).type === 'firearm' && canReloadEquipped(activePlayer) && (
-              <button
-                onClick={() =>
-                  setPlayers(list =>
-                    list.map(p =>
-                      p.id === activePlayer.id
-                        ? reloadWeaponMagazine(p, getEquippedWeapon(p).id)
-                        : p,
-                    ),
-                  )
-                }
-                className="btn btn-ghost"
-              >
-                Recargar
-              </button>
+        <section
+          id="cardsSection"
+          className="col-span-12 space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-4"
+        >
+          <div
+            id="cardsBoard"
+            className="min-h-[140px] space-y-4 rounded-lg border border-neutral-800 bg-neutral-950/60 p-4"
+          >
+            {currentCard ? (
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold text-neutral-100">Resolviendo: {currentCard.title}</h3>
+                <p className="text-sm text-neutral-300">{currentCard.text}</p>
+              </div>
+            ) : (
+              <NoCardActions
+                onExplore={exploreArea}
+                onPassNight={passNight}
+                phase={phase}
+                explorationActive={explorationActive}
+              />
+            )}
+            {timedEvent && (
+              <div className="rounded-lg border border-red-800/30 bg-red-950/40 p-3">
+                <TimedEventBanner
+                  event={timedEvent}
+                  now={nowRef.current}
+                  onResolve={resolveTimedEventPositively}
+                />
+              </div>
             )}
           </div>
-        )}
+          <div className="flex flex-wrap gap-2">
+            <button id="btnDrawDecision" className="btn" onClick={drawDecision}>
+              Sacar carta (decisión)
+            </button>
+            <button id="btnDrawCombat" className="btn" onClick={drawCombat}>
+              Sacar carta (combate)
+            </button>
+            <button id="btnReshuffle" className="btn" onClick={shuffleDecks}>
+              Rebarajar
+            </button>
+            <button id="btnReintegrateDiscards" className="btn" onClick={recycleDiscards}>
+              Reintegrar descartes
+            </button>
+          </div>
+        </section>
+
+        <section id="exploreLootModal" className={clsx("col-span-12", currentCard ? "" : "hidden")}>
+          {currentCard && (
+            <div className="fixed inset-0 z-40 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+              <div className="relative z-50 w-full max-w-3xl mx-4">
+                <CardView
+                  card={currentCard}
+                  onResolveChoice={resolveChoice}
+                  enemies={enemies}
+                  battleLines={logs}
+                  onAttack={performAttack}
+                  onDefend={defend}
+                  onHeal={healSelf}
+                  onHealAlly={() => {
+                    setShowHealAlly(true);
+                    setControlsLocked(true);
+                  }}
+                  onFlee={flee}
+                  onEat={() => consumeFoodItem()}
+                  controlsLocked={controlsLocked}
+                  isEnemyPhase={isEnemyPhase}
+                  canAttackWithSelected={canAttackWithSelected}
+                  activeDown={activeDown}
+                  activePlayer={activePlayer}
+                  onEquipWeapon={handleQuickEquip}
+                  canHeal={!!activePlayer && activePlayer.hp < activePlayer.hpMax && resources.medicine > 0}
+                  canEat={!isEnemyPhase && (resources?.food ?? 0) > 0 && !!activePlayer}
+                  onClose={() => {
+                    if (currentCard.type === "decision") setDiscardDecision(d => [currentCard, ...d]);
+                    else setDiscardCombat(d => [currentCard, ...d]);
+                    handleCloseCard();
+                    endTurnNow(ACTION_TIME_COSTS.decision);
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section id="combatPanel" className={clsx("col-span-12", combatActive ? "" : "hidden")}>
+          {combatActive && (
+            <CombatPanel
+              battleLines={logs}
+              enemies={enemies}
+              onAttack={performAttack}
+              onDefend={defend}
+              onHeal={healSelf}
+              onHealAlly={() => {
+                setShowHealAlly(true);
+                setControlsLocked(true);
+              }}
+              onFlee={flee}
+              controlsLocked={controlsLocked}
+              isEnemyPhase={isEnemyPhase}
+              canAttackWithSelected={canAttackWithSelected}
+              activeDown={activeDown}
+              activePlayer={activePlayer}
+              onEquipWeapon={handleQuickEquip}
+              canHeal={!!activePlayer && activePlayer.hp < activePlayer.hpMax && resources.medicine > 0}
+              onEat={() => consumeFoodItem()}
+              canEat={!isEnemyPhase && !!activePlayer && (resources?.food ?? 0) > 0}
+            />
+          )}
+        </section>
+
+        <section
+          id="gameLog"
+          ref={(el) => {
+            gameLogRef.current = el;
+            if (el) initLogger();
+          }}
+          className="col-span-12 h-48 overflow-y-auto rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm"
+        />
+
+        <section id="controlRow" className="col-span-12 grid grid-cols-12 gap-3">
+          <div
+            id="weaponsTab"
+            className="col-span-12 md:col-span-8 rounded-lg border border-neutral-800 bg-neutral-900/40 p-4"
+          >
+            <label htmlFor="weaponSelect" className="mb-2 block text-sm text-neutral-300">
+              Arma equipada
+            </label>
+            <select
+              id="weaponSelect"
+              className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+              value={currentWeaponId}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (!activePlayerState || !next) return;
+                handleQuickEquip(activePlayerState.id, next);
+              }}
+              disabled={!activePlayerState || weaponOptions.length === 0}
+            >
+              {weaponOptions.map((opt) => (
+                <option key={opt.id} value={opt.id} disabled={!opt.usable}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-span-12 md:col-span-4 flex flex-wrap items-end justify-end gap-2">
+            <button
+              id="btnEat"
+              className="btn"
+              onClick={() => consumeFoodItem()}
+              disabled={!canEatOutOfCombat}
+            >
+              Comer
+            </button>
+            <button
+              id="btnHeal"
+              className="btn"
+              onClick={() => healSelf()}
+              disabled={!canHealOutOfCombat}
+            >
+              Curarse
+            </button>
+            <button
+              id="btnEndTurn"
+              className="btn-primary"
+              onClick={() => endTurnNow(0)}
+              disabled={!canEndTurnAction}
+            >
+              Terminar turno
+            </button>
+          </div>
+        </section>
 
         <PartyPanel
           players={players}
@@ -2221,91 +2489,64 @@ function advanceTurn() {
           onRemove={removePlayer}
           activePlayerId={activePlayerId ?? undefined}
           isEnemyPhase={isEnemyPhase}
-        />
-
-        {/* Zonas principales */}
-        <DeckControls
-          onDrawDecision={drawDecision} onDrawCombat={drawCombat}
-          onShuffle={shuffleDecks} onRecycle={recycleDiscards}
-        />
-
-        {currentCard ? (
-          <CardView
-            card={currentCard}
-            onResolveChoice={resolveChoice}
-            enemies={enemies}
-            battleLines={logs}
-            onAttack={performAttack}
-            onDefend={defend}
-            onHeal={healSelf}
-            onHealAlly={() => { setShowHealAlly(true); setControlsLocked(true); }}
-            onFlee={flee}
-            onEat={()=>consumeFoodItem()}
-            controlsLocked={controlsLocked}
-            isEnemyPhase={isEnemyPhase}
-            canAttackWithSelected={canAttackWithSelected}
-            activeDown={activeDown}
-            activePlayer={activePlayer}
-            onEquipWeapon={handleQuickEquip}
-            canHeal={!!activePlayer && activePlayer.hp < activePlayer.hpMax && resources.medicine>0}
-            canEat={!isEnemyPhase && (resources?.food ?? 0) > 0 && !!activePlayer}
-            onClose={()=>{
-              if(currentCard.type==="decision") setDiscardDecision(d=>[currentCard, ...d]);
-              else setDiscardCombat(d=>[currentCard, ...d]);
-              handleCloseCard();
-              endTurnNow(ACTION_TIME_COSTS.decision);
-            }}
-          />
-        ) : (
-          <NoCardActions onExplore={exploreArea} onPassNight={passNight} phase={phase} explorationActive={explorationActive} />
-        )}
-
-        {timedEvent && (
-          <TimedEventBanner
-            event={timedEvent}
-            now={nowRef.current}
-            onResolve={resolveTimedEventPositively}
-          />
-        )}
-        {!currentCard && !isEnemyPhase && !!activePlayer && (resources?.food ?? 0) > 0 && (
-          <button className="btn btn-green mr-2" onClick={() => consumeFoodItem()}>
-            Comer
-          </button>
-        )}
-        {!isEnemyPhase && !!activePlayer && (
-          <button className="btn btn-ghost" onClick={() => endTurnNow(0)} title="Pasar turno">
-            Terminar turno
-          </button>
-        )}
-        <InventoryPanel
-          stash={stash}
-          players={players}
-          giveItem={giveItemToPlayer}
-          takeItem={takeItemFromPlayer}
-          foundNotes={foundNotes}
-          followNote={followNote}
-        />
-
-        <CampRepair
           resources={resources}
-          camp={camp}
           setResources={setResources}
-          setCamp={setCamp}
+          consumeFoodForPlayer={consumeFoodForPlayer}
+          consumeMedForPlayer={consumeMedForPlayer}
+          activePlayer={activePlayer}
+          setPlayers={setPlayers}
         />
 
-        <CampPanel resources={resources} setResources={setResources} stash={stash} setStash={setStash} />
+        <NotesPanel notes={foundNotes} onFollowNote={followNote} />
 
-        <LogPanel log={logs} />
+        <CampTabs
+          activeTab={activeCampTab}
+          onSelectTab={setActiveCampTab}
+          inventoryState={{
+            stash,
+            players,
+            giveItem: giveItemToPlayer,
+            takeItem: takeItemFromPlayer,
+          }}
+          campState={{
+            resources,
+            setResources,
+            stash,
+            setStash,
+            camp,
+            setCamp,
+          }}
+        />
+
+        <section
+          id="notificationsLog"
+          className="col-span-12 h-28 overflow-y-auto rounded-lg border border-neutral-800 bg-neutral-900/40 p-3 text-sm space-y-2"
+        >
+          {notifications.length === 0 ? (
+            <p className="text-neutral-500">Sin notificaciones de sistema.</p>
+          ) : (
+            notifications.map((note, idx) => (
+              <div key={`${idx}-${note}`} className="rounded bg-neutral-800/60 px-3 py-1">
+                {note}
+              </div>
+            ))
+          )}
+        </section>
       </main>
 
-      {state==="paused" && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="p-8 rounded-2xl border border-neutral-700 bg-neutral-900 max-w-md w-full space-y-4">
+      {state === "paused" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md space-y-4 rounded-2xl border border-neutral-700 bg-neutral-900 p-8">
             <h2 className="text-2xl font-bold text-red-400">Pausado</h2>
-            <button className="btn btn-red text-white w-full" onClick={()=>{
-              setState("playing");
-              // reanudar queda en control del botón de play/pausa del HUD, no forzamos timeRunning
-            }}>Reanudar</button>
+            <button
+              className="btn btn-red text-white w-full"
+              onClick={() => {
+                setState("playing");
+                setTimeRunning(true);
+              }}
+            >
+              Reanudar
+            </button>
           </div>
         </div>
       )}
@@ -2505,6 +2746,14 @@ function CardView(props:{
         <div>
           <h3 className="text-2xl font-bold">{props.card.title}</h3>
           <p className="text-neutral-300 mt-1">{props.card.text}</p>
+          {!isDecision && props.card.scene && (
+            <div className="mt-2 text-xs uppercase tracking-wide text-neutral-500">
+              Escenario: {props.card.scene}
+            </div>
+          )}
+          {!isDecision && typeof props.card.difficulty === 'number' && (
+            <div className="mt-1 text-xs text-neutral-500">Dificultad estimada: {props.card.difficulty}</div>
+          )}
         </div>
         <button className="btn btn-ghost" onClick={props.card.type==='combat'?props.onFlee:props.onClose}>✖</button>
       </div>
@@ -2512,7 +2761,7 @@ function CardView(props:{
       {isDecision && props.card.choices && (
         <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {props.card.choices.map((c,i)=>(
-            <button key={i} className="btn btn-purple text-white" onClick={()=>props.onResolveChoice(c)}>
+            <button key={i} className="btn" onClick={()=>props.onResolveChoice(c)}>
               → {c.text}
             </button>
           ))}
@@ -2520,146 +2769,42 @@ function CardView(props:{
       )}
 
       {!isDecision && (
-        <div className="mt-5 space-y-3">
-          {props.activePlayer && <BattleTicker lines={props.battleLines} />}
-          {props.activePlayer && (
-            <WeaponQuickBar player={props.activePlayer} onSelect={props.onEquipWeapon} />
-          )}
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 space-y-3">
-              {props.enemies.length===0 ? (
-                <div className="p-4 bg-neutral-900 rounded-xl border border-neutral-800">
-                  <p className="text-lg">🕊️ No quedan enemigos. La zona está momentáneamente segura.</p>
-                </div>
-              ) : (
-                props.enemies.map(e=>{
-                  const isEnemyStunned = hasCondition(e.conditions, 'stunned');
-                  return (
-                    <div key={e.id} className={[
-                      "p-4 bg-neutral-900 rounded-xl border border-red-900",
-                      isEnemyStunned ? "saturate-0 grayscale border-zinc-400/60" : "",
-                    ].join(" ")}>
-                      <div className="text-xs opacity-80 mb-1">
-                        {isEnemyStunned && <span className="px-2 py-0.5 rounded bg-zinc-600/80">Aturdido</span>}
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-bold">{e.name}</h4>
-                          <p className="text-sm text-neutral-400">DEF {e.def} • ATK {e.atk}</p>
-                        </div>
-                        <button
-                          className="btn btn-red text-white"
-                          onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canAttackWithSelected) return; props.onAttack(e.id); }}
-                          disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canAttackWithSelected}
-                        >
-                          {props.canAttackWithSelected ? "🗡️ Atacar" : "Sin munición"}
-                        </button>
-                      </div>
-                      <div className="mt-2 h-2 bg-neutral-800 rounded-full overflow-hidden">
-                        <div className={clsx("h-full", e.hp/e.hpMax>0.6?"bg-green-600":e.hp/e.hpMax>0.3?"bg-yellow-500":"bg-red-600")} style={{width:`${(e.hp/e.hpMax)*100}%`}}/>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <div className="space-y-2">
-              <button
-                className="btn btn-ghost w-full"
-                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onDefend(); }}
-                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
-              >
-                🛡️ Defender
-              </button>
-              <button
-                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onHealAlly(); }}
-                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
-                className="px-3 py-2 w-full rounded-xl border border-white/15 hover:bg-white/5"
-              >
-                Curar aliado
-              </button>
-              <button
-                className="btn btn-ghost w-full"
-                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canHeal) return; props.onHeal(); }}
-                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canHeal}
-                title={!props.canHeal ? "PV al máximo" : undefined}
-              >
-                💊 Curarse
-              </button>
-              {props.canEat && (
-                <button
-                  className="btn btn-green w-full"
-                  onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canEat) return; props.onEat(); }}
-                  disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown || !props.canEat}
-                >
-                  🍞 Comer
-                </button>
-              )}
-              <button
-                className="btn btn-ghost w-full"
-                onClick={()=>{ if (props.controlsLocked || props.isEnemyPhase || props.activeDown) return; props.onFlee(); }}
-                disabled={props.controlsLocked || props.isEnemyPhase || props.activeDown}
-              >
-                🏃 Huir
-              </button>
-            </div>
+        <div className="mt-5 space-y-3 text-sm text-neutral-300">
+          <p>Gestiona el enfrentamiento desde el panel de combate. Esta carta sirve como referencia narrativa.</p>
+          <div className="flex justify-end">
+            <button className="btn" onClick={props.onFlee}>Abandonar combate</button>
           </div>
         </div>
       )}
-
-
     </div>
   );
 }
 
-function NoCardActions({onExplore, onPassNight, phase, explorationActive}:{onExplore:()=>void; onPassNight:()=>void; phase:Phase; explorationActive:boolean}){
-  return (
-    <div className="card bg-neutral-900 border-neutral-800 p-6 flex flex-wrap items-center gap-3">
-      <button
-        onClick={onExplore}
-        disabled={explorationActive}
-        className={`px-6 py-3 rounded-xl font-bold transition-all ${
-          explorationActive ? 'bg-neutral-800 cursor-not-allowed opacity-60' : 'bg-red-900 hover:bg-red-800'
-        }`}
-      >
-        🧭 Explorar {explorationActive ? '(en curso...)' : '(saqueo y riesgo)'}
-      </button>
-      {(phase==="dusk"||phase==="night") && (
-        <button className="btn btn-red text-white" onClick={onPassNight}>🌙 Pasar la noche</button>
-      )}
-      {(phase==="dawn"||phase==="day") && (
-        <span className="text-sm text-neutral-400">El sol aún ofrece margen para actuar...</span>
-      )}
-    </div>
-  );
-}
-
-function TimedEventBanner({event, now, onResolve}:{event:TimedEvent; now:number; onResolve:()=>void}){
-  const elapsed = Math.max(0, now - event.startedAt);
-  const pct = clamp((elapsed/event.durationMs)*100, 0, 100);
-  const remain = Math.max(0, event.durationMs - elapsed);
-  const mm = String(Math.floor(remain/60000)).padStart(2,"0");
-  const ss = String(Math.floor((remain%60000)/1000)).padStart(2,"0");
-  return (
-    <div className="card p-4 bg-gradient-to-br from-yellow-900/20 to-black border-yellow-800">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h4 className="font-bold text-yellow-300">Evento: {event.name}</h4>
-          <p className="text-sm text-neutral-300">{event.text}</p>
-        </div>
-        <div className="min-w-[200px]">
-          <div className="w-full h-3 bg-neutral-800 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-yellow-400 to-red-600" style={{width:`${pct}%`}}/>
-          </div>
-          <div className="text-right text-xs text-neutral-400 mt-1">{mm}:{ss}</div>
-        </div>
-        <button className="btn btn-ghost" onClick={onResolve}>Resolver ahora</button>
-      </div>
-    </div>
-  );
-}
-
-function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyPhase}:{players:Player[]; onUpdatePlayer:(id:string, patch:Partial<Player>)=>void; onRemove:(id:string)=>void; activePlayerId?: string; isEnemyPhase: boolean}){
+function PartyPanel({
+  players,
+  onUpdatePlayer,
+  onRemove,
+  activePlayerId,
+  isEnemyPhase,
+  resources,
+  setResources,
+  consumeFoodForPlayer,
+  consumeMedForPlayer,
+  activePlayer,
+  setPlayers,
+}:{
+  players: Player[];
+  onUpdatePlayer: (id: string, patch: Partial<Player>) => void;
+  onRemove: (id: string) => void;
+  activePlayerId?: string;
+  isEnemyPhase: boolean;
+  resources: Resources;
+  setResources: React.Dispatch<React.SetStateAction<Resources>>;
+  consumeFoodForPlayer: (playerId: string, itemId: string) => void;
+  consumeMedForPlayer: (playerId: string, itemId: string) => void;
+  activePlayer: Player | null;
+  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+}){
   const alive = players.filter(p=>p.status!=="dead");
   const [selected, setSelected] = useState<string | null>(alive[0]?.id ?? null);
   useEffect(()=>{
@@ -2667,24 +2812,25 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
   }, [players]);
 
   return (
-    <div className="grid md:grid-cols-3 gap-4">
-      <div className="md:col-span-2 card bg-neutral-900 border-neutral-800 p-6">
-        <h3 className="text-xl font-bold mb-4">👥 Supervivientes</h3>
-        <div className="grid sm:grid-cols-2 gap-3">
-            {players.map(p=>{
-            const isDown = p.hp <= 0;
-            const isBleeding = hasCondition(p.conditions,'bleeding');
-            const isInfected = hasCondition(p.conditions,'infected');
-            const isStunned = hasCondition(p.conditions,'stunned');
-            const inf = p.conditions?.infected;
-            const left = inf?.expiresAtMs ? Math.max(0, inf.expiresAtMs - Date.now()) : 0;
-            const mm = String(Math.floor(left/60000)).padStart(2,'0');
-            const ss = String(Math.floor((left%60000)/1000)).padStart(2,'0');
-            return (
+    <>
+      <section
+        id="survivorsPanel"
+        className="col-span-12 grid gap-3 md:grid-cols-3 lg:grid-cols-4"
+      >
+        {players.map(p=>{
+          const isDown = p.hp <= 0;
+          const isBleeding = hasCondition(p.conditions,'bleeding');
+          const isInfected = hasCondition(p.conditions,'infected');
+          const isStunned = hasCondition(p.conditions,'stunned');
+          const inf = p.conditions?.infected;
+          const left = inf?.expiresAtMs ? Math.max(0, inf.expiresAtMs - Date.now()) : 0;
+          const mm = String(Math.floor(left/60000)).padStart(2,'0');
+          const ss = String(Math.floor((left%60000)/1000)).padStart(2,'0');
+          return (
             <div
               key={p.id}
               className={[
-                "rounded-2xl border p-3 transition bg-neutral-800/50 border-neutral-700",
+                "rounded-xl border p-3 transition bg-neutral-900/60 border-neutral-800 text-sm",
                 (!isEnemyPhase && p.id === activePlayerId) ? "ring-2 ring-emerald-400 animate-pulse" : "",
                 isDown ? "saturate-0 grayscale opacity-80" : "",
                 isBleeding && !isDown ? "border-red-500/60" : "",
@@ -2692,61 +2838,70 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
               ].join(" ")}
             >
               <input
-                className="text-sm font-semibold leading-tight bg-transparent border-b border-neutral-700 outline-none focus:border-red-500 w-full"
+                className="w-full border-b border-neutral-700 bg-transparent text-sm font-semibold leading-tight outline-none focus:border-red-500"
                 value={p.name}
                 onChange={(e)=>onUpdatePlayer(p.id,{ name: e.target.value })}
               />
               <div className="h-px bg-white/10 mt-1" />
-              <div className="flex flex-wrap items-center gap-1 mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-1">
                 {isDown ? (
-                  <span className="px-2 py-0.5 rounded bg-zinc-700/80 text-zinc-100">Fuera de combate</span>
+                  <span className="rounded bg-zinc-700/80 px-2 py-0.5 text-xs text-zinc-100">Fuera de combate</span>
                 ) : (
                   <>
-                    <span className="px-2 py-0.5 rounded bg-white/10">Vivo</span>
-                    {isBleeding && <span className="px-2 py-0.5 rounded bg-red-600/80">Sangrando</span>}
-                    {isInfected && <span className="px-2 py-0.5 rounded bg-emerald-600/80">Infectado</span>}
-                    {isStunned && <span className="px-2 py-0.5 rounded bg-zinc-500/80">Aturdido</span>}
+                    <span className="rounded bg-white/10 px-2 py-0.5 text-xs">Vivo</span>
+                    {isBleeding && <span className="rounded bg-red-600/80 px-2 py-0.5 text-xs">Sangrando</span>}
+                    {isInfected && <span className="rounded bg-emerald-600/80 px-2 py-0.5 text-xs">Infectado</span>}
+                    {isStunned && <span className="rounded bg-zinc-500/80 px-2 py-0.5 text-xs">Aturdido</span>}
                   </>
                 )}
               </div>
               {isInfected && !isDown && (
-                <div className="text-xs mt-1 opacity-80">
+                <div className="mt-1 text-xs opacity-80">
                   Tiempo para curarse: {mm}:{ss}
                 </div>
               )}
               <p className="text-xs text-neutral-400">{p.profession}</p>
-              <div className="mt-2">
+              <div className="mt-2 space-y-2">
                 <Bar label="PV" current={p.hp} max={p.hpMax} color="green" />
                 <Bar label="Energía" current={p.energy} max={p.energyMax} color="blue" />
               </div>
-
-              <div className="text-xs text-neutral-400 mt-1">
+              <div className="mt-1 text-xs text-neutral-400">
                 Mochila: {p.inventory.length}/{p.backpackCapacity ?? 8}
               </div>
-
               <div className="mt-2 flex gap-2">
-                <button className="btn btn-ghost" onClick={()=>setSelected(p.id)}>Ver</button>
+                <button className="btn" onClick={()=>setSelected(p.id)}>Ver</button>
                 {p.status!=="dead" && (
                   <button className="btn btn-red text-white" onClick={()=>onRemove(p.id)}>Eliminar</button>
                 )}
               </div>
             </div>
-            );
-          })}
-        </div>
-      </div>
+          );
+        })}
+      </section>
 
-      <div className="card bg-neutral-900 border-neutral-800 p-6">
-        <h3 className="text-xl font-bold mb-3">Detalles</h3>
+      <aside
+        id="survivorDetails"
+        className={clsx(
+          "col-span-12 rounded-lg border border-neutral-800 bg-neutral-900/50 p-4",
+          selected ? "" : "hidden",
+        )}
+      >
+        <h3 className="mb-3 text-lg font-semibold">Detalles</h3>
         {selected ? (
           <>
-            <Details player={players.find(p=>p.id===selected)!} onUpdate={(patch)=>onUpdatePlayer(selected, patch)} addMedicine={(n)=>{
-              const st = addMedicineToCamp({ resources }, n);
-              setResources(st.resources);
-            }} consumeFood={consumeFoodForPlayer} consumeMed={consumeMedForPlayer} />
+            <Details
+              player={players.find(p=>p.id===selected)!}
+              onUpdate={(patch)=>onUpdatePlayer(selected, patch)}
+              addMedicine={(n)=>{
+                const st = addMedicineToCamp({ resources }, n);
+                setResources(st.resources);
+              }}
+              consumeFood={consumeFoodForPlayer}
+              consumeMed={consumeMedForPlayer}
+            />
             {activePlayer && getEquippedWeapon(activePlayer).type==='firearm' && canReloadEquipped(activePlayer) && (
               <button
-                className="mt-3 w-full px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+                className="mt-3 w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
                 onClick={()=>setPlayers(list => list.map(p => p.id===activePlayer.id ? reloadWeaponMagazine(p, getEquippedWeapon(activePlayer).id) : p))}
                 title="Recargar arma"
               >
@@ -2755,13 +2910,12 @@ function PartyPanel({players, onUpdatePlayer, onRemove, activePlayerId, isEnemyP
             )}
           </>
         ) : (
-          <p className="text-neutral-500">Selecciona un personaje.</p>
+          <p className="text-neutral-500">Selecciona un personaje para ver sus detalles.</p>
         )}
-      </div>
-    </div>
+      </aside>
+    </>
   );
 }
-
 function Details({player, onUpdate, addMedicine, consumeFood: onConsumeFood, consumeMed: onConsumeMed}:{player:Player; onUpdate:(patch:Partial<Player>)=>void; addMedicine:(n:number)=>void; consumeFood:(pid:string,itemId:string)=>void; consumeMed:(pid:string,itemId:string)=>void;}){
   const [medkitOpen, setMedkitOpen] = useState(false);
   const [medkitTake, setMedkitTake] = useState(1);
@@ -2897,83 +3051,155 @@ function Details({player, onUpdate, addMedicine, consumeFood: onConsumeFood, con
   );
 }
 
-function InventoryPanel({stash, players, giveItem, takeItem, foundNotes, followNote}:{stash:InventoryItem[]; players:Player[]; giveItem:(id:string,item:InventoryItem)=>void; takeItem:(id:string,item:any)=>void; foundNotes:GameNote[]; followNote:(id:number)=>void}){
+function InventoryTabPanel({stash, players, giveItem, takeItem}:{stash:InventoryItem[]; players:Player[]; giveItem:(id:string,item:InventoryItem)=>void; takeItem:(id:string,item:any)=>void}){
   const [selectedPlayer, setSelectedPlayer] = useState(players[0]?.id ?? "");
   useEffect(()=>{
     if(!players.find(p=>p.id===selectedPlayer) && players[0]) setSelectedPlayer(players[0].id);
   }, [players]);
   const player = players.find(p=>p.id===selectedPlayer);
   return (
-    <>
-      <div className="card bg-neutral-900 border-neutral-800 p-6">
-        <h3 className="text-xl font-bold mb-4">🎒 Inventario & Alijo</h3>
-        <div className="flex flex-wrap items-center gap-3 mb-3">
-          <span className="text-sm text-neutral-400">Selecciona:</span>
-          <select className="bg-neutral-800 rounded px-2 py-1" value={selectedPlayer} onChange={e=>setSelectedPlayer(e.target.value)}>
-            {players.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
-          </select>
-        </div>
-        {!player ? <p>Sin jugador</p> : (
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="text-sm text-neutral-400 mb-1">Alijo del Campamento</h4>
-              <div className="flex flex-wrap gap-2">
-                {stash.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
-                  stash.map((it)=>(
-                    <button key={it.id} className="btn btn-ghost" onClick={()=>giveItem(player.id,it)}>{it.name} ➜</button>
-                  ))
-                }
-              </div>
-            </div>
-            <div>
-              <h4 className="text-sm text-neutral-400 mb-1">Inventario de {player.name}</h4>
-              <div className="flex flex-wrap gap-2">
-                {player.inventory.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
-                  player.inventory.map((it,i)=>(
-                    <button key={i} className="btn btn-ghost" onClick={()=>takeItem(player.id,it)}>⟵ {typeof it==='string'? it : it.name}</button>
-                  ))
-                }
-              </div>
+    <div className="card bg-neutral-900 border-neutral-800 p-6 space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm text-neutral-400">Selecciona:</span>
+        <select className="bg-neutral-800 rounded px-2 py-1" value={selectedPlayer} onChange={e=>setSelectedPlayer(e.target.value)}>
+          {players.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
+        </select>
+      </div>
+      {!player ? <p className="text-neutral-500">Sin jugador</p> : (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <h4 className="text-sm text-neutral-400 mb-1">Alijo del Campamento</h4>
+            <div className="flex flex-wrap gap-2">
+              {stash.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
+                stash.map((it)=>(
+                  <button key={it.id} className="btn btn-ghost" onClick={()=>giveItem(player.id,it)}>{it.name} ➜</button>
+                ))
+              }
             </div>
           </div>
-        )}
-      </div>
+          <div>
+            <h4 className="text-sm text-neutral-400 mb-1">Inventario de {player.name}</h4>
+            <div className="flex flex-wrap gap-2">
+              {player.inventory.length===0 ? <span className="text-xs text-neutral-500">Vacío</span> :
+                player.inventory.map((it,i)=>(
+                  <button key={i} className="btn btn-ghost" onClick={()=>takeItem(player.id,it)}>⟵ {typeof it==='string'? it : it.name}</button>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      <div className="mt-6 bg-gradient-to-br from-neutral-900 to-black border border-neutral-800 rounded-2xl p-6">
-        <h3 className="text-xl font-bold mb-4">🗒️ Notas encontradas</h3>
-        {foundNotes.length === 0 ? (
-          <p className="text-neutral-500">Aún no has encontrado notas.</p>
-        ) : (
-          <div className="space-y-3">
-            {foundNotes.map(n => (
-              <div key={n.id} className="p-4 bg-neutral-800 rounded-xl">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold">{n.title}</h4>
-                    <p className="text-sm text-neutral-300 mt-1">{n.body}</p>
-                    {n.hintLocation && (
-                      <p className="text-xs text-neutral-400 mt-1">
-                        Pista: <span className="text-neutral-200">{n.hintLocation}</span>
-                      </p>
-                    )}
-                  </div>
-                  {n.leadType && !n.resolved ? (
-                    <button
-                      onClick={() => followNote(n.id)}
-                      className="px-3 py-2 bg-red-900 hover:bg-red-800 rounded-lg text-sm font-bold"
-                    >
-                      Seguir pista
-                    </button>
-                  ) : (
-                    <span className="text-xs text-green-400">✓ Resuelta</span>
+function NotesPanel({notes, onFollowNote}:{notes:GameNote[]; onFollowNote:(id:number)=>void}){
+  return (
+    <section
+      id="notesPanel"
+      className="col-span-12 rounded-lg border border-neutral-800 bg-neutral-900/40 p-6"
+    >
+      <h3 className="text-xl font-bold mb-4">🗒️ Notas encontradas</h3>
+      {notes.length === 0 ? (
+        <p className="text-neutral-500">Aún no has encontrado notas.</p>
+      ) : (
+        <div className="space-y-3">
+          {notes.map(n => (
+            <div key={n.id} className="rounded-xl border border-neutral-800/80 bg-neutral-900/70 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h4 className="font-bold">{n.title}</h4>
+                  <p className="mt-1 text-sm text-neutral-300">{n.body}</p>
+                  {n.hintLocation && (
+                    <p className="mt-1 text-xs text-neutral-400">
+                      Pista: <span className="text-neutral-200">{n.hintLocation}</span>
+                    </p>
                   )}
                 </div>
+                {n.leadType && !n.resolved ? (
+                  <button
+                    onClick={() => onFollowNote(n.id)}
+                    className="btn btn-primary text-neutral-900"
+                  >
+                    Seguir pista
+                  </button>
+                ) : (
+                  <span className="text-xs text-green-400">✓ Resuelta</span>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CampTabs({
+  activeTab,
+  onSelectTab,
+  inventoryState,
+  campState,
+}:{
+  activeTab: "inv" | "camp" | "rep";
+  onSelectTab: (tab:"inv"|"camp"|"rep")=>void;
+  inventoryState: { stash: InventoryItem[]; players: Player[]; giveItem:(id:string,item:InventoryItem)=>void; takeItem:(id:string,item:any)=>void; };
+  campState: {
+    resources: Resources;
+    setResources: React.Dispatch<React.SetStateAction<Resources>>;
+    stash: InventoryItem[];
+    setStash: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
+    camp: Camp;
+    setCamp: React.Dispatch<React.SetStateAction<Camp>>;
+  };
+}){
+  return (
+    <section id="campTabs" className="col-span-12 rounded-lg border border-neutral-800 bg-neutral-900/40">
+      <div className="flex border-b border-neutral-800">
+        {(
+          [
+            { key: "inv" as const, label: "Inventario & Alijo" },
+            { key: "camp" as const, label: "Campamento" },
+            { key: "rep" as const, label: "Reparaciones" },
+          ]
+        ).map(tab => (
+          <button
+            key={tab.key}
+            data-tab={tab.key}
+            className={clsx("tab flex-1 text-left", activeTab === tab.key ? "active" : "")}
+            onClick={()=>onSelectTab(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
-    </>
+      <div id="tabContent" className="p-4 space-y-4">
+        <div data-tabpanel="inv" className={activeTab === "inv" ? "" : "hidden"}>
+          <InventoryTabPanel
+            stash={inventoryState.stash}
+            players={inventoryState.players}
+            giveItem={inventoryState.giveItem}
+            takeItem={inventoryState.takeItem}
+          />
+        </div>
+        <div data-tabpanel="camp" className={activeTab === "camp" ? "" : "hidden"}>
+          <CampResourcesTab
+            resources={campState.resources}
+            setResources={campState.setResources}
+            stash={campState.stash}
+            setStash={campState.setStash}
+          />
+        </div>
+        <div data-tabpanel="rep" className={activeTab === "rep" ? "" : "hidden"}>
+          <CampRepair
+            resources={campState.resources}
+            camp={campState.camp}
+            setResources={campState.setResources}
+            setCamp={campState.setCamp}
+          />
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -3027,45 +3253,107 @@ function CampRepair({resources, camp, setResources, setCamp}:{resources:Resource
   );
 }
 
-function CampPanel({resources, setResources, stash, setStash}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>; stash:InventoryItem[]; setStash:React.Dispatch<React.SetStateAction<InventoryItem[]>>}){
+const RESOURCE_CAPS: Record<keyof Resources, number> = {
+  food: 50,
+  water: 50,
+  medicine: 20,
+  fuel: 30,
+  ammo: 120,
+  materials: 40,
+};
+
+function CampResourcesTab({resources, setResources, stash, setStash}:{resources:Resources; setResources:React.Dispatch<React.SetStateAction<Resources>>; stash:InventoryItem[]; setStash:React.Dispatch<React.SetStateAction<InventoryItem[]>>}){
   const [openModal, setOpenModal] = useState<null | "food" | "medicine" | "ammo">(null);
   const total = Object.values(resources).reduce((a,b)=>a+b,0);
-  const iconMap: Record<keyof Resources, string> = { food:"🍖", water:"💧", medicine:"💊", fuel:"⛽", ammo:"🔫", materials:"🔨" };
-  const labelMap: Record<"food"|"medicine"|"ammo", string> = { food:"Comida", medicine:"Medicina", ammo:"Munición" };
   const state = { camp: { resources, stash } };
   const setState = (next:any) => { setResources(next.camp.resources); setStash(next.camp.stash); };
+  const labels: Record<keyof Resources, string> = {
+    food: "Comida",
+    water: "Agua",
+    medicine: "Medicina",
+    fuel: "Combustible",
+    ammo: "Munición",
+    materials: "Materiales",
+  };
+  const icons: Record<keyof Resources, string> = {
+    food: "🍖",
+    water: "💧",
+    medicine: "💊",
+    fuel: "⛽",
+    ammo: "🔫",
+    materials: "🔨",
+  };
+  const stockable: Record<string, true> = { food: true, medicine: true, ammo: true };
   return (
     <>
-      <div className="card bg-neutral-900 border-neutral-800 p-6">
-        <h3 className="text-xl font-bold mb-4">🏕️ Campamento</h3>
-        <div className="grid sm:grid-cols-3 md:grid-cols-6 gap-3">
-          {Object.entries(resources).map(([k,v])=>{
-            if(k === 'food' || k === 'medicine' || k === 'ammo'){
-              return (
-                <CampTileButton
-                  key={k}
-                  icon={iconMap[k as keyof Resources]}
-                  label={labelMap[k as 'food'|'medicine'|'ammo']}
-                  value={v}
-                  onClick={()=>setOpenModal(k as "food"|"medicine"|"ammo")}
-                />
-              );
-            }
+      <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-6 space-y-4">
+        <ul className="space-y-3">
+          {(Object.keys(resources) as (keyof Resources)[]).map(key => {
+            const value = resources[key];
+            const cap = RESOURCE_CAPS[key] ?? Math.max(1, value);
+            const pct = Math.min(100, Math.round((value / Math.max(cap, 1)) * 100));
             return (
-              <div key={k} className="text-center p-3 rounded-xl bg-neutral-800">
-                <div className="text-2xl mb-1">{iconMap[k as keyof Resources]}</div>
-                <div className="text-xl font-bold">{v}</div>
-                <div className="text-xs text-neutral-400">{k}</div>
-              </div>
+              <li key={key} className="flex items-center gap-4">
+                <div className="flex w-32 items-center gap-2 text-sm text-neutral-200">
+                  <span>{icons[key]}</span>
+                  <span>{labels[key]}</span>
+                </div>
+                <div className="flex-1 h-2 rounded bg-neutral-800 overflow-hidden">
+                  <div className="h-full bg-neutral-200" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="w-16 text-right text-sm tabular-nums text-neutral-300">{value}</span>
+                {stockable[key] ? (
+                  <button
+                    className="btn"
+                    onClick={()=>setOpenModal(key as "food"|"medicine"|"ammo")}
+                  >
+                    Gestionar
+                  </button>
+                ) : null}
+              </li>
             );
           })}
-        </div>
-        <p className="mt-3 text-xs text-neutral-500">Total almacenado: {total}</p>
+        </ul>
+        <p className="text-xs text-neutral-500">Total almacenado: {total}</p>
       </div>
       <StockFoodModal isOpen={openModal === 'food'} onClose={()=>setOpenModal(null)} state={state} setState={setState} />
       <StockMedicineModal isOpen={openModal === 'medicine'} onClose={()=>setOpenModal(null)} state={state} setState={setState} />
       <StockAmmoModal isOpen={openModal === 'ammo'} onClose={()=>setOpenModal(null)} state={state} setState={setState} />
     </>
+  );
+}
+
+function NoCardActions({
+  onExplore,
+  onPassNight,
+  phase,
+  explorationActive,
+}: {
+  onExplore: () => void;
+  onPassNight: () => void;
+  phase: Phase;
+  explorationActive: boolean;
+}) {
+  return (
+    <div className="card flex flex-wrap items-center gap-3 border-neutral-800 bg-neutral-900 p-6">
+      <button
+        onClick={onExplore}
+        disabled={explorationActive}
+        className={`px-6 py-3 rounded-xl font-bold transition-all ${
+          explorationActive ? "bg-neutral-800 cursor-not-allowed opacity-60" : "bg-red-900 hover:bg-red-800"
+        }`}
+      >
+        🧭 Explorar {explorationActive ? "(en curso...)" : "(saqueo y riesgo)"}
+      </button>
+      {(phase === "dusk" || phase === "night") && (
+        <button className="btn btn-red text-white" onClick={onPassNight}>
+          🌙 Pasar la noche
+        </button>
+      )}
+      {(phase === "dawn" || phase === "day") && (
+        <span className="text-sm text-neutral-400">El sol aún ofrece margen para actuar...</span>
+      )}
+    </div>
   );
 }
 

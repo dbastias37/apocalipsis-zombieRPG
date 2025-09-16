@@ -1,3 +1,5 @@
+import { appendLog } from "../systems/logger";
+
 export type LogFn = (msg: string) => void;
 export type TimeFn = () => string;
 
@@ -25,7 +27,9 @@ export function registerTimeProvider(fn: TimeFn) {
 export function gameLog(message: string) {
   try {
     const stamp = timeProvider();
-    currentLogger(`[${stamp}] ${message}`);
+    const line = `[${stamp}] ${message}`;
+    appendLog(line);
+    currentLogger(line);
   } catch {
     // no-op para no romper el runtime
   }
